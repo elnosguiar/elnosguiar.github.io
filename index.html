@@ -1,194 +1,258 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>민준 & 서하 결혼식 초대장</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OO & OO의 결혼식에 초대합니다</title>
+    <style>
+        /* CSS 스타일 시작 */
+        :root {
+            --primary-color: #a09280; /* 대표 색상 (예: 베이지/골드 계열) */
+            --text-color: #333333;
+            --sub-text-color: #777777;
+            --background-color: #ffffff;
+            --font-family: 'Arial', 'Malgun Gothic', 'Dotum', sans-serif;
+        }
 
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
 
-<style>
-:root{
-  --bg:#fffdf9;
-  --card:#ffffffdd;
-  --muted:#6b5a4d;
-  --accent:#d6c19b;
-  --accent-dark:#b9956f;
-  --glass-alpha:0.56;
-}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:"Inter","Noto Serif KR",system-ui,sans-serif;background:linear-gradient(180deg,var(--bg),#fbf7f1 60%);color:#2f241f;overflow-x:hidden}
-.bg-layer{position:fixed;inset:0;pointer-events:none;z-index:-2;background:radial-gradient(circle at 10% 20%, rgba(255,210,225,0.34), transparent 20%), radial-gradient(circle at 85% 80%, rgba(255,235,200,0.28), transparent 18%), radial-gradient(circle at 50% 110%, rgba(220,200,230,0.18), transparent 25%);filter:blur(40px);}
-header{position:fixed;left:0;right:0;top:12px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:999;}
-.brand{display:flex;align-items:center;gap:8px}
-.logo{width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family:"Noto Serif KR";box-shadow:0 6px 18px rgba(0,0,0,0.12);}
-.hero{height:68vh;width:100%;display:flex;align-items:flex-end;justify-content:center;background:center/cover no-repeat url('https://images.unsplash.com/photo-1541901084-4c9f0f0f3f2b?fit=crop&w=800&q=80');position:relative;overflow:hidden;}
-.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.46));}
-.hero-inner{width:92%;max-width:520px;margin-bottom:36px;z-index:3;text-align:center;color:#fff;transform:translateY(18px);opacity:0;animation:heroIn 900ms ease-out forwards 300ms;}
-.small-date{font-size:14px;opacity:.92;letter-spacing:1px}
-.hero-title{font-family:"Noto Serif KR";font-size:34px;margin:8px 0;letter-spacing:2px}
-.hero-sub{font-size:15px;opacity:.95}
-@keyframes heroIn{to{transform:none;opacity:1}}
-.card{width:92%;max-width:520px;margin:-70px auto 24px;background: rgba(255,255,255,var(--glass-alpha));border-radius:20px;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,0.12);border:1px solid rgba(255,255,255,0.6);position:relative;z-index:5;backdrop-filter: blur(10px) saturate(120%);}
-.inv-title{font-size:18px;color:var(--muted);letter-spacing:1.8px}
-.names{font-family:"Noto Serif KR";font-size:28px;margin:12px 0;background:linear-gradient(90deg,var(--accent),#f7e9cf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.desc{color:var(--muted);font-size:15px;line-height:1.8}
-.meta{margin-top:14px;font-size:14px;color:#57463f;opacity:.95}
-.actions{display:flex;gap:10px;margin-top:18px;justify-content:center;flex-wrap:wrap}
-.btn{background:linear-gradient(90deg,var(--accent-dark),var(--accent));color:#2d1f16;font-weight:600;padding:12px 14px;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 18px rgba(0,0,0,0.12);border:0;cursor:pointer;}
+        .container {
+            max-width: 600px; /* 모바일 최적화 */
+            margin: 0 auto;
+            padding: 20px 0;
+        }
 
-/* gallery */
-.gallery-wrap{margin:30px auto 10px;width:92%;max-width:1000px;overflow:hidden;}
-.gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth;padding-bottom:8px;}
-.gallery img{width:76%;max-width:360px;height:420px;object-fit:cover;border-radius:14px;scroll-snap-align:center;box-shadow:0 10px 34px rgba(0,0,0,0.14)}
-.thumbs{display:flex;gap:8px;justify-content:center;margin-top:10px}
-.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px;cursor:pointer;opacity:.9;border:2px solid transparent}
-.thumbs img.active{border-color:rgba(0,0,0,0.08);opacity:1}
+        /* 메인 사진 섹션 */
+        .main-photo {
+            width: 100%;
+            height: 400px; /* 이미지 높이 조절 */
+            background-image: url('main_wedding_photo.jpg'); /* 실제 이미지 경로로 변경하세요 */
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
 
-/* RSVP */
-.rsvp{width:92%;max-width:520px;margin:16px auto;background:var(--card);border-radius:16px;padding:20px;box-shadow:0 12px 28px rgba(0,0,0,0.1)}
-.rsvp h3{text-align:center;margin-top:0;font-family:"Noto Serif KR"}
-.rsvp form{display:flex;flex-direction:column;gap:12px}
-.rsvp input, .rsvp select, .rsvp textarea{padding:10px;border-radius:8px;border:1px solid #ccc;font-size:14px}
+        /* 텍스트 섹션 */
+        section {
+            padding: 20px 25px;
+            margin-bottom: 40px;
+        }
 
-/* 방명록 */
-.guestbook{width:92%;max-width:520px;margin:16px auto;background:var(--card);border-radius:16px;padding:20px;box-shadow:0 12px 28px rgba(0,0,0,0.1)}
-.guestbook h3{text-align:center;margin-top:0;font-family:"Noto Serif KR"}
-.guestbook-list{max-height:220px;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:8px}
-.guestbook-list div{padding:8px;border-radius:8px;background:#fff5eb;border:1px solid #e3d7c0;font-size:14px}
+        .title-section h1 {
+            font-family: 'Georgia', serif;
+            font-size: 2.2em;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
 
-/* Map */
-.map-container{width:92%;max-width:520px;height:220px;margin:16px auto;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,0.1)}
-</style>
+        .title-section p {
+            color: var(--sub-text-color);
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .names {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 10px 0 20px;
+            letter-spacing: 2px;
+        }
+
+        .date-location {
+            font-size: 1.1em;
+            margin: 10px 0;
+            padding: 10px 0;
+            border-top: 1px solid #eeeeee;
+            border-bottom: 1px solid #eeeeee;
+            font-weight: bold;
+        }
+
+        /* 인사말 */
+        .greeting-section {
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        /* 버튼 스타일 */
+        .action-button {
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 10px 5px;
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: bold;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .action-button.primary {
+            background-color: var(--primary-color);
+            color: #ffffff;
+        }
+
+        .action-button:hover {
+            background-color: #e0e0e0;
+            color: var(--text-color);
+        }
+
+        .action-button.primary:hover {
+            background-color: #8a7c6f; /* Hover 색상 */
+            color: #ffffff;
+        }
+
+        /* 연락처 및 계좌번호 (아코디언 스타일) */
+        .details-section .detail-box {
+            border: 1px solid #eee;
+            margin-top: 15px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .detail-box summary {
+            padding: 15px;
+            cursor: pointer;
+            outline: none;
+            background-color: #fafafa;
+            font-weight: bold;
+            list-style: none; /* 기본 마커 제거 */
+            position: relative;
+        }
+        .detail-box summary::-webkit-details-marker { display: none; } /* Chrome 마커 제거 */
+        .detail-box summary::after {
+            content: '▼';
+            position: absolute;
+            right: 15px;
+            font-size: 0.8em;
+            transition: transform 0.3s;
+        }
+        .detail-box[open] summary::after {
+            content: '▲';
+        }
+
+        .detail-box .content {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            background-color: #ffffff;
+            text-align: left;
+        }
+
+        .detail-box .content p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .map-section {
+            height: 300px;
+            background-color: #f0f0f0;
+            line-height: 300px;
+            color: var(--sub-text-color);
+            margin-bottom: 40px;
+        }
+
+        /* 푸터 */
+        footer {
+            font-size: 0.8em;
+            color: var(--sub-text-color);
+            padding: 20px 0;
+            border-top: 1px solid #eee;
+        }
+        /* CSS 스타일 끝 */
+    </style>
 </head>
 <body>
-<div class="bg-layer"></div>
 
-<header>
-  <div class="brand">
-    <div class="logo">M</div>
-    <div style="font-size:14px;color:var(--muted)"><strong>우리의 결혼</strong></div>
-  </div>
-</header>
+    <div class="container">
+        <div class="main-photo" title="OO & OO 웨딩 사진"></div>
 
-<section class="hero">
-  <div class="hero-inner">
-    <div class="small-date">SAT · 2026.05.20 · 13:00</div>
-    <div class="hero-title">민준 & 서하</div>
-    <div class="hero-sub">소중한 분을 모십니다 — 함께 해주세요</div>
-  </div>
-</section>
+        <section class="title-section">
+            <p>2025년 12월 25일 (수) 오후 1시</p>
+            <h1>SAVE THE DATE</h1>
+            <p>하나가 되는 아름다운 날, 귀한 걸음 하시어 축복해 주시면 감사하겠습니다.</p>
+            
+            <div class="names">
+                OOO &hearts; OOO
+            </div>
 
-<main>
-<article class="card">
-  <div class="inv-title">Wedding Invitation</div>
-  <div class="names">김민준 · 이서하</div>
-  <div class="desc">서로에게 가장 따뜻한 사람이 되어, 새로운 시작을 하려 합니다. 소중한 당신을 정중히 초대합니다.</div>
-  <div class="meta">2026-05-20 SAT · 13:00 · 서울 강남구 OO웨딩홀</div>
-</article>
+            <div class="date-location">
+                2025. 12. 25. (수) 오후 1시<br>
+                서울 더 그랜드 호텔 1층 그랜드홀
+            </div>
+        </section>
+        
+        <section class="greeting-section">
+            <p>
+                오랜 기다림 속에서 믿음과 사랑으로<br>
+                하나됨을 약속하였습니다.<br>
+                서로를 향한 한결같은 마음으로<br>
+                아름다운 가정을 이루겠습니다.<br>
+                바쁘신 중에도 부디 오셔서<br>
+                저희의 뜻깊은 새 출발을 축복해 주시면<br>
+                더 없는 기쁨이겠습니다.
+            </p>
+        </section>
 
-<!-- gallery -->
-<section class="gallery-wrap" aria-label="사진 갤러리">
-  <div class="gallery" id="gallery">
-    <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?fit=crop&w=400&q=80" alt="photo1">
-    <img src="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?fit=crop&w=400&q=80" alt="photo2">
-    <img src="https://images.unsplash.com/photo-1493666438817-866a91353ca9?fit=crop&w=400&q=80" alt="photo3">
-    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=400&q=80" alt="photo4">
-  </div>
-  <div class="thumbs" id="thumbs">
-    <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?fit=crop&w=80&q=80" data-index="0" class="active" alt="thumb1">
-    <img src="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?fit=crop&w=80&q=80" data-index="1" alt="thumb2">
-    <img src="https://images.unsplash.com/photo-1493666438817-866a91353ca9?fit=crop&w=80&q=80" data-index="2" alt="thumb3">
-    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=80&q=80" data-index="3" alt="thumb4">
-  </div>
-</section>
+        <section class="buttons-section">
+            <a href="tel:010-1234-5678" class="action-button">신랑에게 연락하기</a>
+            <a href="tel:010-9876-5432" class="action-button">신부에게 연락하기</a>
+            <a href="https://map.naver.com/index.nhn?slng=&slat=&stext=&elng=&elat=&etext=서울+더+그랜드+호텔" target="_blank" class="action-button primary">찾아오시는 길</a>
+        </section>
 
-<!-- RSVP -->
-<section class="rsvp">
-  <h3>RSVP</h3>
-  <form onsubmit="alert('답장 전송 완료!');return false;">
-    <input type="text" placeholder="이름" required>
-    <select required>
-      <option value="">참석 여부</option>
-      <option value="yes">참석</option>
-      <option value="no">불참</option>
-    </select>
-    <textarea placeholder="메시지 남기기 (선택)"></textarea>
-    <button class="btn" type="submit">전송</button>
-  </form>
-</section>
+        <section class="details-section">
+            <h2>마음 전하실 곳</h2>
+            
+            <div class="detail-box">
+                <details>
+                    <summary>혼주 및 신랑 연락처</summary>
+                    <div class="content">
+                        <p><strong>신랑: OOO</strong> (010-1234-5678)</p>
+                        <p><strong>신랑 아버지: OOO</strong> (010-2222-3333)</p>
+                        <p><strong>신랑 어머니: OOO</strong> (010-4444-5555)</p>
+                    </div>
+                </details>
+            </div>
+            
+            <div class="detail-box">
+                <details>
+                    <summary>혼주 및 신부 연락처</summary>
+                    <div class="content">
+                        <p><strong>신부: OOO</strong> (010-9876-5432)</p>
+                        <p><strong>신부 아버지: OOO</strong> (010-6666-7777)</p>
+                        <p><strong>신부 어머니: OOO</strong> (010-8888-9999)</p>
+                    </div>
+                </details>
+            </div>
+            
+             <div class="detail-box">
+                <details>
+                    <summary>마음 전하실 곳 (계좌번호)</summary>
+                    <div class="content">
+                        <p><strong>신랑 (OOO):</strong> XX은행 123-456-78901</p>
+                        <p><strong>신부 (OOO):</strong> XX은행 098-765-43210</p>
+                        <p><em>*축하의 마음만으로도 충분합니다.</em></p>
+                    </div>
+                </details>
+            </div>
+        </section>
+        
+        <div class="map-section">
+            지도 삽입 공간 (카카오맵 또는 네이버 지도)
+        </div>
 
-<!-- 방명록 -->
-<section class="guestbook">
-  <h3>방명록</h3>
-  <form id="guestForm">
-    <input type="text" placeholder="이름 또는 닉네임" required>
-    <textarea placeholder="메시지를 남겨주세요" required></textarea>
-    <button class="btn" type="submit">등록</button>
-  </form>
-  <div class="guestbook-list" id="guestList"></div>
-</section>
+        <footer>
+            <p>&copy; 2025. OOO & OOO. All rights reserved.</p>
+        </footer>
 
-<!-- Map -->
-<div class="map-container">
-  <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3165.123456!2d127.027!3d37.497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x357ca123456789ab%3A0xabcdef123456789!2z7ISc7Jq47Iqk7J206rKg7J207J6Q!5e0!3m2!1sko!2skr!4v1600000000000!5m2!1sko!2skr" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-</div>
+    </div>
 
-<!-- BGM -->
-<audio id="bgm" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop autoplay></audio>
-<div style="text-align:center;margin:16px">
-  <button class="btn" id="bgmBtn">음악 일시정지/재생</button>
-</div>
-
-<script>
-/* gallery */
-const gallery=document.getElementById('gallery');
-const thumbs=document.getElementById('thumbs');
-function scrollToGalleryIndex(idx){
-  const target=gallery.children[idx];
-  if(!target) return;
-  const leftPos=target.offsetLeft-gallery.offsetLeft;
-  gallery.scrollTo({left:leftPos,behavior:'smooth'});
-}
-if(thumbs){
-  thumbs.addEventListener('click', e=>{
-    const t=e.target;
-    if(t.tagName!=='IMG') return;
-    const idx=parseInt(t.dataset.index||'0',10);
-    scrollToGalleryIndex(idx);
-    Array.from(thumbs.children).forEach(i=>i.classList.remove('active'));
-    t.classList.add('active');
-  });
-  let autoIdx=0;
-  setInterval(()=>{
-    autoIdx=(autoIdx+1)%gallery.children.length;
-    scrollToGalleryIndex(autoIdx);
-    Array.from(thumbs.children).forEach(i=>i.classList.remove('active'));
-    thumbs.children[autoIdx].classList.add('active');
-  },4200);
-}
-
-/* BGM control */
-const bgm=document.getElementById('bgm');
-document.getElementById('bgmBtn').addEventListener('click',()=>{
-  if(bgm.paused) bgm.play();
-  else bgm.pause();
-});
-
-/* Guestbook */
-const guestForm=document.getElementById('guestForm');
-const guestList=document.getElementById('guestList');
-guestForm.addEventListener('submit', e=>{
-  e.preventDefault();
-  const name=e.target[0].value.trim();
-  const msg=e.target[1].value.trim();
-  if(name && msg){
-    const div=document.createElement('div');
-    div.innerHTML=`<strong>${name}</strong>: ${msg}`;
-    guestList.prepend(div);
-    guestForm.reset();
-  }
-});
-</script>
 </body>
 </html>
