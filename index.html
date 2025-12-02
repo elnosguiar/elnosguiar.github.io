@@ -2,96 +2,200 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>모바일 청첩장</title>
 
 <style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
   body {
-    margin: 0;
-    padding: 0;
-    font-family: "Noto Serif KR", serif;
-    background: linear-gradient(135deg, #fff8f3 0%, #fefdf9 100%);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: #5a4a42;
-    overflow: hidden;
+    font-family: "Noto Sans KR", "Noto Serif KR", sans-serif;
+    background: #faf8f4;
+    color: #4a3f37;
+    line-height: 1.5;
   }
 
-  /* 은은한 꽃 패턴 */
-  body::before {
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 4rem;
+  }
+
+  /* 상단 커버 */
+  .cover {
+    position: relative;
+    width: 100%;
+    height: 340px;
+    background: url("https://images.unsplash.com/photo-1524253482453-3fed8d2fe12b?q=80&w=1200") center/cover no-repeat;
+  }
+
+  .cover::after {
     content: "";
     position: absolute;
     inset: 0;
-    background-image:
-      radial-gradient(circle at 10% 20%, rgba(255,200,200,0.25) 0%, transparent 60%),
-      radial-gradient(circle at 90% 70%, rgba(255,210,240,0.28) 0%, transparent 65%),
-      radial-gradient(circle at 50% 120%, rgba(255,220,200,0.25) 0%, transparent 70%);
-    z-index: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.45));
   }
 
+  .cover-text {
+    position: absolute;
+    bottom: 30px;
+    width: 100%;
+    text-align: center;
+    z-index: 2;
+    color: #fff;
+  }
+  .cover-text h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .cover-text span {
+    font-size: 1.1rem;
+    opacity: 0.9;
+  }
+
+  /* 카드 영역 */
   .card {
-    padding: 3rem 2rem;
-    border-radius: 24px;
-    max-width: 360px;
-    width: 88%;
-    backdrop-filter: blur(10px);
-    background: rgba(255,255,255,0.45);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
-    border: 1px solid rgba(255,255,255,0.6);
+    background: #ffffff;
+    margin: -40px 1.2rem 1rem;
+    border-radius: 18px;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 8px 26px rgba(0,0,0,0.08);
+    text-align: center;
     position: relative;
-    animation: fadeIn 1.3s ease forwards;
-    opacity: 0;
-    z-index: 1;
+    z-index: 5;
   }
 
-  /* 금박 효과 */
   .gold {
-    background: linear-gradient(90deg, #d6c19b, #f2e6c9, #d6c19b);
+    background: linear-gradient(90deg, #d6c19b, #f3e8c9, #d6c19b);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    font-weight: 700;
   }
 
   .title {
-    font-size: 2rem;
+    font-size: 1.9rem;
+    font-weight: 700;
     margin-bottom: 1rem;
-    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    font-size: 1.15rem;
+    color: #6a584c;
+    margin-bottom: 1.5rem;
   }
 
   .line {
-    width: 80px;
+    width: 70px;
     height: 2px;
+    background: #d5c0a7;
     margin: 1.2rem auto;
-    background: linear-gradient(90deg, #d1b28c, #f3e4cb, #d1b28c);
-    border-radius: 4px;
+    border-radius: 3px;
   }
 
-  .text {
-    font-size: 1.15rem;
+  .info {
+    font-size: 1rem;
+    color: #6b5c4e;
+    margin-top: 1rem;
     line-height: 1.8;
-    color: #6b5a52;
   }
 
-  /* 페이드인 */
-  @keyframes fadeIn {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
+  /* 버튼 */
+  .btn-wrap {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
   }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 0.9rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    background: #c0a88f;
+    transition: 0.25s;
+  }
+
+  .btn:hover { opacity: 0.9; }
+
+  .map-btn { background: #a8937c; }
+  .rsvp-btn { background: #d3b89c; }
+
+  /* 꽃 테두리 (SVG 패턴) */
+  .flower-border {
+    margin-top: 2.5rem;
+    padding: 2rem 1.5rem;
+    border: 10px solid transparent;
+    border-image: url('https://i.imgur.com/p1hZ5Q2.png') 30 round;
+    text-align: center;
+  }
+
+  .flower-border h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    color: #5a4a41;
+  }
+
+  .flower-border p {
+    color: #6d5c50;
+    font-size: 1rem;
+  }
+
 </style>
 </head>
 
 <body>
+
+<div class="container">
+
+  <!-- 상단 커버 -->
+  <div class="cover">
+    <div class="cover-text">
+      <h1>2026. 05. 20</h1>
+      <span>Seoul, Korea</span>
+    </div>
+  </div>
+
+  <!-- 메인 카드 -->
   <div class="card">
     <div class="title gold">저희 결혼합니다</div>
     <div class="line"></div>
-    <div class="text">
+
+    <div class="subtitle">
       서로에게 가장 특별한 사람이 되어<br>
-      사랑으로 한 걸음 나아가려 합니다.<br><br>
-      소중한 당신을 초대합니다.
+      사랑으로 한 걸음 나아가려 합니다.
+    </div>
+
+    <div class="info">
+      👰 신부 : 이 수현<br>
+      🤵 신랑 : 석 민재<br><br>
+      📅 2026년 3월 7일 토요일 오전 11시<br>
+      📍 서울 강남구 OO웨딩홀 3층
+    </div>
+
+    <div class="btn-wrap">
+      <a href="#" class="btn map-btn">📍 오시는 길 보기</a>
+      <a href="#" class="btn rsvp-btn">💌 참석 여부 보내기 (RSVP)</a>
     </div>
   </div>
+
+  <!-- 꽃 테두리 섹션 -->
+  <div class="flower-border">
+    <h2>초대의 글</h2>
+    <p>
+      소중한 여러분과 함께하는 순간이<br>
+      저희에게 큰 기쁨이 됩니다.<br>
+      함께해 주시면 감사하겠습니다.
+    </p>
+  </div>
+
+</div>
+
 </body>
 </html>
