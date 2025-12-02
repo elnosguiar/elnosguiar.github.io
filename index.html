@@ -1,138 +1,481 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>모바일 청첩장</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Our Wedding — 초대장</title>
+
+<!-- 폰트 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<!-- PWA manifest (minimal) -->
+<link rel="manifest" href="manifest.json" id="pwamanifest">
+<meta name="theme-color" content="#fff8f2">
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&display=swap');
-
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  :root{
+    --bg:#fffdf9;
+    --card:#ffffffdd;
+    --muted:#6b5a4d;
+    --accent:#d6c19b;
+    --accent-dark:#b9956f;
+    --glass-alpha:0.56;
   }
 
-  body {
-    font-family: "Noto Serif KR", serif;
-    background: linear-gradient(180deg, #fff8f6 0%, #fdfdfb 100%);
-    min-height: 100vh;
-    color: #4a3d38;
-    overflow-x: hidden;
-    position: relative;
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f0f10;
+      --card:#111214cc;
+      --muted:#ccc3bd;
+    }
   }
 
-  /* ✦ 꽃 패턴 오라 느낌 */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: "Inter", "Noto Serif KR", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    background: linear-gradient(180deg,var(--bg), #fbf7f1 60%);
+    color: #2f241f;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    overflow-y: scroll;
+  }
+
+  /* decorative light/orb layers (parallax) */
+  .bg-layer{
+    position:fixed; inset:0; pointer-events:none; z-index:-2;
     background:
-      radial-gradient(circle at 20% 20%, rgba(255,208,228,0.28), transparent 60%),
-      radial-gradient(circle at 80% 80%, rgba(255,233,200,0.25), transparent 60%),
-      radial-gradient(circle at 50% 120%, rgba(255,210,210,0.22), transparent 70%);
+      radial-gradient(circle at 10% 20%, rgba(255,210,225,0.34), transparent 20%),
+      radial-gradient(circle at 85% 80%, rgba(255,235,200,0.28), transparent 18%),
+      radial-gradient(circle at 50% 110%, rgba(220,200,230,0.18), transparent 25%);
     filter: blur(40px);
   }
 
-  /* ✦ 메인 카드 (글래스모피즘 + 금테) */
-  .card {
-    width: 88%;
-    max-width: 420px;
-    margin: 140px auto 80px;
-    padding: 3rem 2rem 3.5rem;
-    background: rgba(255,255,255,0.55);
-    backdrop-filter: blur(14px);
-    border-radius: 28px;
-    border: 1px solid rgba(255,255,255,0.9);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-    text-align: center;
-    animation: fadeInUp 1.3s ease forwards;
-    opacity: 0;
-    position: relative;
+  /* top nav small */
+  header{
+    position:fixed; left:0; right:0; top:12px; display:flex; justify-content:space-between; align-items:center;
+    padding:0 16px; z-index:999;
+  }
+  .brand{display:flex;align-items:center;gap:8px}
+  .logo{
+    width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family: "Noto Serif KR";
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  }
+  .nav-actions{display:flex;gap:10px;align-items:center}
+
+  /* hero */
+  .hero{
+    height:68vh;
+    width:100%;
+    display:flex;align-items:flex-end; justify-content:center;
+    background: center/cover no-repeat url('YOUR_MAIN_PHOTO.jpg');
+    position:relative; overflow:hidden;
+  }
+  .hero::after{
+    content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.46));
+  }
+  .hero-inner{
+    width:92%; max-width:520px; margin-bottom:36px; z-index:3; text-align:center; color:#fff;
+    transform:translateY(18px); opacity:0; animation:heroIn 900ms ease-out forwards 300ms;
+  }
+  .small-date{font-size:14px; opacity:.92; letter-spacing:1px}
+  .hero-title{font-family:"Noto Serif KR"; font-size:34px; margin:8px 0; letter-spacing:2px}
+  .hero-sub{font-size:15px; opacity:.95}
+  @keyframes heroIn { to { transform:none; opacity:1 } }
+
+  /* center card (glass + gold trim) */
+  .card{
+    width:92%; max-width:520px; margin:-70px auto 24px;
+    background: rgba(255,255,255,var(--glass-alpha)); border-radius:20px; padding:28px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.12);
+    border:1px solid rgba(255,255,255,0.6);
+    position:relative; z-index:5;
+    backdrop-filter: blur(10px) saturate(120%);
+  }
+  /* subtle gold frame using pseudo element */
+  .card::before{
+    content:""; position:absolute; inset:-2px; border-radius:22px;
+    background: linear-gradient(90deg,#f6ecd0,#d7bfa0);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; padding:2px; pointer-events:none;
   }
 
-  /* ✦ 카드 금빛 장식 */
-  .card::after {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: 28px;
-    padding: 2px;
-    background: linear-gradient(135deg,#f5e6c8,#d9c2a5,#f7ecd6);
-    -webkit-mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
+  .inv-title{font-size:18px; color:var(--muted); letter-spacing:1.8px}
+  .names{font-family:"Noto Serif KR"; font-size:28px; margin:12px 0; color:#3e2f27; background:linear-gradient(90deg,var(--accent),#f7e9cf); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
+  .desc{color:var(--muted); font-size:15px; line-height:1.8}
+
+  .meta{margin-top:14px; font-size:14px; color: #57463f; opacity:.95}
+
+  .divider{height:2px; width:86px; margin:16px auto; border-radius:4px; background:linear-gradient(90deg,#d1b28c,#f3e8cf,#d1b28c)}
+
+  /* actions */
+  .actions{display:flex; gap:10px; margin-top:18px; justify-content:center; flex-wrap:wrap}
+  .btn{
+    background:linear-gradient(90deg,var(--accent-dark),var(--accent)); color:#2d1f16; font-weight:600;
+    padding:12px 14px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    box-shadow:0 8px 18px rgba(0,0,0,0.12); border:0;
   }
 
-  /* ✦ 금박 텍스트 */
-  .gold {
-    background: linear-gradient(90deg,#d6c19b,#f3e8cd,#d6c19b);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 700;
-    letter-spacing: 2px;
+  /* gallery slider */
+  .gallery-wrap{margin:30px auto 10px; width:92%; max-width:1000px}
+  .gallery{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:8px}
+  .gallery img{width:76%; max-width:360px; height:420px; object-fit:cover; border-radius:14px; scroll-snap-align:center; box-shadow:0 10px 34px rgba(0,0,0,0.14)}
+  .thumbs{display:flex; gap:8px; justify-content:center; margin-top:10px}
+  .thumbs img{width:64px;height:64px; object-fit:cover; border-radius:10px; cursor:pointer; opacity:.9; border:2px solid transparent}
+  .thumbs img.active{border-color:rgba(0,0,0,0.08); opacity:1}
+
+  /* info grid */
+  .grid{width:92%; max-width:520px; margin:18px auto; display:grid; gap:12px}
+  .panel{background:var(--card); border-radius:12px; padding:14px; box-shadow:0 8px 20px rgba(0,0,0,0.06); border:1px solid rgba(255,255,255,0.6)}
+  .panel h4{margin-bottom:8px; color:var(--muted); letter-spacing:1px}
+
+  /* map iframe */
+  .map-frame{width:100%; height:260px; border:0; border-radius:12px; display:block; overflow:hidden}
+
+  /* video */
+  .video{width:100%; height:220px; border-radius:10px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.12)}
+
+  /* guestbook */
+  .guestbook form{display:flex; flex-direction:column; gap:8px}
+  .guestbook textarea, .guestbook input[type="text"]{width:100%; padding:12px; border-radius:10px; border:1px solid #e6ded6; resize:vertical; font-size:14px}
+  .entry{background:rgba(255,255,255,0.9); padding:12px; border-radius:10px; box-shadow:0 6px 12px rgba(0,0,0,0.06); margin-top:8px}
+
+  /* floating music/playback and share */
+  .floating{
+    position:fixed; right:16px; bottom:16px; display:flex; gap:10px; flex-direction:column; z-index:9999;
+  }
+  .float-btn{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent),var(--accent-dark)); color:#2b1d16; font-weight:700; box-shadow:0 12px 26px rgba(0,0,0,0.16); cursor:pointer}
+
+  /* print styles */
+  @media print{
+    body{background:#fff}
+    .floating, header, .thumbs, .gallery{display:none}
+    .hero{display:none}
+    .card{box-shadow:none; border:0; margin:0}
   }
 
-  .title {
-    font-size: 2.2rem;
-    margin-bottom: 1rem;
-  }
-
-  .names {
-    font-size: 1.6rem;
-    margin: 1.4rem 0 0.4rem;
-    font-weight: 600;
-  }
-
-  .date {
-    margin-top: 1.2rem;
-    font-size: 1.2rem;
-    letter-spacing: 1px;
-  }
-
-  .line {
-    width: 80px;
-    height: 2px;
-    background: linear-gradient(90deg,#d1b28c,#f5e8cf,#d1b28c);
-    margin: 1.8rem auto;
-    border-radius: 4px;
-  }
-
-  .text {
-    font-size: 1.15rem;
-    line-height: 1.8;
-    color: #5e4f49;
-  }
-
-  /* ✦ 스크롤 모션 */
-  @keyframes fadeInUp {
-    0% { opacity: 0; transform: translateY(30px); }
-    100% { opacity: 1; transform: translateY(0); }
+  /* responsive */
+  @media (min-width:720px){
+    .card{margin:-90px auto 32px}
+    .gallery img{height:480px}
   }
 </style>
 </head>
-
 <body>
 
-  <div class="card">
-    <div class="title gold">WEDDING INVITATION</div>
+<div class="bg-layer" aria-hidden="true"></div>
 
-    <div class="names gold">민준 · 서하</div>
-    <div class="date">2025. 03. 07 SAT · PM 1:00</div>
+<header>
+  <div class="brand" aria-hidden="false">
+    <div class="logo">M</div>
+    <div style="font-size:14px;color:var(--muted)"><strong>우리의 결혼</strong></div>
+  </div>
 
-    <div class="line"></div>
+  <div class="nav-actions" role="navigation" aria-label="페이지 바로가기">
+    <button id="toggleTheme" class="btn" title="다크/라이트 전환" aria-pressed="false">🌓</button>
+    <button id="shareBtn" class="btn" title="공유">🔗 공유</button>
+  </div>
+</header>
 
-    <div class="text">
-      서로에게 가장 따뜻한 사람이 되어<br>
-      새로운 시작을 하려 합니다.<br><br>
-      소중한 당신을 정중히 초대합니다.
+<!-- HERO -->
+<section class="hero" role="banner" aria-label="웨딩 커버">
+  <div class="hero-inner">
+    <div class="small-date">SAT · 2026.05.20 · 13:00</div>
+    <div class="hero-title">민준 & 서하</div>
+    <div class="hero-sub">소중한 분을 모십니다 — 함께 해주세요</div>
+  </div>
+</section>
+
+<!-- MAIN CARD -->
+<main>
+  <article class="card" role="region" aria-label="초대장 메인">
+    <div class="inv-title">Wedding Invitation</div>
+    <div class="names">김민준 · 이서하</div>
+    <div class="desc">서로에게 가장 따뜻한 사람이 되어, 새로운 시작을 하려 합니다. 소중한 당신을 정중히 초대합니다.</div>
+    <div class="meta">2026-05-20 SAT · 13:00 · 서울 강남구 OO웨딩홀</div>
+
+    <div class="divider" style="margin-top:16px"></div>
+
+    <div class="actions" role="group" aria-label="초대장 버튼">
+      <button class="btn" id="btnMap" onclick="scrollToSection('map')">📍 오시는 길</button>
+      <button class="btn" id="btnRSVP" onclick="openRSVP()">💌 참석 여부</button>
+      <button class="btn" id="btnPrint" onclick="window.print()">🖨️ 저장 / 인쇄</button>
+    </div>
+  </article>
+
+  <!-- gallery -->
+  <section class="gallery-wrap" aria-labelledby="galleryTitle">
+    <h3 id="galleryTitle" class="section-title" style="text-align:center; margin-top:18px">GALLERY</h3>
+    <div class="gallery" id="gallery">
+      <img src="PHOTO_1.jpg" alt="photo1">
+      <img src="PHOTO_2.jpg" alt="photo2">
+      <img src="PHOTO_3.jpg" alt="photo3">
+      <img src="PHOTO_4.jpg" alt="photo4">
+    </div>
+    <div class="thumbs" id="thumbs">
+      <img src="PHOTO_1.jpg" data-index="0" class="active" alt="thumb1">
+      <img src="PHOTO_2.jpg" data-index="1" alt="thumb2">
+      <img src="PHOTO_3.jpg" data-index="2" alt="thumb3">
+      <img src="PHOTO_4.jpg" data-index="3" alt="thumb4">
+    </div>
+  </section>
+
+  <!-- info grid -->
+  <section class="grid" aria-label="세부 정보">
+    <div class="panel" id="panel-people">
+      <h4>BRIDE & GROOM</h4>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="flex:1">
+          <strong>신랑</strong><div>김민준</div><div style="opacity:.8">010-1234-5678</div>
+        </div>
+        <div style="flex:1">
+          <strong>신부</strong><div>이서하</div><div style="opacity:.8">010-9876-5432</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-schedule">
+      <h4>SCHEDULE</h4>
+      <div>12:30 — 하객 입장</div>
+      <div>13:00 — 본식</div>
+      <div>13:40 — 포토타임</div>
+      <div>14:00 — 피로연</div>
+    </div>
+
+    <div class="panel" id="panel-map" aria-label="오시는 길" style="scroll-margin-top:60px">
+      <h4>LOCATION</h4>
+      <div class="sub">서울 ○○웨딩홀</div>
+      <div style="opacity:.9">서울시 강남구 ○○로 123 (지번)</div>
+      <div style="margin-top:10px">
+        <a class="btn" href="https://map.kakao.com" target="_blank" rel="noopener">카카오맵 보기</a>
+        <a class="btn" href="https://naver.me" target="_blank" rel="noopener">네이버지도 보기</a>
+      </div>
+      <div style="margin-top:12px;">
+        <!-- Embedded map (replace src with proper embed) -->
+        <iframe class="map-frame" src="https://www.google.com/maps/embed?pb=YOUR_GOOGLE_EMBED_CODE" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-video">
+      <h4>WEDDING FILM</h4>
+      <div class="video">
+        <!-- YouTube embed (replace id) -->
+        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/ScMzIvxBSi4" title="웨딩 영상" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-account">
+      <h4>GIFT / ACCOUNT</h4>
+      <div class="account">
+        <strong>신랑측</strong><div>국민 123-45-67890 (김민준)</div>
+        <button class="btn" onclick="copyText('국민 123-45-67890 (김민준)')">복사</button>
+        <div style="height:8px"></div>
+        <strong>신부측</strong><div>신한 987-65-43210 (이서하)</div>
+        <button class="btn" onclick="copyText('신한 987-65-43210 (이서하)')">복사</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RSVP modal (simple) -->
+  <div id="rsvpModal" aria-hidden="true" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center; padding:20px">
+    <div style="width:100%; max-width:420px; background:var(--card); padding:18px; border-radius:12px; box-shadow:0 12px 36px rgba(0,0,0,0.3)">
+      <h3 style="margin-bottom:8px">참석 여부</h3>
+      <form id="rsvpForm">
+        <input type="text" id="rsvpName" placeholder="이름" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6ded6;margin-bottom:8px">
+        <select id="rsvpAtt" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6ded6;margin-bottom:8px">
+          <option value="attend">참석합니다</option>
+          <option value="not">불참합니다</option>
+        </select>
+        <textarea id="rsvpMsg" placeholder="메시지(선택)" style="width:100%;height:80px;padding:10px;border-radius:8px;border:1px solid #e6ded6"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn" type="submit">보내기</button>
+          <button class="btn" type="button" onclick="closeRSVP()">취소</button>
+        </div>
+      </form>
     </div>
   </div>
+
+  <!-- guestbook -->
+  <section id="guestbook" style="width:92%; max-width:520px; margin:30px auto">
+    <h3 class="section-title" style="text-align:center">GUESTBOOK</h3>
+    <div class="guestbook panel" style="padding:16px">
+      <form id="gbForm">
+        <input id="gbName" type="text" placeholder="이름 (선택)" />
+        <textarea id="gbMsg" placeholder="축하 메시지를 남겨주세요 :)" required></textarea>
+        <div style="display:flex; gap:8px; margin-top:8px">
+          <button class="btn" type="submit">등록</button>
+          <button class="btn" type="button" onclick="clearGuestbook()">초기화</button>
+        </div>
+      </form>
+      <div id="gbEntries" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <div style="height:70px"></div>
+</main>
+
+<!-- floating controls: music + share + top -->
+<div class="floating" aria-hidden="false">
+  <div id="musicToggle" class="float-btn" title="음악 재생">♪</div>
+  <div id="shareFloating" class="float-btn" title="페이지 공유">🔗</div>
+  <div id="toTop" class="float-btn" title="Top" onclick="window.scrollTo({top:0,behavior:'smooth'})">⬆️</div>
+</div>
+
+<!-- audio element -->
+<audio id="bgm" src="YOUR_BGM.mp3" loop preload="auto"></audio>
+
+<footer style="text-align:center; padding:28px 14px; color:rgba(0,0,0,0.5)">Thank you for celebrating with us 🤍</footer>
+
+<!-- Scripts -->
+<script>
+/* ------------- utilities ------------- */
+function copyText(txt){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=> alert('복사되었습니다: ' + txt));
+  } else {
+    const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove(); alert('복사되었습니다');
+  }
+}
+
+/* ------------- gallery: thumbs -> scroll ------------- */
+const gallery = document.getElementById('gallery');
+const thumbs = document.getElementById('thumbs');
+if(thumbs){
+  thumbs.addEventListener('click', e=>{
+    const t = e.target;
+    if(t.tagName!=='IMG') return;
+    const idx = parseInt(t.dataset.index||'0',10);
+    const target = gallery.children[idx];
+    if(target) target.scrollIntoView({behavior:'smooth', inline:'center'});
+    Array.from(thumbs.children).forEach(i=>i.classList.remove('active'));
+    t.classList.add('active');
+  });
+  // autoplay slider (gentle)
+  let autoIdx=0;
+  setInterval(()=>{
+    if(!gallery) return;
+    autoIdx = (autoIdx+1) % gallery.children.length;
+    gallery.children[autoIdx].scrollIntoView({behavior:'smooth', inline:'center'});
+    Array.from(thumbs.children).forEach(i=>i.classList.remove('active'));
+    if(thumbs.children[autoIdx]) thumbs.children[autoIdx].classList.add('active');
+  }, 4200);
+}
+
+/* ------------- music toggle ------------- */
+const bgm = document.getElementById('bgm');
+const musicToggle = document.getElementById('musicToggle');
+let musicPlaying = false;
+musicToggle.addEventListener('click', async ()=>{
+  try{
+    if(!musicPlaying){ await bgm.play(); musicToggle.innerText='⏸'; musicPlaying=true; }
+    else { bgm.pause(); musicToggle.innerText='♪'; musicPlaying=false; }
+  }catch(e){
+    alert('브라우저가 자동 재생을 차단했습니다. 화면을 터치해 재생해 주세요.');
+  }
+});
+
+/* ------------- share ------------- */
+const shareBtn = document.getElementById('shareBtn');
+const shareFloating = document.getElementById('shareFloating');
+function tryShare(){
+  const shareData = { title: document.title, text: '저희 결혼식에 초대합니다', url: location.href };
+  if(navigator.share){ navigator.share(shareData).catch(()=>alert('공유가 취소되었습니다.')); }
+  else {
+    // fallback: copy URL
+    copyText(location.href);
+  }
+}
+if(shareBtn) shareBtn.addEventListener('click', tryShare);
+if(shareFloating) shareFloating.addEventListener('click', tryShare);
+
+/* ------------- RSVP (modal) ------------- */
+const rsvpModal = document.getElementById('rsvpModal');
+function openRSVP(){ rsvpModal.style.display='flex'; rsvpModal.setAttribute('aria-hidden','false'); document.getElementById('rsvpName').focus(); }
+function closeRSVP(){ rsvpModal.style.display='none'; rsvpModal.setAttribute('aria-hidden','true'); }
+document.getElementById('rsvpForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = document.getElementById('rsvpName').value.trim() || '익명';
+  const att = document.getElementById('rsvpAtt').value;
+  const msg = document.getElementById('rsvpMsg').value.trim();
+  const list = JSON.parse(localStorage.getItem('rsvp')||'[]');
+  list.unshift({name,att,msg,time:new Date().toISOString()});
+  localStorage.setItem('rsvp', JSON.stringify(list));
+  alert('참석 여부가 등록되었습니다. 감사합니다!');
+  closeRSVP();
+});
+
+/* ------------- Guestbook ------------- */
+const gbForm = document.getElementById('gbForm');
+const gbEntries = document.getElementById('gbEntries');
+function renderGuestbook(){
+  const entries = JSON.parse(localStorage.getItem('guestbook')||'[]');
+  gbEntries.innerHTML = entries.map(e=>`<div class="entry"><strong style="display:block">${e.name||'익명'}</strong><div style="font-size:14px;margin-top:6px">${e.msg}</div><div style="opacity:.6;font-size:12px;margin-top:8px">${new Date(e.time).toLocaleString()}</div></div>`).join('');
+}
+gbForm.addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = document.getElementById('gbName').value.trim();
+  const msg = document.getElementById('gbMsg').value.trim();
+  if(!msg) return alert('메시지를 입력해주세요.');
+  const entries = JSON.parse(localStorage.getItem('guestbook')||'[]');
+  entries.unshift({name, msg, time: new Date().toISOString()});
+  localStorage.setItem('guestbook', JSON.stringify(entries));
+  document.getElementById('gbName').value=''; document.getElementById('gbMsg').value='';
+  renderGuestbook();
+});
+function clearGuestbook(){ if(confirm('방명록을 초기화할까요?')){ localStorage.removeItem('guestbook'); renderGuestbook(); } }
+renderGuestbook();
+
+/* ------------- scroll to section helper ------------- */
+function scrollToSection(id){
+  const el = document.getElementById(id) || document.querySelector(`[data-anchor="${id}"]`);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ------------- theme toggle ------------- */
+const toggleTheme = document.getElementById('toggleTheme');
+toggleTheme.addEventListener('click', ()=>{
+  document.documentElement.classList.toggle('dark');
+  const pressed = toggleTheme.getAttribute('aria-pressed') === 'true';
+  toggleTheme.setAttribute('aria-pressed', String(!pressed));
+  // quick invert CSS root colors for demo
+  if(document.documentElement.style.getPropertyValue('--_d') === '1'){
+    document.documentElement.style.removeProperty('--_d');
+    document.documentElement.style.removeProperty('--muted');
+  } else {
+    document.documentElement.style.setProperty('--_d','1');
+    document.documentElement.style.setProperty('--muted','#ddd');
+  }
+});
+
+/* ------------- service worker registration (inline blob) ------------- */
+if('serviceWorker' in navigator){
+  const swCode = `
+    const cacheName = 'wedding-v1';
+    const assets = ['/', location.href];
+    self.addEventListener('install', e => {
+      self.skipWaiting();
+      e.waitUntil(caches.open(cacheName).then(c=>c.addAll(assets)));
+    });
+    self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
+    self.addEventListener('fetch', e => {
+      if(e.request.method !== 'GET') return;
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+        return caches.open(cacheName).then(cache => { cache.put(e.request, res.clone()); return res; });
+      })));
+    });
+  `;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{/*sw restricted on file://*/});
+}
+
+/* ------------- print / save as image (simple) ------------- */
+/* simple "download PNG" via html2canvas is not included to keep single-file without libs.
+   We provide print button above and user can "Save as PDF" via print dialog. */
+
+</script>
 
 </body>
 </html>
