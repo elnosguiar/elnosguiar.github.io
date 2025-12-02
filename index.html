@@ -2,200 +2,137 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>모바일 청첩장</title>
 
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
   body {
-    font-family: "Noto Sans KR", "Noto Serif KR", sans-serif;
-    background: #faf8f4;
-    color: #4a3f37;
-    line-height: 1.5;
-  }
-
-  .container {
-    max-width: 480px;
-    margin: 0 auto;
-    padding-bottom: 4rem;
-  }
-
-  /* 상단 커버 */
-  .cover {
+    font-family: "Noto Serif KR", serif;
+    background: linear-gradient(180deg, #fff8f6 0%, #fdfdfb 100%);
+    min-height: 100vh;
+    color: #4a3d38;
+    overflow-x: hidden;
     position: relative;
-    width: 100%;
-    height: 340px;
-    background: url("https://images.unsplash.com/photo-1524253482453-3fed8d2fe12b?q=80&w=1200") center/cover no-repeat;
   }
 
-  .cover::after {
+  /* ✦ 꽃 패턴 오라 느낌 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,208,228,0.28), transparent 60%),
+      radial-gradient(circle at 80% 80%, rgba(255,233,200,0.25), transparent 60%),
+      radial-gradient(circle at 50% 120%, rgba(255,210,210,0.22), transparent 70%);
+    filter: blur(40px);
+  }
+
+  /* ✦ 메인 카드 (글래스모피즘 + 금테) */
+  .card {
+    width: 88%;
+    max-width: 420px;
+    margin: 140px auto 80px;
+    padding: 3rem 2rem 3.5rem;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(14px);
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    text-align: center;
+    animation: fadeInUp 1.3s ease forwards;
+    opacity: 0;
+    position: relative;
+  }
+
+  /* ✦ 카드 금빛 장식 */
+  .card::after {
     content: "";
     position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.45));
+    inset: -1px;
+    border-radius: 28px;
+    padding: 2px;
+    background: linear-gradient(135deg,#f5e6c8,#d9c2a5,#f7ecd6);
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 
-  .cover-text {
-    position: absolute;
-    bottom: 30px;
-    width: 100%;
-    text-align: center;
-    z-index: 2;
-    color: #fff;
-  }
-  .cover-text h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-  .cover-text span {
-    font-size: 1.1rem;
-    opacity: 0.9;
-  }
-
-  /* 카드 영역 */
-  .card {
-    background: #ffffff;
-    margin: -40px 1.2rem 1rem;
-    border-radius: 18px;
-    padding: 2rem 1.5rem;
-    box-shadow: 0 8px 26px rgba(0,0,0,0.08);
-    text-align: center;
-    position: relative;
-    z-index: 5;
-  }
-
+  /* ✦ 금박 텍스트 */
   .gold {
-    background: linear-gradient(90deg, #d6c19b, #f3e8c9, #d6c19b);
+    background: linear-gradient(90deg,#d6c19b,#f3e8cd,#d6c19b);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    letter-spacing: 2px;
   }
 
   .title {
-    font-size: 1.9rem;
-    font-weight: 700;
+    font-size: 2.2rem;
     margin-bottom: 1rem;
   }
 
-  .subtitle {
-    font-size: 1.15rem;
-    color: #6a584c;
-    margin-bottom: 1.5rem;
+  .names {
+    font-size: 1.6rem;
+    margin: 1.4rem 0 0.4rem;
+    font-weight: 600;
+  }
+
+  .date {
+    margin-top: 1.2rem;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
   }
 
   .line {
-    width: 70px;
+    width: 80px;
     height: 2px;
-    background: #d5c0a7;
-    margin: 1.2rem auto;
-    border-radius: 3px;
+    background: linear-gradient(90deg,#d1b28c,#f5e8cf,#d1b28c);
+    margin: 1.8rem auto;
+    border-radius: 4px;
   }
 
-  .info {
-    font-size: 1rem;
-    color: #6b5c4e;
-    margin-top: 1rem;
+  .text {
+    font-size: 1.15rem;
     line-height: 1.8;
+    color: #5e4f49;
   }
 
-  /* 버튼 */
-  .btn-wrap {
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
+  /* ✦ 스크롤 모션 */
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
-
-  .btn {
-    display: block;
-    width: 100%;
-    padding: 0.9rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 10px;
-    text-align: center;
-    text-decoration: none;
-    color: #fff;
-    background: #c0a88f;
-    transition: 0.25s;
-  }
-
-  .btn:hover { opacity: 0.9; }
-
-  .map-btn { background: #a8937c; }
-  .rsvp-btn { background: #d3b89c; }
-
-  /* 꽃 테두리 (SVG 패턴) */
-  .flower-border {
-    margin-top: 2.5rem;
-    padding: 2rem 1.5rem;
-    border: 10px solid transparent;
-    border-image: url('https://i.imgur.com/p1hZ5Q2.png') 30 round;
-    text-align: center;
-  }
-
-  .flower-border h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    font-weight: 700;
-    color: #5a4a41;
-  }
-
-  .flower-border p {
-    color: #6d5c50;
-    font-size: 1rem;
-  }
-
 </style>
 </head>
 
 <body>
 
-<div class="container">
-
-  <!-- 상단 커버 -->
-  <div class="cover">
-    <div class="cover-text">
-      <h1>2026. 05. 20</h1>
-      <span>Seoul, Korea</span>
-    </div>
-  </div>
-
-  <!-- 메인 카드 -->
   <div class="card">
-    <div class="title gold">저희 결혼합니다</div>
+    <div class="title gold">WEDDING INVITATION</div>
+
+    <div class="names gold">민준 · 서하</div>
+    <div class="date">2025. 03. 07 SAT · PM 1:00</div>
+
     <div class="line"></div>
 
-    <div class="subtitle">
-      서로에게 가장 특별한 사람이 되어<br>
-      사랑으로 한 걸음 나아가려 합니다.
-    </div>
-
-    <div class="info">
-      👰 신부 : 이 수현<br>
-      🤵 신랑 : 석 민재<br><br>
-      📅 2026년 3월 7일 토요일 오전 11시<br>
-      📍 서울 강남구 OO웨딩홀 3층
-    </div>
-
-    <div class="btn-wrap">
-      <a href="#" class="btn map-btn">📍 오시는 길 보기</a>
-      <a href="#" class="btn rsvp-btn">💌 참석 여부 보내기 (RSVP)</a>
+    <div class="text">
+      서로에게 가장 따뜻한 사람이 되어<br>
+      새로운 시작을 하려 합니다.<br><br>
+      소중한 당신을 정중히 초대합니다.
     </div>
   </div>
-
-  <!-- 꽃 테두리 섹션 -->
-  <div class="flower-border">
-    <h2>초대의 글</h2>
-    <p>
-      소중한 여러분과 함께하는 순간이<br>
-      저희에게 큰 기쁨이 됩니다.<br>
-      함께해 주시면 감사하겠습니다.
-    </p>
-  </div>
-
-</div>
 
 </body>
 </html>
