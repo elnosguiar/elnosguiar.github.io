@@ -2,85 +2,125 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>신비로운 애니메이션</title>
+    <title>미래 신비로운 풀스크린 애니메이션</title>
     <style>
-        /* 전체 페이지 설정 */
+        /* --------------------------------------
+         * 1. 초기화 및 풀스크린 설정
+         * -------------------------------------- */
         body {
-            background-color: #0d0a1b; /* 깊은 밤하늘 같은 배경색 */
+            margin: 0;
+            padding: 0;
+            background: #000000; /* 깊은 우주 배경 */
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden; /* 스크롤 방지 */
         }
 
-        /* 애니메이션 컨테이너 */
+        /* 애니메이션 영역 (전체 화면을 덮음) */
         .container {
-            position: relative;
-            width: 300px;
-            height: 300px;
-        }
-
-        /* 신비로운 '구체' 스타일 */
-        .mystic-orb {
             position: absolute;
-            width: 80px;
-            height: 80px;
-            /* 원형 그래디언트: 중앙은 밝고, 바깥은 투명하여 부드러운 빛 효과 */
-            background: radial-gradient(circle, #a395f7, #6a5acd, transparent); 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            /* 배경에 은은한 톤 추가 */
+            background: radial-gradient(circle, rgba(20, 0, 40, 0.3) 0%, rgba(0, 0, 0, 1) 70%);
+        }
+        
+        /* --------------------------------------
+         * 2. 입자(Particle) 스타일
+         * -------------------------------------- */
+        .particle {
+            position: absolute;
             border-radius: 50%;
-            filter: blur(8px); /* 빛이 번지는 듯한 효과 */
-            
-            /* 초기 위치 (컨테이너 중앙) */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-
-            /* 애니메이션 적용 */
-            animation: 
-                float-and-glow 15s infinite ease-in-out alternate, /* 잔잔한 움직임과 빛 */
-                slow-rotate 20s infinite linear; /* 아주 느린 회전 */
+            background-color: #4CAF50; /* 미래적인 녹색 */
+            box-shadow: 0 0 5px #4CAF50, 0 0 10px #70FF7A; /* 빛나는 효과 */
+            opacity: 0; /* 초기에는 보이지 않게 */
+            z-index: 2;
         }
 
-        /* 💫 움직임과 빛 변화를 위한 키프레임 */
-        @keyframes float-and-glow {
+        /* --------------------------------------
+         * 3. 핵심 애니메이션 키프레임
+         * -------------------------------------- */
+        @keyframes travel-and-fade {
             0% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.7;
-                box-shadow: 0 0 20px #a395f7, 0 0 40px #6a5acd;
+                transform: translate(var(--startX), var(--startY)) scale(0.1);
+                opacity: 0;
             }
-            33% {
-                transform: translate(-60%, -40%) scale(1.05);
-                opacity: 0.8;
-                box-shadow: 0 0 30px #a395f7, 0 0 60px #6a5acd;
-            }
-            66% {
-                transform: translate(-40%, -60%) scale(0.95);
-                opacity: 0.6;
-                box-shadow: 0 0 15px #a395f7, 0 0 30px #6a5acd;
+            50% {
+                transform: translate(var(--midX), var(--midY)) scale(var(--scale));
+                opacity: var(--opacity);
             }
             100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.7;
-                box-shadow: 0 0 20px #a395f7, 0 0 40px #6a5acd;
+                transform: translate(var(--endX), var(--endY)) scale(0.01);
+                opacity: 0;
             }
         }
 
-        /* 아주 느린 회전을 위한 키프레임 (optional) */
-        @keyframes slow-rotate {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="mystic-orb"></div>
-    </div>
+    <div class="container" id="particle-container">
+        </div>
+
+    <script>
+        const container = document.getElementById('particle-container');
+        const numParticles = 60; // 생성할 입자의 개수
+
+        for (let i = 0; i < numParticles; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            // --- 랜덤 속성 생성 ---
+            
+            // 크기 (1px ~ 5px)
+            const size = Math.random() * 4 + 1; 
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+
+            // 애니메이션 지속 시간 (8초 ~ 20초)
+            const duration = Math.random() * 12 + 8;
+            
+            // 애니메이션 딜레이 (최대 10초)
+            const delay = Math.random() * 10; 
+            
+            // 색상 변화 (녹색/청색 혼합)
+            const hue = Math.random() < 0.5 ? 120 : 200; // 120(녹색) 또는 200(청색)
+            particle.style.filter = `hue-rotate(${hue}deg)`;
+
+            // --- CSS 변수를 이용한 동적 움직임 설정 ---
+            
+            // 시작/중간/끝 위치 (뷰포트 밖에서도 시작하도록 확장)
+            const startX = `${Math.random() * 200 - 50}vw`; 
+            const startY = `${Math.random() * 200 - 50}vh`; 
+            const midX = `${Math.random() * 100}vw`;
+            const midY = `${Math.random() * 100}vh`;
+            const endX = `${Math.random() * 200 - 50}vw`; 
+            const endY = `${Math.random() * 200 - 50}vh`; 
+            
+            // 투명도 및 크기 변화
+            const opacity = Math.random() * 0.8 + 0.2;
+            const scale = Math.random() * 1.5 + 0.5;
+
+            // CSS 변수 설정
+            particle.style.setProperty('--startX', startX);
+            particle.style.setProperty('--startY', startY);
+            particle.style.setProperty('--midX', midX);
+            particle.style.setProperty('--midY', midY);
+            particle.style.setProperty('--endX', endX);
+            particle.style.setProperty('--endY', endY);
+            particle.style.setProperty('--opacity', opacity);
+            particle.style.setProperty('--scale', scale);
+
+            // 최종 애니메이션 적용
+            particle.style.animation = `travel-and-fade ${duration}s infinite ease-in-out ${delay}s alternate`;
+
+            container.appendChild(particle);
+        }
+    </script>
 </body>
 </html>
