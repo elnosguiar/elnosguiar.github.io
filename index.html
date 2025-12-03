@@ -3,115 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>화려한 오로라 애니메이션</title>
+    <title>강렬한 3D 에너지장</title>
     <style>
         /* --------------------------------------
-         * 1. 초기화 및 풀스크린 설정
+         * 1. 초기화 및 3D 공간 설정
          * -------------------------------------- */
         :root {
-            /* 오로라 컬러 팔레트 */
-            --deep-night: #03041a;       /* 깊은 밤하늘 */
-            --aurora-green: #39ff14;     /* 네온 그린 */
-            --aurora-purple: #8a2be2;    /* 신비로운 보라 */
-            --aurora-blue: #00ffff;      /* 시안 (청록) */
+            --dark-background: #00000a;
+            --energy-color: #ff0055; /* 마젠타/레드 계열의 강렬한 색상 */
+            --glow-color: #ff55aa;
         }
 
         body {
             margin: 0;
             padding: 0;
-            background: var(--deep-night);
+            background: var(--dark-background); 
             overflow: hidden;
             height: 100vh;
             width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 3D 깊이감을 위한 원근법 설정 */
+            perspective: 800px; 
             position: relative;
         }
 
-        /* 오로라 컨테이너 (모든 띠를 포함) */
-        .aurora-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
+        /* --------------------------------------
+         * 2. 메인 컨테이너 및 3D 설정
+         * -------------------------------------- */
+        .portal-container {
             width: 100%;
             height: 100%;
-        }
-
-        /* --------------------------------------
-         * 2. 오로라 띠 스타일
-         * -------------------------------------- */
-        .aurora-band {
             position: absolute;
-            bottom: 0;
-            width: 150vw; /* 화면보다 넓게 만들어 끊기지 않는 파도 효과 */
-            height: 50vh; 
-            transform: skewY(-4deg); /* 오로라의 비스듬한 형태 */
-            filter: blur(2vh); /* 부드럽게 번지는 효과 */
-            opacity: 0.8;
+            transform-style: preserve-3d; /* 3D 자식 요소를 유지 */
+            /* 전체를 천천히 회전시켜 웅장함을 더함 */
+            animation: slow-container-spin 60s linear infinite;
+        }
+
+        @keyframes slow-container-spin {
+            from { transform: rotateY(0deg) rotateX(0deg); }
+            to { transform: rotateY(360deg) rotateX(360deg); }
         }
 
         /* --------------------------------------
-         * 3. 애니메이션 키프레임 (춤추는 듯한 움직임)
+         * 3. 큐브 입자 스타일
          * -------------------------------------- */
-        @keyframes aurora-dance {
+        .cube-particle {
+            position: absolute;
+            width: var(--size);
+            height: var(--size);
+            background: rgba(255, 0, 85, 0.6); 
+            box-shadow: 0 0 5px var(--energy-color), 0 0 15px var(--glow-color);
+            opacity: 0;
+            
+            /* 3D 변환을 위한 설정 */
+            transform-style: preserve-3d;
+            
+            /* 핵심 펄스/붕괴 애니메이션 */
+            animation: pulse-and-rotate var(--duration) linear infinite alternate;
+        }
+
+        /* --------------------------------------
+         * 4. 펄스 및 3D 회전 키프레임
+         * -------------------------------------- */
+        @keyframes pulse-and-rotate {
             0% {
-                transform: translateX(-50vw) skewY(-4deg) scaleY(1);
+                opacity: 0;
+                transform: 
+                    translate3d(var(--x1), var(--y1), var(--z1)) 
+                    rotateX(0deg) rotateY(0deg) scale3d(0.5, 0.5, 0.5);
             }
             50% {
-                transform: translateX(0vw) skewY(2deg) scaleY(1.05);
+                opacity: 1;
+                box-shadow: 0 0 10px var(--energy-color), 0 0 30px var(--glow-color);
             }
             100% {
-                transform: translateX(-50vw) skewY(-4deg) scaleY(1);
+                opacity: 0.2;
+                transform: 
+                    translate3d(var(--x2), var(--y2), var(--z2)) 
+                    rotateX(360deg) rotateY(360deg) scale3d(1.5, 1.5, 1.5);
             }
-        }
-        
-        /* --------------------------------------
-         * 4. 각 띠별 설정 (속도, 색상, 깊이 조절)
-         * -------------------------------------- */
-
-        /* Layer 1: 가장 느리고 배경이 되는 짙은 띠 (깊이감) */
-        .band-1 {
-            background: linear-gradient(to top, rgba(0, 0, 0, 0), var(--aurora-blue) 10%, rgba(0, 0, 0, 0) 90%);
-            height: 60vh;
-            animation: aurora-dance 30s infinite ease-in-out;
-            opacity: 0.4;
-            left: -30vw;
-        }
-
-        /* Layer 2: 메인 컬러 (화려함) */
-        .band-2 {
-            background: linear-gradient(to top, rgba(0, 0, 0, 0), var(--aurora-green) 20%, rgba(0, 0, 0, 0) 80%);
-            height: 40vh;
-            animation: aurora-dance 20s infinite ease-in-out reverse; /* 역방향으로 움직여 입체감 */
-            opacity: 0.6;
-            left: 0vw;
-        }
-
-        /* Layer 3: 보조 컬러 (신비함) */
-        .band-3 {
-            background: linear-gradient(to top, rgba(0, 0, 0, 0), var(--aurora-purple) 30%, rgba(0, 0, 0, 0) 70%);
-            height: 30vh;
-            animation: aurora-dance 15s infinite ease-in-out;
-            opacity: 0.7;
-            left: -50vw;
-            filter: blur(1vh); /* 더 부드럽게 */
-        }
-        
-        /* Layer 4: 가장 빠르고 밝은 띠 (역동성) */
-        .band-4 {
-            background: linear-gradient(to top, rgba(0, 0, 0, 0), var(--aurora-green) 15%, var(--aurora-blue) 40%, rgba(0, 0, 0, 0) 80%);
-            height: 55vh;
-            animation: aurora-dance 12s infinite ease-in-out reverse;
-            opacity: 0.9;
-            left: 50vw;
-            transform: skewY(6deg); /* 다른 각도로 비틀어 복잡한 패턴 */
         }
     </style>
 </head>
 <body>
-    <div class="aurora-container">
-        <div class="aurora-band band-1"></div>
-        <div class="aurora-band band-2"></div>
-        <div class="aurora-band band-3"></div>
-        <div class="aurora-band band-4"></div>
-    </div>
+    <div class="portal-container" id="particle-container">
+        </div>
+
+    <script>
+        const container = document.getElementById('particle-container');
+        const numParticles = 40; // 3D 효과를 위해 입자 수는 50개 이하로 유지
+
+        for (let i = 0; i < numParticles; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('cube-particle');
+            
+            // --- 랜덤 속성 생성 ---
+            
+            // 크기 (5px ~ 20px)
+            const size = Math.random() * 15 + 5; 
+            particle.style.setProperty('--size', `${size}px`);
+
+            // 애니메이션 지속 시간 (8초 ~ 18초)
+            const duration = Math.random() * 10 + 8;
+            particle.style.setProperty('--duration', `${duration}s`);
+
+            // --- 3D 위치 변수 설정 ---
+            // 3D 공간 (-500px ~ 500px) 내에서 움직이도록 설정
+            const range = 500; 
+
+            // 시작 위치 (x1, y1, z1)
+            const x1 = `${Math.random() * range * 2 - range}px`; 
+            const y1 = `${Math.random() * range * 2 - range}px`; 
+            const z1 = `${Math.random() * range * 2 - range}px`; 
+
+            // 끝 위치 (x2, y2, z2)
+            const x2 = `${Math.random() * range * 2 - range}px`; 
+            const y2 = `${Math.random() * range * 2 - range}px`; 
+            const z2 = `${Math.random() * range * 2 - range}px`; 
+            
+            // CSS 변수 적용
+            particle.style.setProperty('--x1', x1);
+            particle.style.setProperty('--y1', y1);
+            particle.style.setProperty('--z1', z1);
+            particle.style.setProperty('--x2', x2);
+            particle.style.setProperty('--y2', y2);
+            particle.style.setProperty('--z2', z2);
+
+            // 애니메이션 시작 지연
+            particle.style.animationDelay = `${Math.random() * 5}s`;
+
+            container.appendChild(particle);
+        }
+    </script>
 </body>
 </html>
