@@ -2,17 +2,18 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>영화적 우주 애니메이션</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>은하수 스타일 애니메이션</title>
     <style>
         /* --------------------------------------
-         * 1. 초기화 및 모바일/풀스크린 설정
+         * 1. 초기화 및 풀스크린 설정
          * -------------------------------------- */
         :root {
-            /* 컬러 팔레트 */
-            --deep-space: #07001c;
-            --galaxy-core: #ffccff;
-            --nebula-light: #5a00a0;
-            --shooting-star: #eaffff;
+            /* 은하수 컬러 팔레트: 깊은 남색과 청백색 별빛 */
+            --deep-space: #010411; 
+            --milky-way-glow: #ccccff;
+            --star-color: #f7f7ff;
+            --nebula-core: #2b0a60;
         }
 
         body {
@@ -22,132 +23,119 @@
             overflow: hidden;
             height: 100vh;
             width: 100vw;
-            perspective: 1200px; /* 깊이감 증가 */
             position: relative;
         }
 
         /* --------------------------------------
-         * 2. 웅장한 배경 및 중심 핵 (영화적 질감)
+         * 2. 웅장한 은하수 배경 (회전 및 빛 효과)
          * -------------------------------------- */
 
-        /* 배경 은하계 (느린 회전) */
-        .galaxy-background {
+        /* 은하수의 중심 띠를 연상시키는 배경 */
+        .milky-way-band {
             position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200vw; /* 뷰포트 대비 200%로 웅장하게 */
-            height: 200vh;
-            background: radial-gradient(circle at 50% 50%, 
-                rgba(255, 255, 255, 0.03) 0%, 
-                rgba(90, 0, 160, 0.4) 30%,      /* 짙은 보라빛 */
-                rgba(7, 0, 28, 1) 80%);
+            top: 50%;
+            left: 50%;
+            width: 300vw; /* 화면보다 훨씬 크게 만들어 웅장함 증폭 */
+            height: 300vh;
+            border-radius: 50%; /* 은하의 나선형 형태 연출 */
+            
+            background: radial-gradient(circle, 
+                rgba(204, 204, 255, 0.1) 0%,     /* 중앙 밝은 부분 */
+                rgba(43, 10, 96, 0.6) 30%,       /* 보랏빛 성운 */
+                rgba(1, 4, 17, 1) 70%            /* 어두운 외곽 */
+            );
             
             transform-origin: 50% 50%;
-            animation: slow-spin 150s linear infinite; /* 더 느린 회전 */
+            transform: translate(-50%, -50%); /* 중앙 정렬 */
+            
+            /* 매우 느린 회전 애니메이션 */
+            animation: ultra-slow-spin 200s linear infinite;
+            filter: blur(5px); /* 은은하게 번지는 느낌 */
             z-index: 1;
         }
 
-        /* 중심부의 강렬한 빛 (블랙홀/은하 핵 느낌) */
-        .core-light {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 15vh;
-            height: 15vh;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, var(--galaxy-core), var(--nebula-light) 50%, transparent 80%);
-            filter: blur(10vh); /* 강력하게 번지는 광원 효과 */
-            z-index: 5;
-            animation: core-pulse 10s ease-in-out infinite alternate;
-        }
-
-        /* 배경 회전 키프레임 */
-        @keyframes slow-spin {
+        /* 배경 회전 키프레임 (더 느리고 부드럽게) */
+        @keyframes ultra-slow-spin {
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
-        /* 중심 핵의 미세한 펄스 애니메이션 */
-        @keyframes core-pulse {
-            0% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
-        }
-
         /* --------------------------------------
-         * 3. 별똥별 (Shooting Star) 스타일
+         * 3. 별 입자 (Stars - JavaScript로 생성)
          * -------------------------------------- */
-        .shooting-star {
+        .star {
             position: absolute;
-            /* 작은 원이 아닌 꼬리를 가진 형태로 시작 */
-            width: 4px;
-            height: 2px;
-            background: linear-gradient(90deg, var(--shooting-star), transparent); 
-            box-shadow: 0 0 5px var(--shooting-star);
+            width: var(--star-size);
+            height: var(--star-size);
+            border-radius: 50%;
+            background-color: var(--star-color);
+            box-shadow: 0 0 1px var(--star-color), 0 0 3px var(--milky-way-glow);
             opacity: 0;
             z-index: 10;
+            /* 작은 움직임과 반짝임 애니메이션 */
+            animation: 
+                star-twinkle var(--twinkle-duration) ease-in-out infinite alternate,
+                star-drift var(--drift-duration) linear infinite alternate;
         }
 
-        /* 별똥별 궤적 애니메이션 */
-        @keyframes shoot {
-            0% {
-                /* 화면 밖 왼쪽 상단에서 시작 (랜덤화는 JS에서 처리) */
-                transform: translate(0vw, 0vh) rotate(225deg); 
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            100% {
-                /* 오른쪽 하단으로 빠르게 이동 */
-                transform: translate(150vw, 150vh) rotate(225deg); 
-                opacity: 0;
-            }
+        /* 별의 깜빡임 (Twinkle) 키프레임 */
+        @keyframes star-twinkle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* 별의 미세한 움직임 (Drift) 키프레임 - 깊이감을 위해 필요 */
+        @keyframes star-drift {
+            0% { transform: translate(0px, 0px); }
+            100% { transform: translate(var(--drift-offset-x), var(--drift-offset-y)); }
         }
     </style>
 </head>
 <body>
-    <div class="galaxy-background"></div>
-    <div class="core-light"></div>
+    <div class="milky-way-band"></div>
     
     <div id="star-container"></div> 
 
     <script>
         const container = document.getElementById('star-container');
-        const numStars = 30; // 모바일 최적화를 위해 입자 수를 이전보다 줄임
+        // 은하수를 표현하기 위해 입자 수를 대폭 증가시킴
+        const numStars = 150; 
 
-        function createStar() {
+        for (let i = 0; i < numStars; i++) {
             const star = document.createElement('div');
-            star.classList.add('shooting-star');
+            star.classList.add('star');
             
             // --- 랜덤 속성 설정 ---
 
-            // 크기 및 꼬리 길이
-            const length = Math.random() * 80 + 30; // 30px ~ 110px 길이의 꼬리
-            star.style.width = `${length}px`;
-            
-            // 시작 위치 (화면 전체에서 무작위)
+            // 크기 (0.5px ~ 2.5px)
+            const size = Math.random() * 2 + 0.5; 
+            star.style.setProperty('--star-size', `${size}px`);
+
+            // 위치 (화면 전체)
             const startX = Math.random() * 100;
             const startY = Math.random() * 100;
-
             star.style.left = `${startX}vw`;
             star.style.top = `${startY}vh`;
 
-            // 애니메이션 지속 시간 (1.5초 ~ 4초)
-            const duration = Math.random() * 2.5 + 1.5;
-            
-            // 애니메이션 딜레이 (최대 10초)
-            const delay = Math.random() * 10; 
+            // 깜빡임 속도 (2초 ~ 5초)
+            const twinkleDuration = Math.random() * 3 + 2; 
+            star.style.setProperty('--twinkle-duration', `${twinkleDuration}s`);
 
-            // 최종 애니메이션 적용
-            star.style.animation = `shoot ${duration}s linear ${delay}s infinite`;
+            // 미세 움직임 속도 (30초 ~ 60초)
+            const driftDuration = Math.random() * 30 + 30; 
+            star.style.setProperty('--drift-duration', `${driftDuration}s`);
+
+            // 미세 움직임 오프셋 (최대 100px)
+            const driftOffsetX = Math.random() * 100 - 50; 
+            const driftOffsetY = Math.random() * 100 - 50; 
+            star.style.setProperty('--drift-offset-x', `${driftOffsetX}px`);
+            star.style.setProperty('--drift-offset-y', `${driftOffsetY}px`);
+
+            // 애니메이션 시작 지연 (별마다 다르게)
+            star.style.animationDelay = `${Math.random() * 5}s`;
+            star.style.opacity = Math.random() * 0.5 + 0.5; // 초기 투명도 설정
 
             container.appendChild(star);
-        }
-
-        // 별똥별 생성
-        for (let i = 0; i < numStars; i++) {
-            createStar();
         }
     </script>
 </body>
