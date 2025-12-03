@@ -1,141 +1,177 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>강렬한 3D 에너지장</title>
-    <style>
-        /* --------------------------------------
-         * 1. 초기화 및 3D 공간 설정
-         * -------------------------------------- */
-        :root {
-            --dark-background: #00000a;
-            --energy-color: #ff0055; /* 마젠타/레드 계열의 강렬한 색상 */
-            --glow-color: #ff55aa;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAX EPIC UNIVERSE</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    background: black;
+    font-family: Arial;
+    touch-action: none;
+  }
 
-        body {
-            margin: 0;
-            padding: 0;
-            background: var(--dark-background); 
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            /* 3D 깊이감을 위한 원근법 설정 */
-            perspective: 800px; 
-            position: relative;
-        }
+  /* 네뷸라 구름 */
+  .nebula {
+    position: absolute;
+    width: 200vw;
+    height: 200vh;
+    top: -50vh;
+    left: -50vw;
+    background: radial-gradient(circle,
+        rgba(80,0,255,0.25) 0%,
+        rgba(0,0,0,0) 70%);
+    mix-blend-mode: screen;
+    animation: nebulaSpin 100s linear infinite;
+    pointer-events: none;
+  }
+  .nebula:nth-child(2) {
+    background: radial-gradient(circle,
+        rgba(0,180,255,0.18) 0%,
+        rgba(0,0,0,0) 70%);
+    animation-duration: 140s;
+    transform-origin: 80% 20%;
+  }
 
-        /* --------------------------------------
-         * 2. 메인 컨테이너 및 3D 설정
-         * -------------------------------------- */
-        .portal-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            transform-style: preserve-3d; /* 3D 자식 요소를 유지 */
-            /* 전체를 천천히 회전시켜 웅장함을 더함 */
-            animation: slow-container-spin 60s linear infinite;
-        }
+  @keyframes nebulaSpin {
+    from { transform: rotate(0deg) scale(1); }
+    to { transform: rotate(360deg) scale(1.2); }
+  }
 
-        @keyframes slow-container-spin {
-            from { transform: rotateY(0deg) rotateX(0deg); }
-            to { transform: rotateY(360deg) rotateX(360deg); }
-        }
+  /* 중앙 텍스트 */
+  .title {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffffffd0;
+    font-size: 3rem;
+    text-align: center;
+    letter-spacing: 5px;
+    text-shadow: 0 0 10px #6fa3ff, 0 0 25px #4683ff;
+    z-index: 999;
+    animation: pulse 4s infinite ease-in-out;
+    user-select: none;
+  }
 
-        /* --------------------------------------
-         * 3. 큐브 입자 스타일
-         * -------------------------------------- */
-        .cube-particle {
-            position: absolute;
-            width: var(--size);
-            height: var(--size);
-            background: rgba(255, 0, 85, 0.6); 
-            box-shadow: 0 0 5px var(--energy-color), 0 0 15px var(--glow-color);
-            opacity: 0;
-            
-            /* 3D 변환을 위한 설정 */
-            transform-style: preserve-3d;
-            
-            /* 핵심 펄스/붕괴 애니메이션 */
-            animation: pulse-and-rotate var(--duration) linear infinite alternate;
-        }
+  @keyframes pulse {
+    0%   { opacity: .5; transform: translate(-50%, -50%) scale(.95); }
+    50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+    100% { opacity: .5; transform: translate(-50%, -50%) scale(.95); }
+  }
 
-        /* --------------------------------------
-         * 4. 펄스 및 3D 회전 키프레임
-         * -------------------------------------- */
-        @keyframes pulse-and-rotate {
-            0% {
-                opacity: 0;
-                transform: 
-                    translate3d(var(--x1), var(--y1), var(--z1)) 
-                    rotateX(0deg) rotateY(0deg) scale3d(0.5, 0.5, 0.5);
-            }
-            50% {
-                opacity: 1;
-                box-shadow: 0 0 10px var(--energy-color), 0 0 30px var(--glow-color);
-            }
-            100% {
-                opacity: 0.2;
-                transform: 
-                    translate3d(var(--x2), var(--y2), var(--z2)) 
-                    rotateX(360deg) rotateY(360deg) scale3d(1.5, 1.5, 1.5);
-            }
-        }
-    </style>
+  @media (max-width: 600px) {
+    .title {
+      font-size: 1.8rem;
+      letter-spacing: 3px;
+    }
+  }
+</style>
 </head>
 <body>
-    <div class="portal-container" id="particle-container">
-        </div>
 
-    <script>
-        const container = document.getElementById('particle-container');
-        const numParticles = 40; // 3D 효과를 위해 입자 수는 50개 이하로 유지
+<div class="nebula"></div>
+<div class="nebula"></div>
+<canvas id="space"></canvas>
 
-        for (let i = 0; i < numParticles; i++) {
-            const particle = document.createElement('div');
-            particle.classList.add('cube-particle');
-            
-            // --- 랜덤 속성 생성 ---
-            
-            // 크기 (5px ~ 20px)
-            const size = Math.random() * 15 + 5; 
-            particle.style.setProperty('--size', `${size}px`);
+<div class="title">🌌 MAX EPIC UNIVERSE 🌌</div>
 
-            // 애니메이션 지속 시간 (8초 ~ 18초)
-            const duration = Math.random() * 10 + 8;
-            particle.style.setProperty('--duration', `${duration}s`);
+<script>
+/* ===========================
+     EPIC 3D STARFIELD CANVAS
+   ===========================*/
 
-            // --- 3D 위치 변수 설정 ---
-            // 3D 공간 (-500px ~ 500px) 내에서 움직이도록 설정
-            const range = 500; 
+const canvas = document.getElementById("space");
+const ctx = canvas.getContext("2d");
 
-            // 시작 위치 (x1, y1, z1)
-            const x1 = `${Math.random() * range * 2 - range}px`; 
-            const y1 = `${Math.random() * range * 2 - range}px`; 
-            const z1 = `${Math.random() * range * 2 - range}px`; 
+let w, h;
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
 
-            // 끝 위치 (x2, y2, z2)
-            const x2 = `${Math.random() * range * 2 - range}px`; 
-            const y2 = `${Math.random() * range * 2 - range}px`; 
-            const z2 = `${Math.random() * range * 2 - range}px`; 
-            
-            // CSS 변수 적용
-            particle.style.setProperty('--x1', x1);
-            particle.style.setProperty('--y1', y1);
-            particle.style.setProperty('--z1', z1);
-            particle.style.setProperty('--x2', x2);
-            particle.style.setProperty('--y2', y2);
-            particle.style.setProperty('--z2', z2);
+// 별 생성
+let stars = [];
+let starCount = 1200;
+let focal = 500;
+function initStars() {
+  stars = [];
+  for (let i = 0; i < starCount; i++) {
+    stars.push({
+      x: (Math.random() - 0.5) * w,
+      y: (Math.random() - 0.5) * h,
+      z: Math.random() * focal,
+      speed: 0.2 + Math.random() * 1
+    });
+  }
+}
+initStars();
 
-            // 애니메이션 시작 지연
-            particle.style.animationDelay = `${Math.random() * 5}s`;
+// 유성(슈팅스타)
+let meteors = [];
+function spawnMeteor() {
+  const angle = Math.random() * Math.PI / 2 + Math.PI / 4;
+  meteors.push({
+    x: Math.random() * w,
+    y: 0,
+    vx: Math.cos(angle) * (3 + Math.random() * 3),
+    vy: Math.sin(angle) * (3 + Math.random() * 3),
+    life: 0,
+    maxLife: 100 + Math.random() * 80
+  });
+}
+setInterval(spawnMeteor, 2000 + Math.random() * 2000);
 
-            container.appendChild(particle);
-        }
-    </script>
+// 애니메이션
+function animate() {
+  ctx.clearRect(0, 0, w, h);
+
+  /* ---- 별 그리기 ---- */
+  for (let s of stars) {
+    s.z -= s.speed;
+    if (s.z <= 0) {
+      s.z = focal;
+      s.x = (Math.random() - 0.5) * w;
+      s.y = (Math.random() - 0.5) * h;
+    }
+
+    let k = focal / s.z;
+    let px = s.x * k + w / 2;
+    let py = s.y * k + h / 2;
+
+    ctx.fillStyle = "rgba(255,255,255," + (1 - s.z / focal) + ")";
+    ctx.beginPath();
+    ctx.arc(px, py, 1.5 + (1 - s.z / focal) * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /* ---- 유성 그리기 ---- */
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    m.x += m.vx;
+    m.y += m.vy;
+    m.life++;
+
+    ctx.strokeStyle = "rgba(180,200,255," + (1 - m.life / m.maxLife) + ")";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(m.x, m.y);
+    ctx.lineTo(m.x - m.vx * 5, m.y - m.vy * 5);
+    ctx.stroke();
+
+    if (m.life >= m.maxLife) meteors.splice(i, 1);
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+
 </body>
 </html>
