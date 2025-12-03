@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>신비로운 애니메이션</title>
+    <style>
+        /* 전체 페이지 설정 */
+        body {
+            background-color: #0d0a1b; /* 깊은 밤하늘 같은 배경색 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; /* 스크롤 방지 */
+        }
+
+        /* 애니메이션 컨테이너 */
+        .container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* 신비로운 '구체' 스타일 */
+        .mystic-orb {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            /* 원형 그래디언트: 중앙은 밝고, 바깥은 투명하여 부드러운 빛 효과 */
+            background: radial-gradient(circle, #a395f7, #6a5acd, transparent); 
+            border-radius: 50%;
+            filter: blur(8px); /* 빛이 번지는 듯한 효과 */
+            
+            /* 초기 위치 (컨테이너 중앙) */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            /* 애니메이션 적용 */
+            animation: 
+                float-and-glow 15s infinite ease-in-out alternate, /* 잔잔한 움직임과 빛 */
+                slow-rotate 20s infinite linear; /* 아주 느린 회전 */
+        }
+
+        /* 💫 움직임과 빛 변화를 위한 키프레임 */
+        @keyframes float-and-glow {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.7;
+                box-shadow: 0 0 20px #a395f7, 0 0 40px #6a5acd;
+            }
+            33% {
+                transform: translate(-60%, -40%) scale(1.05);
+                opacity: 0.8;
+                box-shadow: 0 0 30px #a395f7, 0 0 60px #6a5acd;
+            }
+            66% {
+                transform: translate(-40%, -60%) scale(0.95);
+                opacity: 0.6;
+                box-shadow: 0 0 15px #a395f7, 0 0 30px #6a5acd;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.7;
+                box-shadow: 0 0 20px #a395f7, 0 0 40px #6a5acd;
+            }
+        }
+
+        /* 아주 느린 회전을 위한 키프레임 (optional) */
+        @keyframes slow-rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mystic-orb"></div>
+    </div>
+</body>
+</html>
