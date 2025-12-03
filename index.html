@@ -1,135 +1,131 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>웅장한 우주 애니메이션</title>
-    <style>
-        /* --------------------------------------
-         * 1. 초기화 및 풀스크린 배경 설정
-         * -------------------------------------- */
-        body {
-            margin: 0;
-            padding: 0;
-            background: #040114; /* 깊은 우주 배경색 */
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            perspective: 1000px; /* 3D 공간의 깊이감 설정 */
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epic Space Universe</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    background: #000;
+    font-family: Arial, sans-serif;
+  }
 
-        /* 웅장한 배경 은하계 (회전 효과) */
-        .galaxy-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 200%; /* 화면보다 크게 만들어 웅장하게 회전 */
-            height: 200%;
-            background: radial-gradient(circle at 50% 50%, 
-                rgba(255, 255, 255, 0.05) 0%, /* 중앙 밝은 부분 */
-                rgba(30, 0, 70, 0.5) 40%,      /* 보라빛 은하 나선팔 */
-                rgba(0, 0, 0, 1) 100%);        /* 어두운 외곽 */
-            
-            /* 초기 위치 조정 */
-            transform-origin: 50% 50%;
-            transform: translate(-50%, -50%);
+  /* === 우주 배경 부드러운 그라데이션 === */
+  #bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, #0a0a17 0%, #000 80%);
+    z-index: 1;
+  }
 
-            /* 느린 회전 애니메이션 적용 */
-            animation: slow-spin 120s linear infinite;
-            z-index: 1;
-        }
+  /* === 성운(네뷸라) 효과 === */
+  .nebula {
+    position: absolute;
+    width: 150vw;
+    height: 150vh;
+    background: radial-gradient(circle, rgba(120,0,255,0.25) 0%, rgba(0,0,0,0) 70%);
+    mix-blend-mode: screen;
+    animation: rotateNebula 80s linear infinite;
+    z-index: 2;
+  }
 
-        /* 배경 회전 키프레임 */
-        @keyframes slow-spin {
-            from { transform: translate(-50%, -50%) rotate(0deg); }
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
+  .nebula:nth-child(1) {
+    background: radial-gradient(circle, rgba(0,180,255,0.25) 0%, rgba(0,0,0,0) 70%);
+    animation-duration: 120s;
+    transform-origin: 30% 30%;
+  }
 
+  .nebula:nth-child(2) {
+    transform-origin: 70% 70%;
+  }
 
-        /* --------------------------------------
-         * 2. 별똥별(Shooting Star) 스타일
-         * -------------------------------------- */
-        .shooting-star {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            border-radius: 50%;
-            background: #ffffff;
-            box-shadow: 0 0 5px #ffffff, 0 0 10px #88ffff; /* 밝은 광선 */
-            opacity: 0;
-            z-index: 10;
-        }
+  @keyframes rotateNebula {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 
-        /* 별똥별 궤적 애니메이션 (CSS로 미리 정의) */
-        @keyframes shoot {
-            0% {
-                transform: translate(0, 0) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            100% {
-                /* 대각선으로 빠르게 이동하며 소멸 (꼬리 효과를 위해 transform 이용) */
-                transform: translate(500px, 500px) rotate(20deg); 
-                opacity: 0;
-            }
-        }
-    </style>
+  /* === 별들 (3 레이어: 깊이감) === */
+  .stars, .stars2, .stars3 {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background-repeat: repeat;
+    background-size: contain;
+    animation: starMove linear infinite;
+  }
+
+  .stars {
+    background-image: url('https://raw.githubusercontent.com/itssharlitt/space-assets/main/stars_layer1.png');
+    animation-duration: 140s;
+    opacity: 0.6;
+  }
+  .stars2 {
+    background-image: url('https://raw.githubusercontent.com/itssharlitt/space-assets/main/stars_layer2.png');
+    animation-duration: 220s;
+    opacity: 0.35;
+  }
+  .stars3 {
+    background-image: url('https://raw.githubusercontent.com/itssharlitt/space-assets/main/stars_layer3.png');
+    animation-duration: 300s;
+    opacity: 0.15;
+  }
+
+  @keyframes starMove {
+    from { transform: translateY(0); }
+    to { transform: translateY(1000px); }
+  }
+
+  /* === 중앙 우주 텍스트 === */
+  .center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffffffdd;
+    text-shadow: 0 0 15px #8ab4ff, 0 0 25px #5680ff;
+    font-size: 3rem;
+    letter-spacing: 4px;
+    z-index: 5;
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @media (max-width: 600px) {
+    .center-text {
+      font-size: 1.8rem;
+    }
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.98); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+    100% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.98); }
+  }
+
+</style>
 </head>
 <body>
-    <div class="galaxy-background"></div>
 
-    <div id="star-container"></div> 
+<div id="bg"></div>
 
-    <script>
-        const container = document.getElementById('star-container');
-        const numStars = 40; // 생성할 별똥별의 개수
+<!-- 성운(네뷸라) 두 개: 서로 다른 색 + 회전 -->
+<div class="nebula"></div>
+<div class="nebula"></div>
 
-        function createStar() {
-            const star = document.createElement('div');
-            star.classList.add('shooting-star');
-            
-            // --- 랜덤 속성 설정 ---
+<!-- 멀티 레이어 별 -->
+<div class="stars"></div>
+<div class="stars2"></div>
+<div class="stars3"></div>
 
-            // 크기 (1px ~ 4px)
-            const size = Math.random() * 3 + 1; 
-            star.style.width = `${size}px`;
-            star.style.height = `${size}px`;
+<div class="center-text">
+  🌌 INTO THE UNIVERSE 🌌
+</div>
 
-            // 시작 위치 (화면 상단 또는 왼쪽에서 시작)
-            const startX = Math.random() * window.innerWidth;
-            const startY = Math.random() * window.innerHeight * 0.2; // 주로 화면 상단에서 시작
-
-            star.style.left = `${startX}px`;
-            star.style.top = `${startY}px`;
-
-            // 애니메이션 지속 시간 (1초 ~ 3초)
-            const duration = Math.random() * 2 + 1;
-            
-            // 애니메이션 딜레이 (최대 10초)
-            const delay = Math.random() * 10; 
-            
-            // 꼬리 효과 (가짜 꼬리를 만듦)
-            star.style.setProperty('box-shadow', `0 0 10px rgba(136, 255, 255, 0.8), 0 0 20px -5px #ffffff`);
-
-            // 최종 애니메이션 적용
-            star.style.animation = `shoot ${duration}s linear ${delay}s infinite`;
-
-            container.appendChild(star);
-        }
-
-        // 별똥별 생성
-        for (let i = 0; i < numStars; i++) {
-            createStar();
-        }
-
-        // 별똥별이 끝날 때마다 다시 생성하여 무한히 보이게 함 (선택 사항)
-        // setInterval(() => {
-        //     // container.innerHTML = ''; // 기존 것 제거하고 다시 생성하려면 사용
-        //     // for (let i = 0; i < numStars; i++) {
-        //     //     createStar();
-        //     // }
-        // }, 10000); // 10초마다
-    </script>
 </body>
 </html>
