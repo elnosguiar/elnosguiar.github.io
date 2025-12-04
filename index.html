@@ -42,20 +42,21 @@
     to { transform: rotate(360deg) scale(1.2); }
   }
 
-  /* 중앙 텍스트 */
+  /* 중앙 날짜/시간 */
   .title {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     color: #ffffffd0;
-    font-size: 3rem;
+    font-size: 2.5rem;
     text-align: center;
-    letter-spacing: 5px;
+    letter-spacing: 3px;
     text-shadow: 0 0 10px #6fa3ff, 0 0 25px #4683ff;
     z-index: 999;
     animation: pulse 4s infinite ease-in-out;
     user-select: none;
+    white-space: nowrap;
   }
 
   @keyframes pulse {
@@ -66,8 +67,8 @@
 
   @media (max-width: 600px) {
     .title {
-      font-size: 1.8rem;
-      letter-spacing: 3px;
+      font-size: 1.5rem;
+      letter-spacing: 2px;
     }
   }
 </style>
@@ -78,9 +79,36 @@
 <div class="nebula"></div>
 <canvas id="space"></canvas>
 
-<div class="title">UNIVERSE</div>
+<!-- 날짜/시간 텍스트 -->
+<div class="title" id="clockDisplay"></div>
 
 <script>
+/* ===========================
+      날짜 & 시계 스크립트
+   ===========================*/
+
+function updateClock() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
+  const weekday = days[now.getDay()];
+
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+
+  document.getElementById("clockDisplay").textContent =
+    `${year}-${month}-${date} (${weekday})  ${hh}:${mm}:${ss}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+
+
 /* ===========================
      EPIC 3D STARFIELD CANVAS
    ===========================*/
