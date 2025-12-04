@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ultimate Finance Calculator</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* ------------------------------
+      GLOBAL UI / THEME
+--------------------------------*/
+:root {
+    --bg: #0a0f1a;
+    --card: #111a2a;
+    --accent: #4fa3ff;
+    --text: #ffffff;
+    --glow: 0 0 15px #4fa3ff;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+}
+
+/* Title */
+h1 {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 2.4rem;
+    text-shadow: var(--glow);
+}
+
+/* Container */
+.container {
+    max-width: 900px;
+    margin: auto;
+    margin-top: 25px;
+    padding: 20px;
+}
+
+/* Tabs */
+.tab-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.tab-buttons button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.tab-buttons button.active {
+    background: var(--accent);
+    color: #000;
+    font-weight: bold;
+}
+
+.tab {
+    display: none;
+    background: var(--card);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(79,163,255,0.3);
+}
+
+.tab.active {
+    display: block;
+}
+
+/* Inputs */
+label {
+    display: block;
+    margin-top: 12px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    background: #162235;
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.calculate {
+    width: 100%;
+    padding: 15px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-weight: bold;
+    margin-top: 20px;
+    font-size: 1.15rem;
+    cursor: pointer;
+}
+
+.result-box {
+    margin-top: 20px;
+    padding: 15px;
+    background: #0d1524;
+    border-radius: 10px;
+    line-height: 1.8;
+}
+
+.chart-container {
+    margin-top: 20px;
+    background: #0d1524;
+    padding: 15px;
+    border-radius: 12px;
+}
+</style>
+</head>
+
+<body>
+<h1>Ultimate 금융 계산기</h1>
+
+<div class="container">
+
+<!-- TABS -->
+<div class="tab-buttons">
+    <button class="active" onclick="showTab('deposit')">예금</button>
+    <button onclick="showTab('saving')">적금</button>
+    <button onclick="showTab('loan')">대출</button>
+</div>
+
+<!-- 예금 -->
+<div id="deposit" class="tab active">
+
+    <label>예치금액(원)</label>
+    <input type="number" id="dep_amount">
+
+    <label>연 이자율(%)</label>
+    <input type="number" id="dep_rate">
+
+    <label>기간(개월)</label>
+    <input type="number" id="dep_month">
+
+    <label>이자 방식</label>
+    <select id="dep_type">
+        <option value="simple">단리</option>
+        <option value="monthly">월복리</option>
+        <option value="yearly">연복리</option>
+    </select>
+
+    <button class="calculate" onclick="calcDeposit()">예금 계산</button>
+
+    <div id="dep_result" class="result-box"></div>
+    <div class="chart-container"><canvas id="dep_chart"></canvas></div>
+</div>
+
+<!-- 적금 -->
+<div id="saving" class="tab">
+
+    <label>월 납입액(원)</label>
+    <input type="number" id="sav_amount">
+
+    <label>연 이자율(%)</label>
+    <input type="number" id="sav_rate">
+
+    <label>기간(개월)</label>
+    <input type="number" id="sav_month">
+
+    <label>이자 방식</label>
+    <select id="sav_type">
+        <option value="compound">복리(은행식)</option>
+        <option value="simple">단리</option>
+    </select>
+
+    <button class="calculate" onclick="calcSaving()">적금 계산</button>
+
+    <div id="sav_result" class="result-box"></div>
+    <div class="chart-container"><canvas id="sav_chart"></canvas></div>
+</div>
+
+<!-- 대출 -->
+<div id="loan" class="tab">
+
+    <label>대출금액(원)</label>
+    <input type="number" id="loan_amount">
+
+    <label>연 이자율(%)</label>
+    <input type="number" id="loan_rate">
+
+    <label>기간(개월)</label>
+    <input type="number" id="loan_month">
+
+    <label>상환 방식</label>
+    <select id="loan_type">
+        <option value="amortization">원리금균등</option>
+        <option value="principal">원금균등</option>
+        <option value="bullet">만기일시</option>
+    </select>
+
+    <button class="calculate" onclick="calcLoan()">대출 계산</button>
+
+    <div id="loan_result" class="result-box"></div>
+    <div class="chart-container"><canvas id="loan_chart"></canvas></div>
+</div>
+
+</div>
+
+<script>
+/* -----------------------
+     TAB Change
+------------------------*/
+function showTab(id) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+
+    document.querySelectorAll(".tab-buttons button").forEach(b => b.classList.remove("active"));
+    event.target.classList.add("active");
+}
+
+/* ================================
+        예금 계산 (Full Version)
+================================*/
+let depChart;
+
+function calcDeposit() {
+    const P = Number(dep_amount.value);
+    const r = Number(dep_rate.value) / 100;
+    const m = Number(dep_month.value);
+    const type = dep_type.value;
+
+    let total = 0;
+
+    if (type === "simple") total = P * (1 + r * (m / 12));
+    if (type === "monthly") total = P * (1 + r / 12) ** m;
+    if (type === "yearly") total = P * (1 + r) ** (m / 12);
+
+    const interest = total - P;
+
+    dep_result.innerHTML = `
+    💰 <b>예금 결과</b><br>
+    원금: ${P.toLocaleString()}원 <br>
+    이자: ${Math.round(interest).toLocaleString()}원 <br>
+    만기금액: <b>${Math.round(total).toLocaleString()}원</b>
+    `;
+
+    // Chart
+    if (depChart) depChart.destroy();
+    depChart = new Chart(dep_chart, {
+        type: "line",
+        data: {
+            labels: ["원금", "만기"],
+            datasets: [{
+                label: "예금 증가",
+                data: [P, total],
+                borderColor: "#4fa3ff",
+                tension: 0.3
+            }]
+        }
+    });
+}
+
+/* ================================
+         적금 계산
+================================*/
+let savChart;
+
+function calcSaving() {
+    const A = Number(sav_amount.value);
+    const rate = Number(sav_rate.value) / 100;
+    const n = Number(sav_month.value);
+    const type = sav_type.value;
+
+    let total = 0;
+
+    if (type === "compound") {
+        const r = rate / 12;
+        total = A * (( (1+r)**n - 1 ) / r );
+    }
+    if (type === "simple") {
+        total = A * (n + 1) / 2 * rate * (1 / 12) + A * n;
+    }
+
+    const paid = A * n;
+    const interest = total - paid;
+
+    sav_result.innerHTML = `
+    📦 <b>적금 결과</b><br>
+    총 납입액: ${paid.toLocaleString()}원 <br>
+    이자: ${Math.round(interest).toLocaleString()}원 <br>
+    만기금액: <b>${Math.round(total).toLocaleString()}원</b>
+    `;
+
+    // Chart
+    if (savChart) savChart.destroy();
+    savChart = new Chart(sav_chart, {
+        type: "line",
+        data: {
+            labels: Array.from({length: n}, (_,i)=> i+1),
+            datasets: [{
+                label: "적금 누적 금액",
+                data: Array.from({length:n}, (_,i)=> A*(i+1)),
+                borderColor: "#4fa3ff",
+                tension: 0.4
+            }]
+        }
+    });
+}
+
+/* ================================
+         대출 계산
+================================*/
+let loanChart;
+
+function calcLoan() {
+    const L = Number(loan_amount.value);
+    const r = Number(loan_rate.value)/100/12;
+    const n = Number(loan_month.value);
+    const type = loan_type.value;
+
+    let monthly = 0;
+    let total = 0;
+    let interest = 0;
+
+    if (type === "amortization") {
+        monthly = L * (r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+        total = monthly * n;
+        interest = total - L;
+    }
+
+    if (type === "principal") {
+        const principal = L/n;
+        let totalInterest = 0;
+
+        for (let i=0;i<n;i++) {
+            totalInterest += (L - principal*i)*r;
+        }
+
+        interest = totalInterest;
+        total = L + totalInterest;
+        monthly = "매월 상환 원금 " + Math.round(principal).toLocaleString() + "원";
+    }
+
+    if (type === "bullet") {
+        interest = L*r*n;
+        total = L + interest;
+        monthly = "매월 이자 " + Math.round(L*r).toLocaleString() + "원";
+    }
+
+    loan_result.innerHTML = `
+    🏦 <b>대출 결과</b><br>
+    월 납입금: ${typeof monthly === "string" ? monthly : Math.round(monthly).toLocaleString()+"원"}<br>
+    총 이자: ${Math.round(interest).toLocaleString()}원<br>
+    최종 상환액: <b>${Math.round(total).toLocaleString()}원</b>
+    `;
+
+    // chart
+    if (loanChart) loanChart.destroy();
+    loanChart = new Chart(loan_chart, {
+        type: "doughnut",
+        data: {
+            labels: ["원금", "이자"],
+            datasets: [{
+                data: [L, interest],
+                backgroundColor: ["#4fa3ff", "#ff5777"]
+            }]
+        }
+    });
+}
+
+</script>
+
+</body>
+</html>
