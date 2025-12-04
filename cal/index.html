@@ -5,11 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UNIVERSE FINANCE CALCULATOR</title>
 <style>
-html, body {
-    margin:0; padding:0; height:100%; overflow:hidden;
-    font-family:'Segoe UI', Arial; background:black; color:#e9f2ff;
-}
-/* 네뷸라 */
+html, body {margin:0; padding:0; height:100%; overflow:hidden; font-family:'Segoe UI', Arial; background:black; color:#e9f2ff;}
 .nebula{position:absolute;width:200vw;height:200vh;top:-50vh;left:-50vw;background:radial-gradient(circle, rgba(80,0,255,0.22) 0%, rgba(0,0,0,0) 70%);mix-blend-mode:screen;animation:spin1 120s linear infinite;}
 .nebula:nth-child(2){background:radial-gradient(circle, rgba(0,200,255,0.18) 0%, rgba(0,0,0,0) 70%);animation:spin2 180s linear infinite;}
 @keyframes spin1{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
@@ -87,7 +83,7 @@ input, select{width:100%;padding:12px;border:none;border-radius:8px;background:r
 </div>
 
 <script>
-// 날짜/시계
+// 시계
 function updateClock(){
     const now=new Date();
     const y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'), d=String(now.getDate()).padStart(2,'0');
@@ -106,17 +102,20 @@ function showTab(id,event){
     event.target.classList.add("active");
 }
 
-// 숫자 입력 콤마+소수점
+// 숫자 입력(콤마+소수점)
 function addComma(num){return Number(num).toLocaleString('ko-KR',{maximumFractionDigits:2});}
 function uncomma(str){return parseFloat(str.replace(/,/g,""))||0;}
 document.querySelectorAll(".num").forEach(i=>{
     i.addEventListener("input",function(){
         let raw=this.value.replace(/,/g,"");
-        if(!isNaN(raw)&&raw!==""){this.value=parseFloat(raw).toLocaleString('ko-KR',{maximumFractionDigits:2});}
+        // 온점 하나만 허용
+        const parts = raw.split('.');
+        if(parts.length>2) raw = parts[0]+'.'+parts[1];
+        if(!isNaN(raw) && raw!=="") this.value=parseFloat(raw).toLocaleString('ko-KR',{maximumFractionDigits:2});
     });
 });
 
-// 예금 계산
+// 예금
 function calcDeposit(){
     const P=uncomma(dep_amount.value), r=uncomma(dep_rate.value)/100, m=Number(uncomma(dep_month.value)), type=dep_type.value;
     let total=0;
@@ -127,19 +126,19 @@ function calcDeposit(){
     dep_result.innerHTML=`💰 <b>예금 결과</b><br>원금: ${addComma(P)}원<br>이자: ${addComma(interest)}원<br>만기수령액: <b>${addComma(total)}원</b>`;
 }
 
-// 적금 계산
+// 적금(은행식 기준)
 function calcSaving(){
     const A=uncomma(sav_amount.value), rate=uncomma(sav_rate.value)/100, n=Number(uncomma(sav_month.value)), type=sav_type.value;
     let total=0;
-    if(type==="compound"){ // 은행식 복리
+    if(type==="compound"){ 
         const r=rate/12;
-        total=A*((Math.pow(1+r,n)-1)/r)*(1+r);
-    } else total=A*n + A*(n+1)/2*(rate/12);
+        total=A*((Math.pow(1+r,n)-1)/r)*(1+r); // 은행식 월복리
+    } else total=A*n + A*(n+1)/2*(rate/12); // 단리
     const interest=total-A*n;
     sav_result.innerHTML=`📦 <b>적금 결과</b><br>총 납입액: ${addComma(A*n)}원<br>이자: ${addComma(interest)}원<br>만기수령액: <b>${addComma(total)}원</b>`;
 }
 
-// 대출 계산
+// 대출
 function calcLoan(){
     const L=uncomma(loan_amount.value), r=uncomma(loan_rate.value)/100/12, n=Number(uncomma(loan_month.value)), type=loan_type.value;
     let monthly=0, total=0, interest=0;
