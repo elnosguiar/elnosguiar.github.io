@@ -2,181 +2,229 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>🐶 강아지 강화 게임</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>강아지 강화 : LV100</title>
+
 <style>
-    body {
-        margin: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: linear-gradient(135deg, #1e1e2f, #2b2b45);
-        color: #fff;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-    }
-
-    .game {
-        background: #111;
-        border-radius: 20px;
-        width: 380px;
-        padding: 25px;
-        box-shadow: 0 0 30px rgba(0,0,0,0.6);
-        text-align: center;
-    }
-
-    h1 {
-        margin-top: 0;
-        color: #ffcc00;
-    }
-
-    .dog {
-        font-size: 80px;
-        margin: 10px 0;
-        transition: transform 0.2s;
-    }
-
-    .level {
-        font-size: 26px;
-        margin: 10px 0;
-    }
-
-    .rate {
-        font-size: 16px;
-        color: #aaa;
-    }
-
-    button {
-        width: 100%;
-        padding: 14px;
-        margin-top: 15px;
-        font-size: 18px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        background: linear-gradient(135deg, #ff9800, #ff5722);
-        color: white;
-    }
-
-    button:disabled {
-        background: #555;
-        cursor: not-allowed;
-    }
-
-    .log {
-        margin-top: 15px;
-        background: #000;
-        padding: 10px;
-        height: 120px;
-        overflow-y: auto;
-        font-size: 14px;
-        border-radius: 10px;
-        text-align: left;
-    }
-
-    .success {
-        color: #4caf50;
-    }
-
-    .fail {
-        color: #f44336;
-    }
-
-    .shake {
-        animation: shake 0.3s;
-    }
-
-    @keyframes shake {
-        0% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        50% { transform: translateX(5px); }
-        75% { transform: translateX(-5px); }
-        100% { transform: translateX(0); }
-    }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:linear-gradient(180deg,#0b0c1a,#000);
+    color:#fff;
+}
+.app{
+    max-width:420px;
+    margin:auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+.top{
+    padding:14px;
+    background:#111;
+    text-align:center;
+    border-bottom:1px solid #222;
+}
+.top h1{
+    margin:0;
+    font-size:20px;
+    color:#ffd54f;
+}
+.name{
+    font-size:14px;
+    color:#aaa;
+}
+.main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
+.dog-box{
+    width:240px;
+    height:240px;
+    border-radius:50%;
+    background:radial-gradient(circle,#222,#000);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    box-shadow:0 0 40px rgba(255,193,7,.3);
+    position:relative;
+}
+.dog{
+    font-size:120px;
+}
+.flash{
+    animation:flash .4s;
+}
+@keyframes flash{
+    0%{box-shadow:0 0 0 rgba(255,215,0,0)}
+    50%{box-shadow:0 0 80px rgba(255,215,0,.9)}
+    100%{box-shadow:0 0 0 rgba(255,215,0,0)}
+}
+.shake{
+    animation:shake .3s;
+}
+@keyframes shake{
+    0%{transform:translate(0)}
+    25%{transform:translate(-6px)}
+    50%{transform:translate(6px)}
+    75%{transform:translate(-6px)}
+    100%{transform:translate(0)}
+}
+.info{
+    margin-top:20px;
+    text-align:center;
+}
+.level{
+    font-size:26px;
+}
+.rate{
+    font-size:14px;
+    color:#aaa;
+}
+.bottom{
+    padding:14px;
+    background:#050505;
+    border-top:1px solid #222;
+}
+button{
+    width:100%;
+    padding:18px;
+    border:none;
+    border-radius:14px;
+    font-size:20px;
+    font-weight:bold;
+    background:linear-gradient(135deg,#ffc107,#ff6f00);
+    cursor:pointer;
+}
+button:active{transform:scale(.97)}
+button:disabled{
+    background:#444;
+    color:#888;
+}
+.log{
+    margin-top:10px;
+    max-height:120px;
+    overflow-y:auto;
+    font-size:13px;
+}
+.success{color:#4caf50}
+.fail{color:#f44336}
 </style>
 </head>
+
 <body>
+<div class="app">
 
-<div class="game">
-    <h1>🐶 강아지 강화</h1>
-
-    <div class="dog" id="dog">🐕</div>
-
-    <div class="level">
-        강화 단계: <span id="level">+0</span>
+    <div class="top">
+        <h1>🐶 강아지 강화</h1>
+        <div class="name" id="name"></div>
     </div>
 
-    <div class="rate">
-        성공 확률: <span id="rate">90%</span>
+    <div class="main">
+        <div class="dog-box" id="box">
+            <div class="dog" id="dog">🐕</div>
+        </div>
+
+        <div class="info">
+            <div class="level">LV <span id="lv">0</span></div>
+            <div class="rate">성공 확률 <span id="rate">90%</span></div>
+        </div>
     </div>
 
-    <button id="upgradeBtn">강화하기</button>
+    <div class="bottom">
+        <button id="btn">강화하기</button>
+        <div class="log" id="log"></div>
+    </div>
 
-    <div class="log" id="log"></div>
 </div>
 
 <script>
-    let level = 0;
-    const maxLevel = 10;
+const maxLv = 100;
+let lv = Number(localStorage.getItem("dog_lv")) || 0;
 
-    const levelEl = document.getElementById("level");
-    const rateEl = document.getElementById("rate");
-    const logEl = document.getElementById("log");
-    const btn = document.getElementById("upgradeBtn");
-    const dog = document.getElementById("dog");
+const dog = document.getElementById("dog");
+const lvEl = document.getElementById("lv");
+const rateEl = document.getElementById("rate");
+const nameEl = document.getElementById("name");
+const logEl = document.getElementById("log");
+const btn = document.getElementById("btn");
+const box = document.getElementById("box");
 
-    function getRate(lv) {
-        if (lv <= 3) return 90;
-        if (lv <= 6) return 60;
-        if (lv <= 8) return 30;
-        if (lv === 9) return 15;
-        return 0;
-    }
+function getRate(l){
+    if(l<10) return 90;
+    if(l<30) return 70;
+    if(l<50) return 40;
+    if(l<70) return 25;
+    if(l<90) return 10;
+    return 5;
+}
 
-    function log(msg, cls = "") {
-        const p = document.createElement("div");
-        p.textContent = msg;
-        if (cls) p.classList.add(cls);
-        logEl.prepend(p);
-    }
+function getName(l){
+    if(l<10) return "길바닥 강아지";
+    if(l<30) return "단단한 멍멍이";
+    if(l<50) return "전투견";
+    if(l<70) return "지옥의 사냥견";
+    if(l<90) return "고대 수호견";
+    return "👑 개왕";
+}
 
-    function updateUI() {
-        levelEl.textContent = "+" + level;
-        rateEl.textContent = getRate(level) + "%";
-    }
+function getIcon(l){
+    if(l<30) return "🐕";
+    if(l<60) return "🐕‍🦺";
+    if(l<90) return "🐺";
+    return "🐉";
+}
 
-    btn.addEventListener("click", () => {
-        if (level >= maxLevel) return;
+function save(){
+    localStorage.setItem("dog_lv", lv);
+}
 
-        const rate = getRate(level);
-        const roll = Math.random() * 100;
+function log(msg,cls){
+    const d=document.createElement("div");
+    d.textContent=msg;
+    d.className=cls;
+    logEl.prepend(d);
+}
 
-        dog.classList.remove("shake");
-        void dog.offsetWidth;
-        dog.classList.add("shake");
+function update(){
+    lvEl.textContent=lv;
+    rateEl.textContent=getRate(lv)+"%";
+    nameEl.textContent=getName(lv);
+    dog.textContent=getIcon(lv);
+    if(lv>=maxLv) btn.disabled=true;
+    save();
+}
 
-        if (roll < rate) {
-            level++;
-            log(`✅ 강화 성공! +${level}`, "success");
-        } else {
-            if (level >= 4) {
-                level--;
-                log(`❌ 강화 실패… 단계 하락 (+${level})`, "fail");
-            } else {
-                log(`❌ 강화 실패… 변화 없음`, "fail");
-            }
+btn.onclick=()=>{
+    if(lv>=maxLv) return;
+
+    const r=getRate(lv);
+    const roll=Math.random()*100;
+
+    box.classList.remove("shake","flash");
+    void box.offsetWidth;
+    box.classList.add("shake");
+
+    if(roll<r){
+        lv++;
+        box.classList.add("flash");
+        log(`✅ 성공 → LV ${lv}`,"success");
+    }else{
+        if(lv>0){
+            lv--;
+            log(`❌ 실패… LV ${lv}`,"fail");
+        }else{
+            log("❌ 실패… 변화 없음","fail");
         }
+    }
+    update();
+};
 
-        updateUI();
-
-        if (level >= maxLevel) {
-            log("🎉 +10 달성! 전설의 강아지 탄생!", "success");
-            btn.disabled = true;
-            dog.textContent = "🐕‍🦺";
-        }
-    });
-
-    updateUI();
+update();
 </script>
-
 </body>
 </html>
