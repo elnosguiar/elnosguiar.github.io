@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Coaster Tycoon PRO</title>
+    <style>
+        :root { --neon-blue: #00f2ff; --neon-pink: #ff007a; --bg: #05070a; }
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        #hud { position: absolute; top: 20px; left: 20px; z-index: 100; pointer-events: none; }
+        .money { font-size: 24px; font-weight: 800; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+        
+        #controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: center; gap: 15px; z-index: 100; }
+        .btn { 
+            background: rgba(20, 25, 35, 0.9); border: 1px solid var(--neon-blue); border-radius: 15px; 
+            padding: 15px; width: 80px; text-align: center; font-size: 12px; cursor: pointer;
+            transition: 0.2s; backdrop-filter: blur(10px);
+        }
+        .btn.active { background: var(--neon-blue); color: black; box-shadow: 0 0 20px var(--neon-blue); }
+        .btn span { display: block; font-size: 24px; margin-bottom: 5px; }
+
+        #msg { position: absolute; top: 50%; width: 100%; text-align: center; opacity: 0.5; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="money">$ <span id="m-val">50,000</span></div>
+    <div style="font-size: 12px; opacity: 0.7;">TRACKS: <span id="t-count">0</span></div>
+</div>
+
+<div id="msg">터치해서 레일을 연결하세요!</div>
+
+<canvas id="c"></canvas>
+
+<div id="controls">
+    <div class="btn" id="btn-track" onclick="setMode('track')">
+        <span>🎢</span>TRACK<br>$500
+    </div>
+    <div class="btn" id="btn-clear" onclick="clearTracks()">
+        <span>🗑️</span>RESET
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+let w, h, money = 50000, mode = null;
+let tracks = []; // [{x, y}]
+let trainPos = 0; // 열차 위치 (인덱스)
+
+function init() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    render();
+}
+
+function setMode(m) {
+    mode = (mode === m) ? null : m;
+    document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    if(mode) document.getElementById('btn-'+m).classList.add('active');
+}
+
+function clearTracks() {
+    tracks = [];
+    trainPos = 0;
+    document.getElementById('t-count').innerText = 0;
+}
+
+// 아이소메트릭 변환
+function toScreen(mx, my) {
+    return { x: (mx - my) * 30 + w/2, y: (mx + my) * 15 + h/3 };
+}
+
+// 터치 시 레일 건설
+canvas.addEventListener('touchstart', handleInput);
+canvas.addEventListener('touchmove', handleInput);
+
+function handleInput(e) {
+    if(mode !== 'track') return;
+    const t = e.touches[0];
+    const dx = t.clientX - w/2, dy = t.clientY - h/3;
+    const mx = Math.round((dy / 15 + dx / 30) / 2);
+    const my = Math.round((dy / 15 - dx / 30) / 2);
+
+    // 마지막 트랙과 다른 지점일 때만 추가
+    if(tracks.length === 0 || (tracks[tracks.length-1].x !== mx || tracks[tracks.length-1].y !== my)) {
+        if(money >= 500) {
+            money -= 500;
+            tracks.push({x: mx, y: my});
+            updateUI();
+        }
+    }
+}
+
+function updateUI() {
+    document.getElementById('m-val').innerText = money.toLocaleString();
+    document.getElementById('t-count').innerText = tracks.length;
+}
+
+function render() {
+    ctx.clearRect(0, 0, w, h);
+    
+    // 1. 그리드 바닥
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    for(let i=-10; i<20; i++) {
+        for(let j=-10; j<20; j++) {
+            const s = toScreen(i, j);
+            ctx.strokeRect(s.x-30, s.y, 60, 30);
+        }
+    }
+
+    // 2. 롤러코스터 레일 그리기
+    if(tracks.length > 1) {
+        ctx.beginPath();
+        ctx.strokeStyle = '#555'; // 레일 지지대
+        ctx.lineWidth = 3;
+        tracks.forEach((p, i) => {
+            const s = toScreen(p.x, p.y);
+            if(i === 0) ctx.moveTo(s.x, s.y + 15);
+            else ctx.lineTo(s.x, s.y + 15);
+        });
+        ctx.stroke();
+
+        // 네온 레일 (상단)
+        ctx.beginPath();
+        ctx.strokeStyle = '#ff007a';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ff007a';
+        tracks.forEach((p, i) => {
+            const s = toScreen(p.x, p.y);
+            if(i === 0) ctx.moveTo(s.x, s.y + 10);
+            else ctx.lineTo(s.x, s.y + 10);
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+    }
+
+    // 3. 열차(Train) 물리 이동
+    if(tracks.length > 2) {
+        trainPos += 0.1; // 열차 속도
+        if(trainPos >= tracks.length - 1) {
+            trainPos = 0; // 한 바퀴 돌면 수익 발생
+            money += tracks.length * 10; 
+            updateUI();
+        }
+
+        const idx = Math.floor(trainPos);
+        const nextIdx = (idx + 1) % tracks.length;
+        const p1 = toScreen(tracks[idx].x, tracks[idx].y);
+        const p2 = toScreen(tracks[nextIdx].x, tracks[nextIdx].y);
+        
+        // 선형 보간으로 부드러운 이동
+        const ratio = trainPos - idx;
+        const tx = p1.x + (p2.x - p1.x) * ratio;
+        const ty = p1.y + (p2.y - p1.y) * ratio;
+
+        // 열차 그리기
+        ctx.fillStyle = '#00f2ff';
+        ctx.shadowBlur = 15; ctx.shadowColor = '#00f2ff';
+        ctx.fillRect(tx - 6, ty + 2, 12, 8);
+        ctx.shadowBlur = 0;
+    }
+
+    requestAnimationFrame(render);
+}
+
+window.onload = init;
+</script>
+
+</body>
+</html>
