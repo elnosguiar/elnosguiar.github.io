@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>드림랜드 타이쿤 V2.0</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; margin: 0; background: #1a1a2e; overflow: hidden; touch-action: none; color: white; }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        #game-canvas { display: block; width: 100%; height: 100%; }
+        
+        .ui-panel {
+            position: absolute; background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px); border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px; z-index: 10;
+        }
+
+        #header { top: 10px; left: 10px; right: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; font-size: 0.9rem; }
+        .stat-val { display: block; font-size: 1.1rem; font-weight: bold; color: #00d2ff; }
+
+        #menu { bottom: 20px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 95%; max-width: 450px; }
+        .btn {
+            padding: 12px 5px; border: none; border-radius: 10px; color: white;
+            font-weight: bold; cursor: pointer; transition: 0.2s; position: relative;
+        }
+        .btn:active { transform: scale(0.95); }
+        .selected { border: 3px solid white; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+        .price { font-size: 0.7rem; display: block; opacity: 0.8; }
+
+        #toast {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 71, 87, 0.9); padding: 8px 20px; border-radius: 20px;
+            font-size: 0.8rem; display: none; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="header" class="ui-panel">
+        <div>자산<span id="money" class="stat-val">50,000</span></div>
+        <div>날짜<span id="date" class="stat-val">1월 1일</span></div>
+        <div>만족도<span id="happy" class="stat-val">100%</span></div>
+    </div>
+
+    <div id="toast">자금이 부족합니다!</div>
+    <canvas id="game-canvas"></canvas>
+
+    <div id="menu">
+        <button class="btn" style="background: #f1c40f; color: #2c3e50;" onclick="selectRide('carousel', this)">
+            🎠 회전목마 <span class="price">5,000</span>
+        </button>
+        <button class="btn" style="background: #e67e22;" onclick="selectRide('bumper', this)">
+            🚗 범퍼카 <span class="price">12,000</span>
+        </button>
+        <button class="btn" style="background: #27ae60;" onclick="selectRide('roller', this)">
+            🎢 코스터 <span class="price">35,000</span>
+        </button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function beep(freq, duration) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = freq; gain.gain.value = 0.1;
+        osc.start(); setTimeout(() => osc.stop(), duration);
+    }
+
+    let money = 50000;
+    let day = 1; let month = 1;
+    let happiness = 100;
+    let selectedRide = null;
+    let rides = []; let peeps = [];
+    let frame = 0;
+
+    const mapSize = 10; const tileW = 60; const tileH = 30;
+    let camX = window.innerWidth / 2; let camY = window.innerHeight / 3;
+
+    const rideData = {
+        carousel: { name: '회전목마', cost: 5000, profit: 200, color: '#f1c40f', lvlCost: 3000 },
+        bumper: { name: '범퍼카', cost: 12000, profit: 500, color: '#e67e22', lvlCost: 7000 },
+        roller: { name: '코스터', cost: 35000, profit: 1500, color: '#27ae60', lvlCost: 20000 }
+    };
+
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize); resize();
+
+    function isoToScreen(mx, my) {
+        return { x: (mx - my) * tileW/2 + camX, y: (mx + my) * tileH/2 + camY };
+    }
+
+    function selectRide(type, btn) {
+        beep(440, 50);
+        selectedRide = (selectedRide === type) ? null : type;
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('selected'));
+        if(selectedRide) btn.classList.add('selected');
+    }
+
+    canvas.addEventListener('touchstart', e => {
+        const rect = canvas.getBoundingClientRect();
+        const tx = e.touches[0].clientX - camX;
+        const ty = e.touches[0].clientY - camY;
+        const mx = Math.floor((ty / (tileH/2) + tx / (tileW/2)) / 2);
+        const my = Math.floor((ty / (tileH/2) - tx / (tileW/2)) / 2);
+
+        if(mx >= 0 && mx < mapSize && my >= 0 && my < mapSize) {
+            const existing = rides.find(r => r.x === mx && r.y === my);
+            if(existing) {
+                upgradeRide(existing);
+            } else if(selectedRide) {
+                placeRide(mx, my);
+            }
+        }
+    });
+
+    function placeRide(x, y) {
+        const data = rideData[selectedRide];
+        if(money >= data.cost) {
+            money -= data.cost;
+            rides.push({ x, y, type: selectedRide, lv: 1, age: 0 });
+            for(let i=0; i<3; i++) spawnPeep();
+            beep(660, 100);
+            showToast(`${data.name} 건설 완료!`, "#27ae60");
+        } else {
+            showToast("자산이 부족합니다!");
+            beep(220, 200);
+        }
+    }
+
+    function upgradeRide(ride) {
+        const cost = rideData[ride.type].lvlCost * ride.lv;
+        if(money >= cost) {
+            money -= cost;
+            ride.lv++;
+            happiness = Math.min(100, happiness + 5);
+            beep(880, 150);
+            showToast(`${rideData[ride.type].name} Lv.${ride.lv} 강화!`, "#2980b9");
+        } else {
+            showToast(`강화비용 ${cost.toLocaleString()}원 부족!`);
+        }
+    }
+
+    function spawnPeep() {
+        peeps.push({ x: Math.random()*mapSize, y: Math.random()*mapSize, col: `hsl(${Math.random()*360}, 60%, 60%)` });
+    }
+
+    function showToast(m, bg="#ff4757") {
+        const t = document.getElementById('toast');
+        t.innerText = m; t.style.background = bg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2000);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        frame++;
+
+        // 타일
+        for(let y=0; y<mapSize; y++) {
+            for(let x=0; x<mapSize; x++) {
+                const s = isoToScreen(x, y);
+                ctx.fillStyle = (x+y)%2===0 ? '#2ed573' : '#7bed9f';
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y); ctx.lineTo(s.x+30, s.y+15);
+                ctx.lineTo(s.x, s.y+30); ctx.lineTo(s.x-30, s.y+15);
+                ctx.fill();
+            }
+        }
+
+        // 기구
+        rides.forEach(r => {
+            const s = isoToScreen(r.x, r.y);
+            const data = rideData[r.type];
+            // 그림자
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath(); ctx.ellipse(s.x, s.y+20, 20, 10, 0, 0, Math.PI*2); ctx.fill();
+            // 본체
+            ctx.fillStyle = data.color;
+            ctx.fillRect(s.x-15, s.y-25 - (Math.sin(frame*0.1)*2), 30, 30);
+            // 라벨
+            ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
+            ctx.fillText(`Lv.${r.lv}`, s.x, s.y - 35);
+        });
+
+        // 손님
+        peeps.forEach(p => {
+            p.x += (Math.random()-0.5)*0.03; p.y += (Math.random()-0.5)*0.03;
+            const s = isoToScreen(p.x, p.y);
+            ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(s.x, s.y+10, 4, 0, Math.PI*2); ctx.fill();
+        });
+
+        requestAnimationFrame(draw);
+    }
+
+    setInterval(() => {
+        day++;
+        if(day > 30) {
+            day = 1; month++;
+            let profit = 0;
+            rides.forEach(r => {
+                profit += rideData[r.type].profit * r.lv;
+                r.age++;
+                if(r.age > 5) happiness -= 2; // 노후화 감점
+            });
+            money += Math.floor(profit * (happiness/100));
+            money -= 2000; // 고정 유지비
+        }
+        document.getElementById('money').innerText = money.toLocaleString();
+        document.getElementById('date').innerText = `${month}월 ${day}일`;
+        document.getElementById('happy').innerText = `${happiness}%`;
+        }, 800);
+
+    draw();
+</script>
+</body>
+</html>
