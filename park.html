@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>드림랜드 타이쿤: 울트라 에디션</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #222; overflow: hidden; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        #game-canvas { display: block; width: 100%; height: 100%; }
+        
+        /* 세련된 UI (글래스모피즘 스타일) */
+        .ui-panel {
+            position: absolute; background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px); border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); padding: 10px;
+        }
+
+        #header { top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-around; font-weight: bold; z-index: 10; }
+        #header span { display: flex; align-items: center; gap: 5px; }
+
+        #menu { bottom: 20px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 90%; max-width: 400px; z-index: 10; }
+        .btn {
+            padding: 15px 5px; border: none; border-radius: 10px; color: white;
+            font-weight: bold; cursor: pointer; text-align: center; transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .btn-cost { font-size: 0.7rem; opacity: 0.8; font-weight: normal; }
+        .selected { transform: scale(1.1); box-shadow: 0 0 15px currentColor; }
+
+        #msg-panel { top: 70px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.5); font-size: 0.8rem; padding: 5px 15px; display: none; z-index: 5; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="header" class="ui-panel">
+        <span>💰 <span id="money">50,000</span>원</span>
+        <span>📅 <span id="date">1월 1일</span></span>
+        <span>👥 <span id="visitors">0</span>명</span>
+    </div>
+
+    <div id="msg-panel" class="ui-panel">건설할 곳을 터치하세요!</div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="menu">
+        <button class="btn" style="background: #FFD700; color: #333;" onclick="selectRide('carousel', this)">
+            <span>🎠 회전목마</span><span class="btn-cost">5,000</span>
+        </button>
+        <button class="btn" style="background: #FF4500;" onclick="selectRide('bumper', this)">
+            <span>🚗 범퍼카</span><span class="btn-cost">10,000</span>
+        </button>
+        <button class="btn" style="background: #32CD32;" onclick="selectRide('roller', this)">
+            <span>🎢 코스터</span><span class="btn-cost">30,000</span>
+        </button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 반응형 캔버스 설정
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // --- 게임 물리 및 상태 ---
+    let money = 50000;
+    let month = 1;
+    let day = 1;
+    let selectedRide = null;
+    let rides = [];
+    let peeps = [];
+    let time = 0; // 애니메이션용 시간축
+
+    // 아이소메트릭 변환 상수
+    const tileW = 60; // 타일 너비
+    const tileH = 30; // 타일 높이
+    const mapSize = 10; // 10x10 맵
+
+    const rideData = {
+        carousel: { name: '회전목마', cost: 5000, profit: 150, color: '#FFD700' },
+        bumper: { name: '범퍼카', cost: 10000, profit: 400, color: '#FF4500' },
+        roller: { name: '코스터', cost: 30000, profit: 1200, color: '#32CD32' }
+    };
+
+    // --- 카메라 컨트롤 ---
+    let cameraX = canvas.width / 2;
+    let cameraY = canvas.height / 3;
+
+    // --- 좌표 변환 함수 ---
+    function isoToScreen(mapX, mapY) {
+        return {
+            x: (mapX - mapY) * tileW / 2 + cameraX,
+            y: (mapX + mapY) * tileH / 2 + cameraY
+        };
+    }
+
+    // --- 입력 처리 ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener('mousedown', (e) => { handleStart(e.clientX, e.clientY); });
+    canvas.addEventListener('mouseup', (e) => { handleEnd(e.clientX, e.clientY); });
+    canvas.addEventListener('touchstart', (e) => { handleStart(e.touches[0].clientX, e.touches[0].clientY); });
+    canvas.addEventListener('touchend', (e) => { handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY); });
+
+    function handleStart(x, y) { touchStartX = x; touchStartY = y; }
+    function handleEnd(x, y) {
+        if (Math.abs(x - touchStartX) < 10 && Math.abs(y - touchStartY) < 10) {
+            handleMapClick(x, y);
+        } else {
+            // 드래그 시 카메라 이동 (미구현)
+        }
+    }
+
+    function handleMapClick(screenX, screenY) {
+        // 스크린 좌표를 아이소메트릭 맵 좌표로 역변환
+        const dx = screenX - cameraX;
+        const dy = screenY - cameraY;
+        const mapX = Math.floor((dy / (tileH / 2) + dx / (tileW / 2)) / 2);
+        const mapY = Math.floor((dy / (tileH / 2) - dx / (tileW / 2)) / 2);
+
+        if (mapX >= 0 && mapX < mapSize && mapY >= 0 && mapY < mapSize) {
+            if (selectedRide) placeRide(mapX, mapY);
+        }
+    }
+
+    function placeRide(x, y) {
+        if (rides.some(r => r.x === x && r.y === y)) return; // 중복 건설 방지
+        const ride = rideData[selectedRide];
+        if (money >= ride.cost) {
+            money -= ride.cost;
+            rides.push({ x, y, type: selectedRide, angle: 0 });
+            for(let i=0; i<5; i++) addPeep(x, y); // 손님 추가
+            updateUI();
+        } else {
+            alert("자금이 부족합니다!");
+        }
+    }
+
+    function selectRide(type, btn) {
+        if (selectedRide === type) {
+            selectedRide = null;
+            btn.classList.remove('selected');
+            document.getElementById('msg-panel').style.display = 'none';
+        } else {
+            selectedRide = type;
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('msg-panel').style.display = 'block';
+        }
+    }
+
+    function addPeep(x, y) {
+        peeps.push({ x, y, z: 0, color: `hsl(${Math.random()*360}, 70%, 50%)`, speed: Math.random()*0.02 + 0.01 });
+    }
+
+    // --- 렌더링 엔진 (실력 발휘!) ---
+    
+    // 바닥 타일 드로잉 (흙+잔디 섞기)
+    function drawTile(x, y) {
+        const screen = isoToScreen(x, y);
+        ctx.fillStyle = (x + y) % 2 === 0 ? '#6ab04c' : '#7dbf6a'; // 잔디 패턴
+        ctx.beginPath();
+        ctx.moveTo(screen.x, screen.y);
+        ctx.lineTo(screen.x + tileW/2, screen.y + tileH/2);
+        ctx.lineTo(screen.x, screen.y + tileH);
+        ctx.lineTo(screen.x - tileW/2, screen.y + tileH/2);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // 놀이기구별 고도화된 드로잉 함수
+    const rideDrawers = {
+        carousel: (ctx, screen, ride) => {
+            // 그림자
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath(); ctx.ellipse(screen.x, screen.y + tileH*0.7, 20, 10, 0, 0, Math.PI*2); ctx.fill();
+
+            const rideBaseColor = '#8e44ad'; // Purple
+            // 기둥
+            ctx.fillStyle = '#ccc';
+            ctx.fillRect(screen.x - 3, screen.y - 30, 6, 40);
+
+            // 지붕 (애니메이션)
+            ctx.fillStyle = rideBaseColor;
+            ctx.beginPath();
+            ctx.moveTo(screen.x, screen.y - 60);
+            ctx.lineTo(screen.x + 25, screen.y - 45);
+            ctx.lineTo(screen.x, screen.y - 30);
+            ctx.lineTo(screen.x - 25, screen.y - 45);
+            ctx.closePath(); ctx.fill();
+
+            // 회전하는 말 (간단 구현)
+            for(let i=0; i<4; i++) {
+                ctx.fillStyle = (i%2===0) ? 'white' : 'Gold';
+                const angle = time * 0.05 + i * Math.PI / 2;
+                const px = screen.x + Math.cos(angle) * 15;
+                const py = screen.y - 45 + Math.sin(angle) * 5;
+                const h = 10 + Math.sin(time * 0.1 + i) * 5; // 위아래 움직임
+                ctx.fillRect(px - 3, py + h, 6, 10);
+                // 말 그림자
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.beginPath(); ctx.ellipse(px, screen.y + tileH/2, 5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+            }
+        },
+        bumper: (ctx, screen, ride) => {
+            // 바닥 (Shadow)
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath(); ctx.ellipse(screen.x, screen.y + tileH*0.7, 25, 12, 0, 0, Math.PI*2); ctx.fill();
+
+            // 본체
+            ctx.fillStyle = '#34495e'; // Dark
+            ctx.beginPath();
+            ctx.moveTo(screen.x, screen.y - 10);
+            ctx.lineTo(screen.x + 30, screen.y + 5);
+            ctx.lineTo(screen.x, screen.y + 20);
+            ctx.lineTo(screen.x - 30, screen.y + 5);
+            ctx.closePath(); ctx.fill();
+
+            // 펜스 및 전선 (생략)
+        },
+        roller: (ctx, screen, ride) => {
+            // 트랙 베이스 (그림자처럼)
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.moveTo(screen.x - tileW, screen.y + tileH/2);
+            ctx.bezierCurveTo(screen.x - tileW/2, screen.y - 50, screen.x + tileW/2, screen.y + 50, screen.x + tileW, screen.y + tileH/2);
+            ctx.stroke();
+
+            // 메인 트랙 (애니메이션 굽이침 구현 불가로 정적 구현)
+            ctx.strokeStyle = '#c0392b'; // Red
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(screen.x - tileW, screen.y - 10);
+            ctx.bezierCurveTo(screen.x - tileW/2, screen.y - 60, screen.x + tileW/2, screen.y + 40, screen.x + tileW, screen.y - 10);
+            ctx.stroke();
+
+            // 지지대 (심플하게)
+            ctx.fillStyle = '#888';
+            ctx.fillRect(screen.x - 2, screen.y - 20, 4, 30);
+            ctx.fillRect(screen.x - tileW/2 - 2, screen.y - 35, 4, 30);
+        }
+    };
+
+    // 손님 드로잉 (Peep)
+    function drawPeep(p) {
+        const screen = isoToScreen(p.x, p.y);
+        
+        // 그림자
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath(); ctx.ellipse(screen.x, screen.y + 12, 5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+
+        // 몸통 (애니메이션 위아래 흔들림)
+        const bounce = Math.abs(Math.sin(time * 0.1 + p.x * 10)) * 2;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(screen.x, screen.y + 5 - bounce, 4, 0, Math.PI*2); ctx.fill();
+        // 머리
+        ctx.fillStyle = '#f3e5ab'; // Skin
+        ctx.beginPath(); ctx.arc(screen.x, screen.y - bounce, 3, 0, Math.PI*2); ctx.fill();
+    }
+
+    // --- 메인 드로우 루프 ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        time++;
+
+        // 1. 맵 바닥 렌더링
+        for (let y = 0; y < mapSize; y++) {
+            for (let x = 0; x < mapSize; x++) {
+                drawTile(x, y);
+            }
+        }
+
+        // 2. 맵 객체 렌더링 (놀이기구 + 손님 섞어서 렌더링 해야 입체감 유지 - 심플 구현)
+        rides.sort((a, b) => (a.x + a.y) - (b.x + b.y)); // 뒤에 있는 것 먼저 렌더링
+        rides.forEach(r => {
+            const screen = isoToScreen(r.x, r.y);
+            rideDrawers[r.type](ctx, screen, r);
+        });
+
+        // 손님 렌더링 및 이동
+        peeps.forEach(p => {
+            p.x += (Math.random() - 0.5) * p.speed;
+            p.y += (Math.random() - 0.5) * p.speed;
+            if(p.x<0 || p.x>=mapSize) p.x = Math.random()*mapSize;
+            if(p.y<0 || p.y>=mapSize) p.y = Math.random()*mapSize;
+            drawPeep(p);
+        });
+
+        requestAnimationFrame(draw);
+    }
+
+    // --- 게임 로직 및 UI ---
+    function updateUI() {
+        document.getElementById('money').innerText = money.toLocaleString();
+        document.getElementById('date').innerText = `${month}월 ${day}일`;
+        document.getElementById('visitors').innerText = peeps.length;
+    }
+
+    setInterval(() => {
+        if(rides.length === 0) return;
+        day++;
+        if (day > 30) {
+            day = 1; month++;
+            // 정산
+            rides.forEach(r => money += rideData[r.type].profit);
+            money -= 1000 + (peeps.length * 10); // 유지비 + 인건비
+            if(money < 0) alert("파산 직전입니다!");
+        }
+        updateUI();
+    }, 1000);
+
+    // 초기 카메라 위치 조정
+    cameraX = canvas.width / 2;
+    cameraY = canvas.height / 3;
+
+    updateUI();
+    draw();
+
+</script>
+
+</body>
+</html>
