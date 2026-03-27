@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dreamland Tycoon PRO</title>
+    <style>
+        :root { --p-color: #00f2ff; --accent: #ff007a; --bg: #0b0e14; --panel: rgba(20, 25, 35, 0.85); }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: #fff; overflow: hidden; touch-action: none; width: 100vw; height: 100vh; }
+        
+        /* 상단 프로페셔널 HUD */
+        #hud { position: absolute; top: 0; width: 100%; padding: 15px 20px; display: grid; grid-template-columns: 1.2fr 1fr 1fr; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); z-index: 100; }
+        .stat-group { display: flex; flex-direction: column; }
+        .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.5); }
+        .value { font-size: 18px; font-weight: 800; color: var(--p-color); text-shadow: 0 0 10px rgba(0,242,255,0.5); }
+        #weather-icon { font-size: 20px; margin-left: auto; align-self: center; }
+
+        /* 게임 캔버스 */
+        #c { display: block; width: 100%; height: 100%; background: radial-gradient(circle, #1a1f2c 0%, #0b0e14 100%); }
+
+        /* 하단 컨트롤 유닛 */
+        #controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 500px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; z-index: 100; }
+        .ride-btn { background: var(--panel); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: center; backdrop-filter: blur(10px); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .ride-btn.active { border-color: var(--p-color); box-shadow: 0 0 20px rgba(0,242,255,0.3); transform: translateY(-5px); }
+        .ride-btn img-icon { font-size: 24px; margin-bottom: 5px; }
+        .ride-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+        .ride-cost { font-size: 10px; color: var(--accent); }
+
+        /* 플로팅 텍스트 애니메이션 */
+        .money-float { position: absolute; color: #44ff44; font-weight: bold; pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 200; }
+        @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-50px); } }
+
+        /* 설정 팝업 */
+        #pop { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; background: var(--panel); border-radius: 24px; padding: 25px; border: 1px solid var(--p-color); display: none; z-index: 300; text-align: center; backdrop-filter: blur(20px); }
+        .btn-confirm { background: var(--p-color); color: #000; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="stat-group">
+        <span class="label">Balance</span>
+        <span class="value" id="m-val">50,000</span>
+    </div>
+    <div class="stat-group">
+        <span class="label">Date</span>
+        <span class="value" id="d-val">01/01</span>
+    </div>
+    <div id="weather-icon">☀️</div>
+</div>
+
+<div id="pop">
+    <h2 style="margin-bottom:10px">Welcome Back!</h2>
+    <p id="pop-msg" style="font-size:14px; color:#ccc">휴무 동안 수익을 정산했습니다.</p>
+    <button class="btn-confirm" onclick="closePop()">Collect</button>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="controls">
+    <div class="ride-btn" id="b-carousel" onclick="sel('carousel')">
+        <span>🎠</span><span class="ride-name">Carousel</span><span class="ride-cost">$5,000</span>
+    </div>
+    <div class="ride-btn" id="b-bumper" onclick="sel('bumper')">
+        <span>🚗</span><span class="ride-name">Bumper Car</span><span class="ride-cost">$12,000</span>
+    </div>
+    <div class="ride-btn" id="b-roller" onclick="sel('roller')">
+        <span>🎢</span><span class="ride-name">Mega Coaster</span><span class="ride-cost">$35,000</span>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+let w, h, camX, camY, money = 50000, day = 1, month = 1, weather = 'sunny';
+let rides = [], peeps = [], effects = [], selected = null, frame = 0;
+
+const RIDE_TYPES = {
+    carousel: { n: 'Carousel', c: 5000, p: 300, col: '#00f2ff', icon: '🎠' },
+    bumper: { n: 'Bumper', c: 12000, p: 800, col: '#ff007a', icon: '🚗' },
+    roller: { n: 'Coaster', c: 35000, p: 2500, col: '#bc13fe', icon: '🎢' }
+};
+
+function init() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    camX = w / 2; camY = h / 2.5;
+    loadGame();
+    animate();
+}
+
+// --- 핵심: 세이브/로드 시스템 ---
+function saveGame() {
+    const data = { money, month, day, rides };
+    localStorage.setItem('dreamland_pro_data', JSON.stringify(data));
+}
+
+function loadGame() {
+    const saved = localStorage.getItem('dreamland_pro_data');
+    if (saved) {
+        const d = JSON.parse(saved);
+        money = d.money; month = d.month; day = d.day; rides = d.rides;
+        document.getElementById('pop-msg').innerText = "이전 데이터를 성공적으로 불러왔습니다.";
+        document.getElementById('pop').style.display = 'block';
+    }
+}
+
+function closePop() { document.getElementById('pop').style.display = 'none'; }
+
+// --- 그래픽 로직: 아이소메트릭 & 네온 ---
+function drawTile(x, y) {
+    const sx = (x - y) * 30 + camX, sy = (x + y) * 15 + camY;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.beginPath();
+    ctx.moveTo(sx, sy); ctx.lineTo(sx + 30, sy + 15); ctx.lineTo(sx, sy + 30); ctx.lineTo(sx - 30, sy + 15);
+    ctx.closePath(); ctx.stroke();
+}
+
+function drawRide(r) {
+    const sx = (r.x - r.y) * 30 + camX, sy = (r.x + r.y) * 15 + camY;
+    const type = RIDE_TYPES[r.type];
+    
+    // 네온 글로우 효과
+    ctx.shadowBlur = 15; ctx.shadowColor = type.col;
+    ctx.fillStyle = type.col;
+    const bounce = Math.sin(frame * 0.1) * 3;
+    ctx.fillRect(sx - 10, sy - 20 + bounce, 20, 20);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#fff"; ctx.font = "10px bold"; ctx.textAlign="center";
+    ctx.fillText(type.icon, sx, sy - 5 + bounce);
+}
+
+function sel(t) {
+    selected = (selected === t) ? null : t;
+    document.querySelectorAll('.ride-btn').forEach(b => b.classList.remove('active'));
+    if (selected) document.getElementById('b-' + t).classList.add('active');
+}
+
+canvas.addEventListener('touchstart', e => {
+    const t = e.touches[0], dx = t.clientX - camX, dy = t.clientY - camY;
+    const mx = Math.floor((dy / 15 + dx / 30) / 2), my = Math.floor((dy / 15 - dx / 30) / 2);
+    if (mx >= 0 && mx < 10 && my >= 0 && my < 10) {
+        if (selected) build(mx, my);
+    }
+});
+
+function build(x, y) {
+    if (rides.some(r => r.x === x && r.y === y)) return;
+    const r = RIDE_TYPES[selected];
+    if (money >= r.c) {
+        money -= r.c;
+        rides.push({ x, y, type: selected });
+        spawnFloatText(`-$${r.c.toLocaleString()}`, event.touches[0].clientX, event.touches[0].clientY, '#ff007a');
+        saveGame();
+    }
+}
+
+function spawnFloatText(txt, x, y, col) {
+    const el = document.createElement('div');
+    el.className = 'money-float';
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.style.color = col; el.innerText = txt;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+function animate() {
+    ctx.clearRect(0, 0, w, h);
+    frame++;
+    for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) drawTile(i, j);
+    rides.forEach(drawRide);
+    requestAnimationFrame(animate);
+}
+
+// --- 유료 게임의 밸런스 엔진 ---
+setInterval(() => {
+    day++;
+    if (day > 30) {
+        day = 1; month++;
+        let mProfit = 0;
+        rides.forEach(r => {
+            let p = RIDE_TYPES[r.type].p;
+            if (weather === 'rainy') p *= 0.5;
+            mProfit += p;
+        });
+        money += mProfit;
+        spawnFloatText(`+$${mProfit.toLocaleString()}`, w/2, h/2, '#44ff44');
+        saveGame();
+    }
+    
+    // 날씨 시스템 (20% 확률로 비)
+    if (day === 1) {
+        weather = Math.random() > 0.8 ? 'rainy' : 'sunny';
+        document.getElementById('weather-icon').innerText = weather === 'sunny' ? '☀️' : '🌧️';
+    }
+
+    document.getElementById('m-val').innerText = money.toLocaleString();
+    document.getElementById('d-val').innerText = `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}`;
+}, 800);
+
+window.onload = init;
+</script>
+</body>
+</html>
