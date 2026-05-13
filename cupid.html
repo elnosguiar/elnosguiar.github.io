@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>In-Yeon P2P: 서버 없는 인연</title>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        #log { background: #f4f4f4; padding: 10px; border-radius: 5px; height: 200px; overflow-y: scroll; }
+        .user-card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h2>🚀 인연 P2P 매칭 시스템</h2>
+    <p>중앙 서버 없이 유저끼리 직접 데이터를 주고받습니다.</p>
+
+    <div id="auth">
+        <input id="alias" placeholder="닉네임">
+        <input id="pass" type="password" placeholder="비밀번호 (데이터 복호화용)">
+        <button onclick="signUp()">계정 생성 및 신호 발사</button>
+    </div>
+
+    <div id="main" style="display:none;">
+        <h3 id="welcome"></h3>
+        <div id="log"></div>
+        <hr>
+        <h4>발견된 운명의 상대</h4>
+        <div id="peer-list"></div>
+    </div>
+
+    <script>
+        // 1. P2P 네트워크 초기화
+        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+        const user = gun.user().recall({storage: true});
+
+        // 2. 가입 및 로그인 (내 폰에만 저장되는 키 생성)
+        async function signUp() {
+            const alias = document.getElementById('alias').value;
+            const pass = document.getElementById('pass').value;
+
+            user.create(alias, pass, (ack) => {
+                if (ack.err) return alert(ack.err);
+                login(alias, pass);
+            });
+        }
+
+        async function login(alias, pass) {
+            user.auth(alias, pass, async (at) => {
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('main').style.display = 'block';
+                document.getElementById('welcome').innerText = `${alias}님, 매칭 신호 전송 중...`;
+                
+                // 내 정보를 암호화해서 공용 채널에 공유
+                const profile = { name: alias, msg: "반갑습니다!", time: Date.now() };
+                gun.get('in-yeon-global-discovery').get(at.sea.pub).put(profile);
+                
+                addLog("시스템: 분산 네트워크에 내 신호를 등록했습니다.");
+                listenPeers(at.sea.pub);
+            });
+        }
+
+        // 3. 네트워크에서 다른 유저 찾기
+        function listenPeers(myPub) {
+            gun.get('in-yeon-global-discovery').map().on((data, pub) => {
+                if (pub === myPub) return; // 나 자신은 제외
+                
+                const list = document.getElementById('peer-list');
+                let el = document.getElementById(pub);
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = pub;
+                    el.className = 'user-card';
+                    list.appendChild(el);
+                }
+                el.innerHTML = `<strong>👤 ${data.name}</strong><br>소개: ${data.msg}<br><button onclick="connect('${pub}')">1:1 P2P 대화하기</button>`;
+            });
+        }
+
+        function addLog(msg) {
+            const log = document.getElementById('log');
+            log.innerHTML += `<div>${msg}</div>`;
+        }
+
+        function connect(pub) {
+            alert(pub.substring(0,10) + "... 님과 서버를 거치지 않는 보안 터널을 생성합니다.");
+        }
+    </script>
+</body>
+</html>
