@@ -1,5 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>In-Yeon P2P v15: Final</title>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <style>
+        :root { --primary: #8b5cf6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; line-height: 1.5; }
+        .container { max-width: 420px; margin: 0 auto; }
+        input { width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #334155; background: #1c1c21; color: white; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
+        #debug-log { background: #000; color: #10b981; font-family: monospace; font-size: 11px; padding: 10px; height: 120px; overflow-y: auto; border-radius: 8px; border: 1px solid #10b98144; margin: 15px 0; }
+        .user-card { background: var(--card); padding: 15px; border-radius: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155; }
+        #chat-ui { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100; flex-direction: column; padding: 20px; }
+        #msg-list { flex: 1; overflow-y: auto; background: #000; border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid #1e293b; }
+        .m { margin: 6px 0; padding: 10px; border-radius: 12px; max-width: 80%; word-break: break-all; }
+        .m.me { background: var(--primary); align-self: flex-end; margin-left: auto; }
+        .m.them { background: #334155; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="lobby">
+    <h2 style="text-align: center; color: var(--primary);">✨ 인연 P2P v15</h2>
+    
+    <!-- 인증 폼 -->
+    <div id="auth-section">
+        <input id="alias" placeholder="닉네임 (기기별로 다르게!)">
+        <input id="pass" type="password" placeholder="비밀번호">
+        <button onclick="handleAuth()">인연 찾기 시작</button>
+    </div>
+
+    <!-- 로비 리스트 -->
+    <div id="main-section" style="display:none;">
+        <h3 id="my-name" style="margin-bottom: 5px;">접속 완료</h3>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 0;">상대방이 접속할 때까지 잠시만 기다려주세요.</p>
+        <div id="peer-list"></div>
+    </div>
+
+    <!-- 디버그 로그 (스크린샷 확인용) -->
+    <div id="debug-log">시스템 초기화 중...</div>
+</div>
+
+<!-- 채팅 창 -->
+<div id="chat-ui">
+    <button onclick="location.reload()" style="width: auto; background: #475569; padding: 8px 15px;">닫기/종료</button>
+    <h3 id="target-title">상대방</h3>
+    <div id="msg-list" style="display:flex; flex-direction:column;"></div>
+    <div style="display:flex; gap:10px;">
+        <input id="chat-input" placeholder="메시지 입력..." style="margin:0;">
+        <button onclick="sendMsg()" style="width:70px;">전송</button>
+    </div>
+</div>
+
 <script>
-    // 1. 서버 주소 최적화 (https 필수)
+    // 1. 릴레이 서버 설정 (안정적인 서버 3곳 사용)
     const gun = Gun([
         'https://gun-manhattan.herokuapp.com/gun',
         'https://peer.wallie.io/gun',
@@ -7,97 +64,116 @@
     ]);
     const user = gun.user().recall({storage: true});
 
-    function log(m) {
+    function log(msg) {
         const d = document.getElementById('debug-log');
-        d.innerHTML = `> ${m}<br>` + d.innerHTML;
+        d.innerHTML = `> ${msg}<br>` + d.innerHTML;
+        console.log(msg);
     }
 
-    async function doAuth() {
-        const a = document.getElementById('alias').value;
-        const p = document.getElementById('pass').value;
-        if(!a || !p) return alert("닉네임/비번 입력!");
+    // 2. 인증 및 계정 생성
+    async function handleAuth() {
+        const alias = document.getElementById('alias').value;
+        const pass = document.getElementById('pass').value;
+        if(!alias || !pass) return alert("닉네임과 비번을 입력하세요.");
 
-        log(`인증 시도: ${a}`);
-        user.auth(a, p, ack => {
-            if(ack.err) {
-                user.create(a, p, () => doAuth());
+        log(`인증 시도: ${alias}`);
+        user.auth(alias, pass, (ack) => {
+            if (ack.err) {
+                log("신규 유저입니다. 계정 생성 중...");
+                user.create(alias, pass, (cack) => {
+                    if (cack.err) log("생성 에러: " + cack.err);
+                    else handleAuth();
+                });
             } else {
-                log("🎉 인증 성공! 리스트 대기...");
-                start(a);
+                log("✅ 인증 성공!");
+                startApp(alias);
             }
         });
     }
 
-    function start(name) {
-        document.getElementById('auth-box').style.display = 'none';
-        document.getElementById('peer-box').style.display = 'block';
-        document.getElementById('my-id').innerText = `나: ${name}`;
+    // 3. 앱 시작 및 상대방 감지
+    function startApp(alias) {
+        document.getElementById('auth-section').style.display = 'none';
+        document.getElementById('main-section').style.display = 'block';
+        document.getElementById('my-name').innerText = `나: ${alias}`;
 
-        // 채널명을 더 유니크하게 변경 (v13)
-        const discovery = gun.get('in-yeon-final-check-v13');
+        // 공용 발견 채널 (버전 업그레이드)
+        const discovery = gun.get('in-yeon-v15-discovery');
 
-        // 내 정보 등록
-        const heart = () => {
+        // 내 상태 등록
+        const heartbeat = () => {
             discovery.get(user.is.pub).put({
-                name: name,
-                time: Date.now()
+                name: alias,
+                active: Date.now()
             }, (ack) => {
                 if(!ack.err) log("📡 내 신호 발사 중...");
             });
         };
-        heart();
-        setInterval(heart, 10000);
+        heartbeat();
+        setInterval(heartbeat, 10000); // 10초마다 갱신
 
-        // 상대방 찾기 (강력한 리스너)
+        // 상대방 감지 리스너
         discovery.map().on((data, pub) => {
             if(!data || !data.name || pub === user.is.pub) return;
             
-            // 5분 이내 데이터만 표시
-            if(Date.now() - data.time > 300000) return;
+            // 2분 내 접속 유저만 표시
+            if(Date.now() - data.active > 120000) {
+                const old = document.getElementById(pub);
+                if(old) old.remove();
+                return;
+            }
 
-            log(`👤 발견: ${data.name}`);
+            log(`👤 유저 발견: ${data.name}`);
             let el = document.getElementById(pub);
             if(!el) {
                 el = document.createElement('div');
                 el.id = pub;
-                el.className = 'peer';
+                el.className = 'user-card';
                 document.getElementById('peer-list').appendChild(el);
             }
-            el.innerHTML = `<span><b>${data.name}</b></span><button onclick="goChat('${pub}', '${data.name}')" style="width:70px; padding:5px;">대화</button>`;
+            el.innerHTML = `<span><strong>${data.name}</strong></span>
+                            <button onclick="openChat('${pub}', '${data.name}')" style="width:80px; padding:8px;">채팅하기</button>`;
         });
     }
 
-    // 채팅 관련 (goChat, doSend)은 이전 코드와 동일하게 유지하되 
-    // 경로만 'msgs-v13'으로 변경하여 새 방을 만드세요.
-    function goChat(pub, name) {
-        currentRid = [user.is.pub, pub].sort().join('');
+    // 4. 채팅 기능
+    let currentRoom = null;
+    function openChat(pub, name) {
+        // 고유 방 ID 생성 (두 사람의 공개키 정렬 조합)
+        currentRoom = [user.is.pub, pub].sort().join('');
         document.getElementById('chat-ui').style.display = 'flex';
-        document.getElementById('chat-with').innerText = `${name}님과 대화`;
+        document.getElementById('target-title').innerText = `${name}님과 대화`;
         document.getElementById('msg-list').innerHTML = '';
 
-        log(`채팅방 연결: ${currentRid}`);
-        gun.get('msgs-v13').get(currentRid).map().on(data => {
-            if(data && data.msg) draw(data.msg, data.from === user.is.pub ? 'me' : 'them');
+        log(`채팅방 입장: ${currentRoom}`);
+        // 메시지 수신
+        gun.get('inyeon-msgs-v15').get(currentRoom).map().on((data) => {
+            if(data && data.txt) {
+                drawMsg(data.txt, data.from === user.is.pub ? 'me' : 'them');
+            }
         });
     }
 
-    function doSend() {
-        const i = document.getElementById('msg-input');
-        if(!i.value) return;
-        gun.get('msgs-v13').get(currentRid).set({
-            msg: i.value,
+    function sendMsg() {
+        const input = document.getElementById('chat-input');
+        if(!input.value || !currentRoom) return;
+
+        gun.get('inyeon-msgs-v15').get(currentRoom).set({
+            txt: input.value,
             from: user.is.pub,
             time: Date.now()
         });
-        i.value = '';
+        input.value = '';
     }
 
-    function draw(m, s) {
+    function drawMsg(txt, side) {
         const div = document.createElement('div');
-        div.className = `m ${s}`;
-        div.innerText = m;
-        const list = document.getElementById('msg-list');
-        list.appendChild(div);
-        list.scrollTop = list.scrollHeight;
+        div.className = `m ${side}`;
+        div.innerText = txt;
+        const box = document.getElementById('msg-list');
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
     }
 </script>
+</body>
+</html>
