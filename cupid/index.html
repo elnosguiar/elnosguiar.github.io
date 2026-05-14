@@ -3,130 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>In-Yeon P2P: 실시간 채팅</title>
+    <title>In-Yeon P2P: Final</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <style>
-        :root { --primary: #8b5cf6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        input { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin: 5px 0; }
-        #chat-ui { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 100; padding: 15px; box-sizing: border-box; flex-direction: column; }
-        #messages { flex: 1; overflow-y: auto; background: #000; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
-        .msg { margin: 5px 0; padding: 8px 12px; border-radius: 15px; max-width: 80%; word-break: break-all; }
-        .msg.me { background: var(--primary); margin-left: auto; }
-        .msg.them { background: #334155; }
-        .user-card { background: var(--card); padding: 12px; margin: 8px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155; }
+        :root { --primary: #7c3aed; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 400px; margin: 0 auto; }
+        input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        #peer-list { margin-top: 20px; }
+        .user-card { background: var(--card); padding: 15px; border-radius: 16px; margin-bottom: 10px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        #chat-window { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 1000; flex-direction: column; padding: 20px; }
+        #msg-box { flex: 1; overflow-y: auto; background: #000; border-radius: 12px; padding: 15px; margin: 15px 0; border: 1px solid #1e293b; }
+        .m { margin: 6px 0; padding: 10px; border-radius: 12px; max-width: 85%; line-height: 1.4; font-size: 15px; }
+        .m.me { background: var(--primary); margin-left: auto; color: white; }
+        .m.them { background: #334155; color: white; }
     </style>
 </head>
 <body>
 
-<div id="auth-screen">
-    <h2>✨ 인연 매칭</h2>
-    <input id="alias" placeholder="닉네임">
-    <input id="pass" type="password" placeholder="비밀번호">
-    <button onclick="handleAuth()">접속하기</button>
+<div class="container" id="lobby">
+    <h2 style="color:var(--primary)">✨ 인연 P2P</h2>
+    <div id="auth-form">
+        <input id="alias" placeholder="닉네임">
+        <input id="pass" type="password" placeholder="비밀번호">
+        <button onclick="login()">접속 및 신호 발사</button>
+    </div>
+    <div id="main-content" style="display:none;">
+        <p id="status-text" style="color:#10b981; font-size: 14px;">📡 네트워크 탐색 중...</p>
+        <div id="peer-list"></div>
+    </div>
 </div>
 
-<div id="lobby-screen" style="display:none;">
-    <h3 id="welcome"></h3>
-    <p style="font-size: 12px; color: #94a3b8;">다른 기기에서 다른 닉네임으로 접속하면 아래에 나타납니다.</p>
-    <div id="peer-list"></div>
-</div>
-
-<div id="chat-ui">
-    <button onclick="closeChat()" style="width: auto; background: #475569;">뒤로가기</button>
-    <h3 id="chat-target">상대방</h3>
-    <div id="messages"></div>
-    <div style="display: flex; gap: 5px;">
-        <input id="chat-input" placeholder="메시지 입력...">
-        <button onclick="sendMessage()" style="width: 80px;">전송</button>
+<div id="chat-window">
+    <button onclick="closeChat()" style="width: auto; background: #475569;">나가기</button>
+    <h3 id="target-name">상대방</h3>
+    <div id="msg-box"></div>
+    <div style="display:flex; gap:10px;">
+        <input id="msg-input" placeholder="메시지..." style="margin:0;">
+        <button onclick="send()" style="width:70px;">전송</button>
     </div>
 </div>
 
 <script>
-    // 릴레이 서버 리스트
-    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
+    // 가장 신뢰도 높은 dApp 전용 릴레이 서버들
+    const gun = Gun([
+        'https://gun-manhattan.herokuapp.com/gun',
+        'https://relay.peer.ooo/gun',
+        'https://gunjs.herokuapp.com/gun'
+    ]);
     const user = gun.user().recall({storage: true});
-    let currentPeerPub = null;
+    let currentPub = null;
+    let chatListener = null;
 
-    async function handleAuth() {
+    async function login() {
         const alias = document.getElementById('alias').value;
         const pass = document.getElementById('pass').value;
-        user.auth(alias, pass, (ack) => {
-            if (ack.err) user.create(alias, pass, () => handleAuth());
-            else startApp(alias);
+        if(!alias || !pass) return alert("입력해주세요.");
+
+        user.auth(alias, pass, ack => {
+            if (ack.err) {
+                user.create(alias, pass, () => login());
+            } else {
+                showLobby(alias);
+            }
         });
     }
 
-    function startApp(alias) {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('lobby-screen').style.display = 'block';
-        document.getElementById('welcome').innerText = `${alias}님 온라인`;
+    function showLobby(alias) {
+        document.getElementById('auth-form').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('status-text').innerText = `● ${alias}님 온라인 (신호 전송 중)`;
 
-        // 1. 공용 디스커버리 채널에 내 신호 등록
-        // 키 이름을 유니크하게 변경하여 충돌 방지
-        const discovery = gun.get('in-yeon-global-v10'); 
-        discovery.get(user.is.pub).put({ name: alias, t: Date.now() });
+        // 1. 내 신호 등록 (매 10초마다 갱신)
+        const heart = () => gun.get('inyeon-v11').get(user.is.pub).put({name: alias, t: Date.now()});
+        heart(); setInterval(heart, 10000);
 
-        // 2. 다른 유저 실시간 감시
-        discovery.map().on((data, pub) => {
-            if (!data || pub === user.is.pub) return;
-            if (Date.now() - data.t > 600000) return; // 10분 내 신호만
+        // 2. 피어 발견
+        gun.get('inyeon-v11').map().on((data, pub) => {
+            if(!data || pub === user.is.pub) return;
+            if(Date.now() - data.t > 30000) return; // 30초 넘은 데이터 무시
 
             let el = document.getElementById(pub);
-            if (!el) {
+            if(!el) {
                 el = document.createElement('div');
                 el.id = pub;
                 el.className = 'user-card';
                 document.getElementById('peer-list').appendChild(el);
             }
-            el.innerHTML = `<span><strong>${data.name}</strong></span> 
-                            <button onclick="openChat('${pub}', '${data.name}')" style="width:80px; padding:5px;">채팅</button>`;
+            el.innerHTML = `<b>${data.name}</b> <button onclick="openChat('${pub}', '${data.name}')" style="width:70px;">채팅</button>`;
         });
     }
 
-    // 3. 채팅창 열기
     function openChat(pub, name) {
-        currentPeerPub = pub;
-        document.getElementById('chat-target').innerText = name + "님과의 대화";
-        document.getElementById('chat-ui').style.display = 'flex';
-        document.getElementById('messages').innerHTML = ''; // 초기화
+        currentPub = pub;
+        document.getElementById('chat-window').style.display = 'flex';
+        document.getElementById('target-name').innerText = name;
+        document.getElementById('msg-box').innerHTML = '';
 
-        // 상대방과 나 사이의 공용 채널 구독 (정렬된 PUB 키 조합)
-        const channelID = [user.is.pub, pub].sort().join('_');
-        gun.get('chats').get(channelID).map().on((msg) => {
-            if (!msg) return;
-            renderMsg(msg.text, msg.from === user.is.pub ? 'me' : 'them');
+        const rid = [user.is.pub, pub].sort().join(''); // 고유 방 ID
+        
+        // 이전 리스너가 있다면 해제 (Gun의 단순화된 구현을 위해 재구독 방지)
+        if(chatListener) chatListener.off(); 
+
+        chatListener = gun.get('msgs').get(rid).map().on(data => {
+            if(data) draw(data.txt, data.from === user.is.pub ? 'me' : 'them');
         });
     }
 
-    // 4. 메시지 전송
-    function sendMessage() {
-        const input = document.getElementById('chat-input');
-        if (!input.value || !currentPeerPub) return;
-
-        const channelID = [user.is.pub, currentPeerPub].sort().join('_');
-        gun.get('chats').get(channelID).set({
-            text: input.value,
-            from: user.is.pub,
-            time: Date.now()
-        });
-        input.value = '';
+    function send() {
+        const txt = document.getElementById('msg-input').value;
+        if(!txt) return;
+        const rid = [user.is.pub, currentPub].sort().join('');
+        gun.get('msgs').get(rid).set({txt, from: user.is.pub, t: Date.now()});
+        document.getElementById('msg-input').value = '';
     }
 
-    function renderMsg(text, side) {
+    function draw(txt, side) {
         const div = document.createElement('div');
-        div.className = `msg ${side}`;
-        div.innerText = text;
-        const box = document.getElementById('messages');
+        div.className = `m ${side}`;
+        div.innerText = txt;
+        const box = document.getElementById('msg-box');
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     }
 
     function closeChat() {
-        document.getElementById('chat-ui').style.display = 'none';
-        currentPeerPub = null;
+        document.getElementById('chat-window').style.display = 'none';
+        currentPub = null;
     }
 </script>
 </body>
