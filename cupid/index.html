@@ -2,153 +2,130 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>In-Yeon P2P v16</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Yeon P2P v17: The Last</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <style>
-        :root { --primary: #10b981; --bg: #000000; --card: #111111; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        input { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #333; background: #222; color: #fff; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--primary); color: #000; font-weight: bold; cursor: pointer; font-size: 16px; }
-        #debug-log { background: #000; color: #00ff00; font-family: monospace; font-size: 10px; padding: 10px; height: 120px; overflow-y: auto; border: 1px solid #00ff0033; margin: 15px 0; border-radius: 5px; }
-        .user-card { background: var(--card); padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; }
-        #chat-ui { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100; flex-direction: column; padding: 20px; }
-        #msg-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; border: 1px solid #222; margin-bottom: 10px; border-radius: 8px; }
-        .m { margin: 5px 0; padding: 10px; border-radius: 8px; max-width: 80%; }
-        .m.me { background: var(--primary); color: #000; align-self: flex-end; }
-        .m.them { background: #333; color: #fff; align-self: flex-start; }
+        body { font-family: sans-serif; background: #000; color: #fff; padding: 20px; }
+        .card { background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
+        input { width: 100%; padding: 12px; margin: 5px 0; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 5px; border: none; background: #10b981; color: #000; font-weight: bold; cursor: pointer; }
+        #log { font-size: 10px; color: #0f0; height: 80px; overflow-y: auto; border: 1px solid #0f03; padding: 5px; margin: 10px 0; }
+        .peer { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #222; }
+        #chat { display:none; position:fixed; inset:0; background:#000; flex-direction:column; padding:15px; }
+        #msgs { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; }
+        .m { margin: 5px 0; padding: 10px; border-radius: 8px; max-width: 80%; font-size: 14px; }
+        .m.me { background: #10b981; align-self: flex-end; color: #000; }
+        .m.them { background: #333; align-self: flex-start; }
     </style>
 </head>
 <body>
 
 <div id="lobby">
-    <h2 style="color: var(--primary);">⚡ 인연 P2P v16</h2>
-    <div id="auth-section">
+    <h2 style="color:#10b981">⚡ 인연 P2P v17</h2>
+    <div id="log">네트워크 대기 중...</div>
+    
+    <div class="card" id="auth-ui">
         <input id="alias" placeholder="닉네임 (기기마다 다르게!)">
-        <input id="pass" type="password" placeholder="비밀번호">
-        <button onclick="handleAuth()">접속하기</button>
+        <button onclick="start()">인연 탐색 시작</button>
     </div>
-    <div id="main-section" style="display:none;">
-        <h3 id="my-name"></h3>
+
+    <div class="card" id="list-ui" style="display:none;">
+        <h4 id="my-info"></h4>
         <div id="peer-list"></div>
     </div>
-    <div id="debug-log">준비 완료.</div>
 </div>
 
-<div id="chat-ui">
-    <button onclick="location.reload()" style="width: auto; background: #333; color: #fff; padding: 5px 15px;">종료</button>
-    <h3 id="target-title">대화</h3>
-    <div id="msg-list"></div>
-    <div style="display:flex; gap:10px;">
-        <input id="chat-input" placeholder="메시지..." style="margin:0;">
-        <button onclick="sendMsg()" style="width:70px;">전송</button>
+<div id="chat">
+    <button onclick="location.reload()" style="width:auto; padding:5px 15px;">나가기</button>
+    <h3 id="target-name"></h3>
+    <div id="msgs"></div>
+    <div style="display:flex; gap:5px;">
+        <input id="minput" placeholder="메시지..." style="margin:0;">
+        <button onclick="send()" style="width:60px;">전송</button>
     </div>
 </div>
 
 <script>
-    // 릴레이 서버 리스트 (응답 없으면 다음 서버로 자동 시도)
-    const gun = Gun({
-        peers: [
-            'https://gun-manhattan.herokuapp.com/gun',
-            'https://relay.peer.ooo/gun',
-            'https://gunjs.herokuapp.com/gun'
-        ],
-        localStorage: true // 로컬 저장소 강제 사용
-    });
-    const user = gun.user().recall({storage: true});
+    // 릴레이 서버를 더 공격적으로 배치
+    const gun = Gun([
+        'https://gun-manhattan.herokuapp.com/gun',
+        'https://relay.peer.ooo/gun',
+        'https://dletta.herokuapp.com/gun'
+    ]);
 
     function log(m) {
-        const d = document.getElementById('debug-log');
-        d.innerHTML = `> ${m}<br>` + d.innerHTML;
+        const l = document.getElementById('log');
+        l.innerHTML = `> ${m}<br>` + l.innerHTML;
     }
 
-    async function handleAuth() {
-        const a = document.getElementById('alias').value;
-        const p = document.getElementById('pass').value;
-        if(!a || !p) return alert("입력해줘!");
+    let myName = '';
+    let myId = Math.random().toString(36).substr(2, 9); // 고유 ID 생성
 
-        log(`로그인 시도: ${a}`);
-        user.auth(a, p, (ack) => {
-            if (ack.err) {
-                log("신규 가입 중...");
-                user.create(a, p, (res) => {
-                    if (res.err) log("에러: " + res.err);
-                    else handleAuth();
-                });
-            } else {
-                log("✅ 접속 성공!");
-                start(a);
-            }
-        });
-    }
+    function start() {
+        myName = document.getElementById('alias').value;
+        if(!myName) return alert("이름 써줘!");
 
-    function start(name) {
-        document.getElementById('auth-section').style.display = 'none';
-        document.getElementById('main-section').style.display = 'block';
-        document.getElementById('my-name').innerText = `접속자: ${name}`;
+        document.getElementById('auth-ui').style.display = 'none';
+        document.getElementById('list-ui').style.display = 'block';
+        document.getElementById('my-info').innerText = `내 ID: ${myName}`;
 
-        const discovery = gun.get('in-yeon-v16-final');
+        log(`내 신호 등록 중... (ID: ${myId})`);
 
-        // 내 정보 발사 (3초마다 강제 동기화)
+        // 5초마다 내 신호 갱신
         setInterval(() => {
-            discovery.get(user.is.pub).put({
-                name: name,
-                active: Date.now()
+            gun.get('in-yeon-v17').get(myId).put({
+                name: myName,
+                t: Date.now()
             });
-            log("📡 내 신호 발사 중...");
-        }, 3000);
+        }, 5000);
 
-        // 상대방 감지 (map() 리스너)
-        discovery.map().on((data, pub) => {
-            if(!data || !data.name || pub === user.is.pub) return;
-            if(Date.now() - data.active > 60000) return; // 1분 지나면 패스
+        // 상대방 찾기
+        gun.get('in-yeon-v17').map().on((data, id) => {
+            if(!data || id === myId) return;
+            if(Date.now() - data.t > 30000) return; // 30초 이상 무응답 제외
 
-            log(`👤 발견: ${data.name}`);
-            let el = document.getElementById(pub);
+            log(`인연 발견: ${data.name}`);
+            let el = document.getElementById(id);
             if(!el) {
                 el = document.createElement('div');
-                el.id = pub;
-                el.className = 'user-card';
+                el.id = id;
+                el.className = 'peer';
                 document.getElementById('peer-list').appendChild(el);
             }
-            el.innerHTML = `<span><strong>${data.name}</strong></span>
-                            <button onclick="openChat('${pub}', '${data.name}')" style="width:70px; padding:5px;">대화</button>`;
+            el.innerHTML = `<span><b>${data.name}</b></span><button onclick="goChat('${id}', '${data.name}')" style="width:60px; padding:5px;">대화</button>`;
         });
     }
 
-    let roomId = null;
-    function openChat(pub, name) {
-        roomId = [user.is.pub, pub].sort().join('');
-        document.getElementById('chat-ui').style.display = 'flex';
-        document.getElementById('target-title').innerText = `${name}님과 대화`;
-        document.getElementById('msg-list').innerHTML = '';
+    let currentRid = null;
+    function goChat(id, name) {
+        currentRid = [myId, id].sort().join('');
+        document.getElementById('chat').style.display = 'flex';
+        document.getElementById('target-name').innerText = name;
+        document.getElementById('msgs').innerHTML = '';
 
-        log(`방 접속: ${roomId}`);
-        // 채팅 데이터 리스닝
-        gun.get('msgs-v16').get(roomId).map().once((data) => {
-            if(data && data.text) {
-                draw(data.text, data.from === user.is.pub ? 'me' : 'them');
-            }
+        log(`채팅방 연결: ${currentRid}`);
+        gun.get('chats-v17').get(currentRid).map().on(data => {
+            if(data && data.msg) draw(data.msg, data.sid === myId ? 'me' : 'them');
         });
     }
 
-    function sendMsg() {
-        const i = document.getElementById('chat-input');
+    function send() {
+        const i = document.getElementById('minput');
         if(!i.value) return;
-        gun.get('msgs-v16').get(roomId).set({
-            text: i.value,
-            from: user.is.pub,
-            time: Date.now()
+        gun.get('chats-v17').get(currentRid).set({
+            msg: i.value,
+            sid: myId,
+            t: Date.now()
         });
         i.value = '';
     }
 
-    function draw(t, s) {
+    function draw(m, s) {
         const div = document.createElement('div');
         div.className = `m ${s}`;
-        div.innerText = t;
-        const box = document.getElementById('msg-list');
+        div.innerText = m;
+        const box = document.getElementById('msgs');
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     }
