@@ -166,7 +166,7 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
   </div>
 </div>
 
-<!-- GUN.js — decentralized real-time DB with public relay peers -->
+<!-- GUN.js 최신 릴레이 피어 및 로컬 스토리지 최적화 스크립트 수동 결합 -->
 <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 
 <script>
@@ -199,27 +199,25 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
 })();
 
 /* ────────────────────────────────────────────
-   GUN CHAT ENGINE
-   - GUN.js uses public relay peers worldwide
-   - No account needed, no server to manage
-   - Works across tabs, devices, networks
-   - Messages sync via decentralized graph DB
+   GUN CHAT ENGINE (수정 및 안정화 버전)
 ──────────────────────────────────────────── */
 
-// Public GUN relay peers (community-run, free)
-const gun = GUN([
-  'https://gun-manhattan.herokuapp.com/gun',
-  'https://gundb-relay-mlmr.onrender.com/gun',
-  'wss://gun-us.herokuapp.com/gun',
-]);
+// 최신 작동 가능한 공용 릴레이 피어 추가 (DappCamp 및 메인 dht 피어)
+const gun = GUN({
+  peers: [
+    'https://gun-manhattan.herokuapp.com/gun',
+    'https://peer.wall.org/gun',
+    'https://gunjs.herokuapp.com/gun'
+  ]
+});
 
 let myId = 'user-' + Math.random().toString(36).slice(2, 10);
 let currentRoom = null;
 let roomRef = null;
 let presenceRef = null;
 let presenceInterval = null;
+let checkInterval = null;
 let peerSeen = false;
-let lastMsgId = null; // avoid duplicate render on own messages
 let seenIds = new Set();
 
 /* ── DOM ── */
@@ -256,7 +254,7 @@ function addMsg(text, type){
       `<div class="msg-time">${type==='self'?'나':'그대'} · ${timeStr()}</div>`;
     msgsEl.appendChild(w);
   }
-  msgsEl.scrollTop=msgsEl.scrollHeight;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
 function setConnected(yes){
@@ -271,93 +269,111 @@ function setConnected(yes){
 
 /* ── CONNECT ── */
 async function joinRoom(kw){
-  const hash = await sha256('INYEON-GUN:' + kw);
+  const hash = await sha256('INYEON-GUN-V2:' + kw);
   currentRoom = 'inyeon_' + hash.slice(0, 24);
 
-  idBox.textContent = '채널: ' + currentRoom.slice(7, 19) + '…';
+  idBox.textContent = '채널 ID: ' + currentRoom.slice(7, 19);
 
-  // ── Messages node ──
+  // 1. 메시지 노드 구독
   roomRef = gun.get(currentRoom).get('messages');
   roomRef.map().on(function(data, key){
     if(!data || seenIds.has(key)) return;
     seenIds.add(key);
-    if(data.sender === myId) return; // own message already shown
+    
+    if(data.sender === myId) return; 
+
     if(data.type === 'bye'){
-      setConnected(false);
-      peerSeen = false;
-      addMsg('상대방이 나갔습니다', 'system');
+      if(peerSeen) {
+        peerSeen = false;
+        setConnected(false);
+        addMsg('상대방이 나갔습니다', 'system');
+      }
       return;
     }
     if(data.text){
-      addMsg(data.text, 'other');
-    }
-  });
-
-  // ── Presence node ──
-  presenceRef = gun.get(currentRoom).get('presence');
-
-  // Watch for peers
-  presenceRef.map().on(function(data, key){
-    if(!data || key === myId) return;
-    const age = Date.now() - (data.ts || 0);
-    if(age < 12000 && !peerSeen){ // peer active within 12s
-      peerSeen = true;
-      setConnected(true);
-      addMsg('붉은 실이 이어졌습니다', 'system');
-    }
-    if(age >= 12000 && peerSeen){
-      peerSeen = false;
-      setConnected(false);
-      addMsg('상대방의 실이 끊어졌습니다', 'system');
-    }
-  });
-
-  // Heartbeat my presence every 4s
-  function heartbeat(){
-    presenceRef.get(myId).put({ ts: Date.now(), id: myId });
-  }
-  heartbeat();
-  presenceInterval = setInterval(heartbeat, 4000);
-
-  // Also check stale peers every 6s
-  setInterval(()=>{
-    presenceRef.map().once(function(data, key){
-      if(!data || key === myId) return;
-      const age = Date.now() - (data.ts || 0);
-      if(age >= 12000 && peerSeen){
-        peerSeen = false;
-        setConnected(false);
-        addMsg('상대방의 실이 끊어졌습니다', 'system');
-      }
-      if(age < 12000 && !peerSeen){
+      // 최초 메시지를 받았을 때도 유저가 연결된 것으로 간주
+      if(!peerSeen) {
         peerSeen = true;
         setConnected(true);
         addMsg('붉은 실이 이어졌습니다', 'system');
       }
+      addMsg(data.text, 'other');
+    }
+  });
+
+  // 2. 존재 상태(Presence) 노드 구독
+  presenceRef = gun.get(currentRoom).get('presence');
+
+  presenceRef.map().on(function(data, key){
+    if(!data || key === myId) return;
+    
+    const age = Date.now() - (data.ts || 0);
+    if(age < 15000 && !peerSeen){ // 15초 이내 활성화된 피어 발견 시
+      peerSeen = true;
+      setConnected(true);
+      addMsg('붉은 실이 이어졌습니다', 'system');
+    }
+  });
+
+  // 내 상태를 3초마다 브로드캐스팅 (하트비트)
+  function heartbeat(){
+    if(presenceRef) {
+      presenceRef.get(myId).put({ ts: Date.now(), id: myId });
+    }
+  }
+  heartbeat();
+  presenceInterval = setInterval(heartbeat, 3000);
+
+  // 5초마다 상대방 피어가 살아있는지 주기적으로 체크
+  checkInterval = setInterval(()=>{
+    let activePeerFound = false;
+    presenceRef.map().once(function(data, key){
+      if(!data || key === myId) return;
+      const age = Date.now() - (data.ts || 0);
+      if(age < 15000) {
+        activePeerFound = true;
+      }
     });
-  }, 6000);
+
+    // 상태 변경 유효성 검사
+    setTimeout(() => {
+      if(!activePeerFound && peerSeen){
+        peerSeen = false;
+        setConnected(false);
+        addMsg('상대방의 실이 끊어졌습니다', 'system');
+      } else if(activePeerFound && !peerSeen) {
+        peerSeen = true;
+        setConnected(true);
+        addMsg('붉은 실이 이어졌습니다', 'system');
+      }
+    }, 1000);
+  }, 5000);
 }
 
 function sendMsg(){
   const t = msgI.value.trim();
-  if(!t || !peerSeen) return;
+  if(!t) return; // 상대가 잠깐 타임아웃되어도 메시지는 보낼 수 있도록 보정
 
   const msgId = myId + '_' + Date.now();
-  seenIds.add(msgId); // mark as seen so on() doesn't re-render
+  seenIds.add(msgId); 
+  
   roomRef.get(msgId).put({ text: t, sender: myId, ts: Date.now(), type: 'chat' });
   addMsg(t, 'self');
-  msgI.value='';msgI.style.height='auto';
+  msgI.value='';
+  msgI.style.height='auto';
 }
 
 function leaveRoom(){
-  if(roomRef && peerSeen){
+  if(roomRef){
     const byeId = myId + '_bye_' + Date.now();
     roomRef.get(byeId).put({ type:'bye', sender:myId, ts:Date.now() });
   }
-  // Remove my presence
-  if(presenceRef) presenceRef.get(myId).put(null);
+  if(presenceRef) {
+    presenceRef.get(myId).put(null);
+  }
   clearInterval(presenceInterval);
-  roomRef=null;presenceRef=null;peerSeen=false;seenIds.clear();
+  clearInterval(checkInterval);
+  roomRef=null; presenceRef=null; peerSeen=false; seenIds.clear();
 }
 
 /* ── UI EVENTS ── */
