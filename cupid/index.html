@@ -5,306 +5,577 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>인연 — 붉은 실</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700&family=DM+Serif+Display:ital@0;1&family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --ink:#0d0b0b;--ink2:#151010;--ink3:#1d1515;
-  --red:#c0392b;--red-dim:#8b2020;--red-glow:#e74c3c;
-  --silk:#f5ede0;--silk2:#ede0cc;--muted:#6b5b5b;--gold:#c9a96e;
+  --ink:     #110a0a;
+  --ink2:    #1c1010;
+  --ink3:    #251515;
+  --red:     #e03030;
+  --red-dim: #b02828;
+  --silk:    #f0e4d4;
+  --silk2:   #ddd0bc;
+  --muted:   #9a8070;
+  --border:  #3a2020;
 }
-html,body{height:100%;overflow:hidden;background:var(--ink);}
-body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E");opacity:.7;}
-#bg-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;}
-#app{position:relative;z-index:2;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(--silk); }
 
-/* ENTRY */
-#entry-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:2rem;animation:rise 1s cubic-bezier(.16,1,.3,1) both;}
-.en-inner{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;}
-.logo-wrap{position:relative;margin-bottom:2.4rem;text-align:center;}
-.logo-kanji{font-family:‘Noto Serif KR’,serif;font-weight:700;font-size:5rem;color:var(–silk);letter-spacing:-.02em;line-height:1;position:relative;display:inline-block;}
-.logo-kanji::after{content:’’;position:absolute;left:-8px;right:-8px;bottom:4px;height:2px;background:var(–red);transform:scaleX(0);transform-origin:left;animation:ul-in .8s .6s cubic-bezier(.16,1,.3,1) forwards;}
-.logo-sub{font-family:‘DM Serif Display’,serif;font-style:italic;font-size:.95rem;color:var(–red-dim);letter-spacing:.08em;margin-top:.5rem;}
-.logo-desc{font-family:‘Noto Sans KR’,sans-serif;font-weight:300;font-size:.62rem;color:var(–muted);letter-spacing:.25em;text-transform:uppercase;margin-top:.3rem;}
-.thread-icon{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(–red),transparent);margin:0 auto 2.5rem;position:relative;}
-.thread-icon::before,.thread-icon::after{content:‘✦’;position:absolute;top:50%;transform:translateY(-50%);color:var(–red);font-size:.5rem;}
-.thread-icon::before{left:-10px;}.thread-icon::after{right:-10px;}
-.field-wrap{width:100%;margin-bottom:1rem;}
-.field-label{font-family:‘Noto Sans KR’,sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.3em;text-transform:uppercase;color:var(–muted);margin-bottom:.6rem;display:block;}
-.kw-input{width:100%;background:transparent;border:none;border-bottom:1px solid #3a2a2a;padding:.8rem 0;font-family:‘Noto Serif KR’,serif;font-size:1.2rem;font-weight:300;color:var(–silk);outline:none;transition:border-color .4s;letter-spacing:.05em;}
-.kw-input:focus{border-bottom-color:var(–red);}
-.kw-input::placeholder{color:#3a2a2a;font-style:italic;}
-.cta{width:100%;margin-top:2rem;background:none;border:1px solid var(–red-dim);color:var(–silk);font-family:‘Noto Serif KR’,serif;font-size:.9rem;font-weight:400;letter-spacing:.2em;padding:1rem 2rem;cursor:pointer;position:relative;overflow:hidden;transition:color .3s;}
-.cta::before{content:’’;position:absolute;inset:0;background:var(–red);transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.16,1,.3,1);z-index:0;}
-.cta:hover::before{transform:scaleX(1);}
-.cta span{position:relative;z-index:1;}
-.cta:disabled{opacity:.4;cursor:not-allowed;}
-.cta:disabled::before{display:none;}
-.entry-hint{margin-top:1.8rem;font-family:‘Noto Sans KR’,sans-serif;font-weight:300;font-size:.62rem;color:var(–muted);line-height:2;text-align:center;letter-spacing:.05em;}
-.red-dot{color:var(–red);}
+/* grain overlay */
+body::after {
+content: ‘’; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+background-image: url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘200’ height=‘200’%3E%3Cfilter id=‘n’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘4’/%3E%3C/filter%3E%3Crect width=‘200’ height=‘200’ filter=‘url(%23n)’ opacity=‘0.04’/%3E%3C/svg%3E”);
+}
 
-/* CHAT */
-#chat-screen{display:none;width:100%;max-width:680px;height:100vh;flex-direction:column;}
-.chat-header{display:flex;align-items:center;padding:1.1rem 1.6rem;border-bottom:1px solid #1e1212;flex-shrink:0;gap:1.2rem;background:rgba(13,11,11,.7);backdrop-filter:blur(12px);}
-.back-btn{background:none;border:none;color:var(–muted);font-family:‘Noto Sans KR’,sans-serif;font-size:.7rem;cursor:pointer;letter-spacing:.05em;padding:.4rem 0;transition:color .2s;flex-shrink:0;}
-.back-btn:hover{color:var(–silk);}
-.header-center{flex:1;text-align:center;}
-.header-title{font-family:‘Noto Serif KR’,serif;font-size:1rem;font-weight:700;color:var(–silk);letter-spacing:.05em;}
-.header-kw{font-family:‘DM Serif Display’,serif;font-style:italic;font-size:.72rem;color:var(–red-dim);margin-top:.15rem;letter-spacing:.05em;}
-.status-pill{display:flex;align-items:center;gap:.4rem;font-family:‘Noto Sans KR’,sans-serif;font-size:.6rem;font-weight:300;color:var(–muted);letter-spacing:.1em;}
-.s-dot{width:5px;height:5px;border-radius:50%;background:var(–muted);flex-shrink:0;}
-.s-dot.on{background:#e74c3c;box-shadow:0 0 6px #e74c3c99;}
-.s-dot.wait{background:var(–red-dim);animation:throb 2s infinite;}
-.messages{flex:1;overflow-y:auto;padding:2rem 1.6rem;display:flex;flex-direction:column;gap:1rem;scroll-behavior:smooth;}
-.messages::-webkit-scrollbar{width:3px;}
-.messages::-webkit-scrollbar-thumb{background:#2a1a1a;}
-.msg{max-width:68%;animation:msg-rise .3s cubic-bezier(.16,1,.3,1) both;}
-.msg.self{align-self:flex-end;}.msg.other{align-self:flex-start;}
-.msg-bubble{padding:.8rem 1.1rem;font-family:‘Noto Serif KR’,serif;font-size:.88rem;font-weight:300;line-height:1.75;word-break:break-word;white-space:pre-wrap;position:relative;}
-.msg.self .msg-bubble{background:var(–ink3);color:var(–silk);border:1px solid #2e1a1a;border-radius:12px 12px 2px 12px;}
-.msg.self .msg-bubble::after{content:’’;position:absolute;bottom:-1px;right:-1px;width:30px;height:1px;background:var(–red-dim);}
-.msg.other .msg-bubble{background:#130e0e;color:var(–silk2);border:1px solid #1e1212;border-radius:12px 12px 12px 2px;}
-.msg.other .msg-bubble::after{content:’’;position:absolute;bottom:-1px;left:-1px;width:30px;height:1px;background:var(–red-dim);}
-.msg-time{font-family:‘Noto Sans KR’,sans-serif;font-size:.52rem;font-weight:300;color:#3d2a2a;margin-top:.35rem;letter-spacing:.08em;}
-.msg.self .msg-time{text-align:right;padding-right:2px;}.msg.other .msg-time{padding-left:2px;}
-.sys-msg{align-self:center;font-family:‘Noto Sans KR’,sans-serif;font-size:.6rem;font-weight:300;color:#4a3030;letter-spacing:.15em;text-transform:uppercase;padding:.25rem .8rem;border-top:1px solid #2a1818;border-bottom:1px solid #2a1818;animation:msg-rise .4s ease both;}
-.thread-sep{align-self:center;width:80px;height:1px;background:linear-gradient(90deg,transparent,var(–red-dim),transparent);margin:.5rem 0;}
-.input-area{display:flex;align-items:flex-end;gap:.8rem;padding:1.1rem 1.6rem;border-top:1px solid #1e1212;background:rgba(13,11,11,.7);backdrop-filter:blur(12px);flex-shrink:0;}
-.msg-input{flex:1;background:transparent;border:none;border-bottom:1px solid #2a1a1a;padding:.5rem 0;font-family:‘Noto Serif KR’,serif;font-size:.9rem;font-weight:300;color:var(–silk);outline:none;resize:none;min-height:36px;max-height:100px;transition:border-color .3s;line-height:1.6;}
-.msg-input:focus{border-bottom-color:var(–red-dim);}
-.msg-input::placeholder{color:#2e1e1e;font-style:italic;}
-.send-btn{background:none;border:1px solid var(–red-dim);width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(–red-dim);transition:all .25s;flex-shrink:0;font-size:.9rem;}
-.send-btn:hover:not(:disabled){background:var(–red);border-color:var(–red);color:var(–silk);}
-.send-btn:disabled{opacity:.25;cursor:not-allowed;}
+#bg-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
-/* WAITING */
-#waiting-overlay{position:absolute;inset:0;background:rgba(10,8,8,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.6rem;z-index:20;backdrop-filter:blur(16px);}
-.wait-thread{width:1px;height:60px;background:linear-gradient(to bottom,transparent,var(–red));animation:thread-grow 1.5s ease infinite alternate;}
-.wait-kanji{font-family:‘Noto Serif KR’,serif;font-size:2.5rem;font-weight:700;color:var(–red-dim);letter-spacing:.1em;animation:glow-pulse 3s ease infinite;}
-.wait-title{font-family:‘DM Serif Display’,serif;font-style:italic;font-size:1rem;color:var(–silk);letter-spacing:.05em;}
-.wait-sub{font-family:‘Noto Sans KR’,sans-serif;font-weight:300;font-size:.65rem;color:var(–muted);text-align:center;line-height:2;letter-spacing:.05em;}
-.wait-id{font-family:‘Noto Sans KR’,sans-serif;font-size:.55rem;font-weight:300;color:#3a2525;letter-spacing:.08em;border:1px solid #1e1212;padding:.35rem .8rem;}
+#app { position: relative; z-index: 2; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-@keyframes rise{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
-@keyframes ul-in{to{transform:scaleX(1)}}
-@keyframes msg-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes throb{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
-@keyframes thread-grow{from{height:40px;opacity:.4}to{height:80px;opacity:1}}
-@keyframes glow-pulse{0%,100%{text-shadow:0 0 20px #c0392b44}50%{text-shadow:0 0 40px #c0392baa,0 0 80px #c0392b44}}
+/* ── ENTRY ── */
+#entry-screen {
+width: 100%; max-width: 440px; padding: 2.5rem 2rem;
+display: flex; flex-direction: column; align-items: center;
+animation: rise .9s cubic-bezier(.16,1,.3,1) both;
+}
+.logo-kanji {
+font-family: ‘Noto Serif KR’, serif; font-weight: 700;
+font-size: 5.5rem; color: var(–silk);
+letter-spacing: -.02em; line-height: 1; position: relative;
+}
+.logo-kanji::after {
+content: ‘’; position: absolute; left: 0; right: 0; bottom: 2px;
+height: 2px; background: var(–red);
+transform: scaleX(0); transform-origin: left;
+animation: ul-in .9s .5s cubic-bezier(.16,1,.3,1) forwards;
+}
+.logo-en {
+font-family: ‘DM Serif Display’, serif; font-style: italic;
+font-size: 1rem; color: var(–red-dim); letter-spacing: .1em; margin-top: .5rem;
+}
+.logo-tag {
+font-family: ‘Noto Sans KR’, sans-serif; font-weight: 300;
+font-size: .6rem; color: var(–muted); letter-spacing: .25em;
+text-transform: uppercase; margin-top: .3rem;
+}
+.divider {
+width: 60px; height: 1px;
+background: linear-gradient(90deg, transparent, var(–red), transparent);
+margin: 2.2rem 0;
+}
+.field-label {
+font-family: ‘Noto Sans KR’, sans-serif; font-size: .65rem; font-weight: 300;
+letter-spacing: .25em; text-transform: uppercase; color: var(–muted);
+margin-bottom: .7rem; align-self: flex-start; width: 100%;
+}
+.kw-input {
+width: 100%; background: var(–ink2); border: 1px solid var(–border);
+border-bottom: 2px solid var(–border);
+padding: .9rem 1rem; font-family: ‘Noto Serif KR’, serif;
+font-size: 1.15rem; font-weight: 300; color: var(–silk);
+outline: none; transition: border-color .3s, background .3s;
+letter-spacing: .05em;
+}
+.kw-input:focus { border-color: var(–red); background: var(–ink3); }
+.kw-input::placeholder { color: #5a3a3a; font-style: italic; }
 
-@media(max-width:600px){.logo-kanji{font-size:3.8rem;}.msg{max-width:86%;}#chat-screen{max-width:100%;}}
+.cta {
+width: 100%; margin-top: 1.2rem; padding: 1rem;
+background: none; border: 1px solid var(–red-dim);
+color: var(–silk); font-family: ‘Noto Serif KR’, serif;
+font-size: .95rem; font-weight: 400; letter-spacing: .2em;
+cursor: pointer; position: relative; overflow: hidden; transition: color .3s;
+}
+.cta::before {
+content: ‘’; position: absolute; inset: 0; background: var(–red);
+transform: scaleX(0); transform-origin: left;
+transition: transform .4s cubic-bezier(.16,1,.3,1); z-index: 0;
+}
+.cta:hover::before { transform: scaleX(1); }
+.cta span { position: relative; z-index: 1; }
+.cta:disabled { opacity: .4; cursor: not-allowed; }
+.cta:disabled::before { display: none; }
+
+.hint {
+margin-top: 1.8rem; font-family: ‘Noto Sans KR’, sans-serif;
+font-weight: 300; font-size: .68rem; color: var(–muted);
+line-height: 2.2; text-align: center; letter-spacing: .03em;
+}
+.hint span { color: var(–red); }
+
+/* ── CHAT ── */
+#chat-screen {
+display: none; width: 100%; max-width: 700px; height: 100vh;
+flex-direction: column;
+}
+.chat-header {
+display: flex; align-items: center; gap: 1rem;
+padding: 1rem 1.4rem; border-bottom: 1px solid var(–border);
+background: rgba(17,10,10,.85); backdrop-filter: blur(16px);
+flex-shrink: 0;
+}
+.back-btn {
+background: none; border: 1px solid var(–border);
+color: var(–muted); font-family: ‘Noto Sans KR’, sans-serif;
+font-size: .7rem; padding: .4rem .8rem; cursor: pointer;
+transition: all .2s; white-space: nowrap;
+}
+.back-btn:hover { border-color: var(–red); color: var(–silk); }
+.h-center { flex: 1; text-align: center; }
+.h-title {
+font-family: ‘Noto Serif KR’, serif; font-size: 1rem; font-weight: 700; color: var(–silk);
+}
+.h-kw {
+font-family: ‘DM Serif Display’, serif; font-style: italic;
+font-size: .75rem; color: var(–red-dim); margin-top: .1rem;
+}
+.status-wrap { display: flex; align-items: center; gap: .45rem; flex-shrink: 0; }
+.s-dot { width: 7px; height: 7px; border-radius: 50%; background: var(–muted); }
+.s-dot.wait { background: var(–red-dim); animation: throb 2s infinite; }
+.s-dot.on   { background: #f04040; box-shadow: 0 0 8px #f0404099; }
+.s-label {
+font-family: ‘Noto Sans KR’, sans-serif; font-size: .65rem;
+font-weight: 300; color: var(–muted); letter-spacing: .05em; white-space: nowrap;
+}
+
+/* messages */
+.messages {
+flex: 1; overflow-y: auto; padding: 1.8rem 1.4rem;
+display: flex; flex-direction: column; gap: 1rem; scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 3px; }
+.messages::-webkit-scrollbar-thumb { background: var(–border); }
+
+.msg { max-width: 70%; animation: msg-up .28s cubic-bezier(.16,1,.3,1) both; }
+.msg.self  { align-self: flex-end; }
+.msg.other { align-self: flex-start; }
+
+.msg-bub {
+padding: .75rem 1rem; font-family: ‘Noto Serif KR’, serif;
+font-size: .9rem; font-weight: 300; line-height: 1.75;
+word-break: break-word; white-space: pre-wrap; position: relative;
+}
+.msg.self  .msg-bub {
+background: var(–ink3); color: var(–silk);
+border: 1px solid #3a2020; border-radius: 10px 10px 2px 10px;
+}
+.msg.other .msg-bub {
+background: #180d0d; color: var(–silk2);
+border: 1px solid #281414; border-radius: 10px 10px 10px 2px;
+}
+/* red thread accent */
+.msg.self  .msg-bub::after { content:’’; position:absolute; bottom:-1px; right:0; width:28px; height:1px; background:var(–red-dim); }
+.msg.other .msg-bub::after { content:’’; position:absolute; bottom:-1px; left:0;  width:28px; height:1px; background:var(–red-dim); }
+
+.msg-time {
+font-family: ‘Noto Sans KR’, sans-serif; font-size: .55rem;
+font-weight: 300; color: var(–muted); margin-top: .3rem;
+}
+.msg.self  .msg-time { text-align: right; padding-right: 2px; }
+.msg.other .msg-time { padding-left: 2px; }
+
+.sys-msg {
+align-self: center; font-family: ‘Noto Sans KR’, sans-serif;
+font-size: .62rem; font-weight: 300; color: var(–muted);
+letter-spacing: .12em; text-transform: uppercase;
+padding: .25rem .9rem; border-top: 1px solid var(–border);
+border-bottom: 1px solid var(–border);
+animation: msg-up .3s ease both;
+}
+.thread-sep {
+align-self: center; width: 70px; height: 1px;
+background: linear-gradient(90deg,transparent,var(–red-dim),transparent);
+margin: .2rem 0;
+}
+
+/* input */
+.input-area {
+display: flex; align-items: flex-end; gap: .7rem;
+padding: 1rem 1.4rem; border-top: 1px solid var(–border);
+background: rgba(17,10,10,.85); backdrop-filter: blur(16px);
+flex-shrink: 0;
+}
+.msg-input {
+flex: 1; background: var(–ink2); border: 1px solid var(–border);
+padding: .65rem .9rem; font-family: ‘Noto Serif KR’, serif;
+font-size: .9rem; font-weight: 300; color: var(–silk);
+outline: none; resize: none; min-height: 40px; max-height: 100px;
+transition: border-color .25s; line-height: 1.55;
+}
+.msg-input:focus { border-color: var(–red-dim); }
+.msg-input::placeholder { color: #5a3535; font-style: italic; }
+.send-btn {
+background: var(–red); border: none; width: 40px; height: 40px;
+display: flex; align-items: center; justify-content: center;
+cursor: pointer; color: var(–silk); font-size: 1rem;
+transition: background .2s, transform .1s; flex-shrink: 0;
+}
+.send-btn:hover:not(:disabled) { background: #f04040; }
+.send-btn:active:not(:disabled) { transform: scale(.93); }
+.send-btn:disabled { background: var(–border); cursor: not-allowed; }
+
+/* ── WAITING OVERLAY ── */
+#waiting-overlay {
+position: absolute; inset: 0; z-index: 20;
+background: rgba(12,7,7,.92); backdrop-filter: blur(18px);
+display: flex; flex-direction: column; align-items: center; justify-content: center;
+gap: 1.4rem;
+}
+.w-thread-anim {
+display: flex; flex-direction: column; align-items: center; gap: 0; margin-bottom: .4rem;
+}
+.w-dot { width: 6px; height: 6px; border-radius: 50%; background: var(–red); animation: bounce-dot 1.6s ease infinite; }
+.w-dot:nth-child(2) { animation-delay: .2s; }
+.w-dot:nth-child(3) { animation-delay: .4s; }
+.w-line { width: 1px; height: 20px; background: linear-gradient(to bottom, var(–red-dim), transparent); }
+
+.w-kanji {
+font-family: ‘Noto Serif KR’, serif; font-size: 2.8rem; font-weight: 700;
+color: var(–red-dim); letter-spacing: .08em;
+animation: glow 3s ease infinite;
+}
+.w-title {
+font-family: ‘DM Serif Display’, serif; font-style: italic;
+font-size: 1.05rem; color: var(–silk); letter-spacing: .05em;
+}
+.w-sub {
+font-family: ‘Noto Sans KR’, sans-serif; font-weight: 300;
+font-size: .68rem; color: var(–muted); text-align: center;
+line-height: 2.1; letter-spacing: .04em;
+}
+.w-id {
+font-family: ‘Noto Sans KR’, sans-serif; font-size: .6rem;
+font-weight: 300; color: #6a4040; letter-spacing: .06em;
+border: 1px solid var(–border); padding: .35rem 1rem;
+}
+
+/* ── KEYFRAMES ── */
+@keyframes rise    { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+@keyframes ul-in   { to{transform:scaleX(1)} }
+@keyframes msg-up  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes throb   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.25;transform:scale(.65)} }
+@keyframes glow    { 0%,100%{text-shadow:0 0 20px #c0202044} 50%{text-shadow:0 0 40px #e03030bb,0 0 80px #c0202055} }
+@keyframes bounce-dot { 0%,80%,100%{transform:scaleY(1);opacity:.4} 40%{transform:scaleY(1.6);opacity:1} }
+
+@media(max-width:600px){
+.logo-kanji{font-size:4rem;}
+.msg{max-width:88%;}
+#chat-screen{max-width:100%;}
+}
 </style>
 
 </head>
 <body>
+
 <canvas id="bg-canvas"></canvas>
+
 <div id="app">
+  <!-- ENTRY -->
   <div id="entry-screen">
-    <div class="en-inner">
-      <div class="logo-wrap">
-        <div class="logo-kanji">인연</div>
-        <div class="logo-sub">Red Thread of Fate</div>
-        <div class="logo-desc">P2P · Serverless · Encrypted</div>
-      </div>
-      <div class="thread-icon"></div>
-      <div class="field-wrap">
-        <label class="field-label" for="keyword-input">우리만의 단어</label>
-        <input id="keyword-input" class="kw-input" type="text"
-          placeholder="두 사람만 아는 단어를 입력하세요"
-          maxlength="64" autocomplete="off" spellcheck="false">
-      </div>
-      <button id="connect-btn" class="cta"><span>실을 잇다 →</span></button>
-      <p class="entry-hint">
-        같은 단어를 입력한 사람과 연결됩니다<br>
-        <span class="red-dot">✦</span>&nbsp; 메시지는 서버를 거치지 않습니다<br>
-        <span class="red-dot">✦</span>&nbsp; 키워드는 SHA-256으로 해싱됩니다
-      </p>
+    <div style="text-align:center;margin-bottom:.2rem">
+      <div class="logo-kanji">인연</div>
+      <div class="logo-en">Red Thread of Fate</div>
+      <div class="logo-tag">P2P · Serverless · Real-time</div>
     </div>
+    <div class="divider"></div>
+    <label class="field-label" for="keyword-input">우리만의 단어</label>
+    <input id="keyword-input" class="kw-input" type="text"
+      placeholder="두 사람만 아는 단어를 입력하세요"
+      maxlength="64" autocomplete="off" spellcheck="false">
+    <button id="connect-btn" class="cta"><span>실을 잇다 →</span></button>
+    <p class="hint">
+      같은 단어를 입력한 사람과 즉시 연결됩니다<br>
+      <span>✦</span> 메시지는 서버에 저장되지 않습니다<br>
+      <span>✦</span> 같은 기기 탭끼리도 작동합니다
+    </p>
   </div>
+
+  <!-- CHAT -->
 
   <div id="chat-screen">
     <div class="chat-header">
       <button class="back-btn" id="back-btn">← 나가기</button>
-      <div class="header-center">
-        <div class="header-title">인연</div>
-        <div class="header-kw" id="room-kw">—</div>
+      <div class="h-center">
+        <div class="h-title">인연</div>
+        <div class="h-kw" id="room-kw">—</div>
       </div>
-      <div class="status-pill">
+      <div class="status-wrap">
         <div class="s-dot wait" id="status-dot"></div>
-        <span id="status-text">대기 중</span>
+        <span class="s-label" id="status-text">대기 중</span>
       </div>
     </div>
-    <div class="messages" id="messages"></div>
-    <div class="input-area">
-      <textarea id="msg-input" class="msg-input"
-        placeholder="마음을 전하세요… (Enter 전송)" rows="1"></textarea>
-      <button id="send-btn" class="send-btn" disabled>→</button>
-    </div>
-    <div id="waiting-overlay">
-      <div class="wait-thread"></div>
-      <div class="wait-kanji">기다림</div>
-      <div class="wait-title">붉은 실이 닿기를 기다립니다</div>
-      <div class="wait-sub">
-        같은 단어를 입력한 상대방을 기다리고 있습니다<br>
-        연결되는 순간, 실이 이어집니다
-      </div>
-      <div class="wait-id" id="your-id-box">연결 중...</div>
-    </div>
+
+```
+<div class="messages" id="messages"></div>
+
+<div class="input-area">
+  <textarea id="msg-input" class="msg-input"
+    placeholder="마음을 전하세요… (Enter 전송, Shift+Enter 줄바꿈)"
+    rows="1"></textarea>
+  <button id="send-btn" class="send-btn" disabled>→</button>
+</div>
+
+<div id="waiting-overlay">
+  <div class="w-thread-anim">
+    <div class="w-dot"></div>
+    <div class="w-line"></div>
+    <div class="w-dot"></div>
+    <div class="w-line"></div>
+    <div class="w-dot"></div>
+  </div>
+  <div class="w-kanji">기다림</div>
+  <div class="w-title">붉은 실이 닿기를 기다립니다</div>
+  <div class="w-sub">
+    같은 단어를 입력한 상대방을 기다리고 있습니다<br>
+    연결되는 순간, 실이 이어집니다
+  </div>
+  <div class="w-id" id="my-id-box">채널 연결 중...</div>
+</div>
+```
+
   </div>
 </div>
 
+<!-- MQTT over WebSocket (EMQX public broker) -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.10.1/mqtt.browser.min.js"></script>
+
 <script>
+/* ─────────────────────────────────────────
+   RED THREAD CANVAS
+───────────────────────────────────────── */
 (function(){
-  const canvas=document.getElementById('bg-canvas');
-  const ctx=canvas.getContext('2d');
-  let W,H,threads=[],tick=0;
-  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
-  function mkThread(){
-    const sx=Math.random()*W,ex=sx+(Math.random()-.5)*W*.6;
-    return{sx,sy:-10,ex,ey:H+10,
-      cp1x:sx+(Math.random()-.5)*200,cp1y:H*.3,
-      cp2x:ex+(Math.random()-.5)*200,cp2y:H*.7,
-      alpha:Math.random()*.07+.02,width:Math.random()*.7+.2,
-      speed:Math.random()*.0003+.0001,phase:Math.random()*Math.PI*2};
+  const cv=document.getElementById('bg-canvas'), cx=cv.getContext('2d');
+  let W,H,T=[],tick=0;
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  function mk(){
+    const sx=Math.random()*W, ex=sx+(Math.random()-.5)*W*.5;
+    return{sx,sy:-20,ex,ey:H+20,
+      c1x:sx+(Math.random()-.5)*180,c1y:H*.25+Math.random()*H*.2,
+      c2x:ex+(Math.random()-.5)*180,c2y:H*.6+Math.random()*H*.2,
+      a:Math.random()*.09+.03, w:Math.random()*.8+.15,
+      sp:Math.random()*.0003+.0001, ph:Math.random()*Math.PI*2};
   }
-  function init(){resize();threads=Array.from({length:14},mkThread);}
+  function init(){resize();T=Array.from({length:16},mk);}
   function draw(){
-    ctx.clearRect(0,0,W,H);tick++;
-    threads.forEach(t=>{
-      const sw=Math.sin(tick*t.speed+t.phase)*30;
-      ctx.beginPath();ctx.moveTo(t.sx,t.sy);
-      ctx.bezierCurveTo(t.cp1x+sw,t.cp1y,t.cp2x-sw,t.cp2y,t.ex,t.ey);
-      ctx.strokeStyle=`rgba(160,30,30,${t.alpha})`;
-      ctx.lineWidth=t.width;ctx.stroke();
+    cx.clearRect(0,0,W,H); tick++;
+    T.forEach(t=>{
+      const sw=Math.sin(tick*t.sp+t.ph)*28;
+      cx.beginPath(); cx.moveTo(t.sx,t.sy);
+      cx.bezierCurveTo(t.c1x+sw,t.c1y,t.c2x-sw,t.c2y,t.ex,t.ey);
+      cx.strokeStyle=`rgba(180,35,35,${t.a})`;
+      cx.lineWidth=t.w; cx.stroke();
     });
     requestAnimationFrame(draw);
   }
-  window.addEventListener('resize',resize);
-  init();draw();
+  addEventListener('resize',init);
+  init(); draw();
 })();
 
-const PCFG={host:'0.peerjs.com',port:443,secure:true,path:'/',
-  config:{iceServers:[
-    {urls:'stun:stun.l.google.com:19302'},
-    {urls:'stun:stun1.l.google.com:19302'},
-    {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-    {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
-  ]}};
+/* ─────────────────────────────────────────
+   MQTT CHAT ENGINE
+   Public broker: broker.emqx.io:8084 (WSS)
+   Fallback:      broker.hivemq.com:8884 (WSS)
+   No account needed. Messages not stored.
+───────────────────────────────────────── */
+const BROKERS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+];
 
-let peer=null,conn=null,myId=null;
+let mqttClient = null;
+let myTopic = '';       // topic I publish to (others subscribe)
+let peerTopic = '';     // topic I subscribe to (peer publishes)
+let roomTopic = '';     // shared presence topic
+let myClientId = '';
+let peerOnline = false;
+let currentKw = '';
+let brokerIdx = 0;
 
+/* ── DOM refs ── */
+const ES      = document.getElementById('entry-screen');
+const CS      = document.getElementById('chat-screen');
+const kwI     = document.getElementById('keyword-input');
+const conB    = document.getElementById('connect-btn');
+const backB   = document.getElementById('back-btn');
+const msgsEl  = document.getElementById('messages');
+const msgI    = document.getElementById('msg-input');
+const sendB   = document.getElementById('send-btn');
+const sDot    = document.getElementById('status-dot');
+const sTxt    = document.getElementById('status-text');
+const roomKw  = document.getElementById('room-kw');
+const waitOv  = document.getElementById('waiting-overlay');
+const myIdBox = document.getElementById('my-id-box');
+
+/* ── Helpers ── */
 async function sha256(s){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
   return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
 }
-async function getRoomIds(kw){
-  const h=await sha256('INYEON:'+kw);
-  return{hostId:'iy-h-'+h.slice(0,22),guestId:'iy-g-'+h.slice(0,22)};
-}
-function timeStr(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
-
-const ES=document.getElementById('entry-screen');
-const CS=document.getElementById('chat-screen');
-const kwI=document.getElementById('keyword-input');
-const conB=document.getElementById('connect-btn');
-const backB=document.getElementById('back-btn');
-const msgsEl=document.getElementById('messages');
-const msgI=document.getElementById('msg-input');
-const sendB=document.getElementById('send-btn');
-const sDot=document.getElementById('status-dot');
-const sTxt=document.getElementById('status-text');
-const roomKw=document.getElementById('room-kw');
-const waitOv=document.getElementById('waiting-overlay');
-const idBox=document.getElementById('your-id-box');
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function timeStr(){ return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
 
 function addMsg(text,type){
   if(type==='system'){
-    const d=document.createElement('div');d.className='sys-msg';d.textContent=text;msgsEl.appendChild(d);
-    const sep=document.createElement('div');sep.className='thread-sep';msgsEl.appendChild(sep);
-  }else{
-    const w=document.createElement('div');w.className=`msg ${type}`;
-    w.innerHTML=`<div class="msg-bubble">${esc(text)}</div><div class="msg-time">${type==='self'?'나':'그대'} · ${timeStr()}</div>`;
+    const d=document.createElement('div'); d.className='sys-msg'; d.textContent=text;
+    const sep=document.createElement('div'); sep.className='thread-sep';
+    msgsEl.appendChild(d); msgsEl.appendChild(sep);
+  } else {
+    const w=document.createElement('div'); w.className=`msg ${type}`;
+    w.innerHTML=`<div class="msg-bub">${esc(text)}</div>`+
+      `<div class="msg-time">${type==='self'?'나':'그대'} · ${timeStr()}</div>`;
     msgsEl.appendChild(w);
   }
   msgsEl.scrollTop=msgsEl.scrollHeight;
 }
 
-function setConn(yes){
+function setConnected(yes){
+  peerOnline=yes;
   if(yes){
-    sDot.className='s-dot on';sTxt.textContent='연결됨';
-    sendB.disabled=false;waitOv.style.display='none';
-  }else{
-    sDot.className='s-dot wait';sTxt.textContent='대기 중';
-    sendB.disabled=true;waitOv.style.display='flex';
+    sDot.className='s-dot on'; sTxt.textContent='연결됨';
+    sendB.disabled=false; waitOv.style.display='none';
+  } else {
+    sDot.className='s-dot wait'; sTxt.textContent='대기 중';
+    sendB.disabled=true; waitOv.style.display='flex';
   }
 }
 
-function wire(c){
-  conn=c;
-  conn.on('open',()=>{setConn(true);addMsg('붉은 실이 이어졌습니다','system');});
-  conn.on('data',d=>{if(typeof d==='string')addMsg(d,'other');});
-  conn.on('close',()=>{setConn(false);addMsg('실이 끊어졌습니다','system');conn=null;});
-  conn.on('error',e=>addMsg('오류: '+e.message,'system'));
+/* ── MQTT connect ── */
+async function connectMQTT(kw){
+  currentKw=kw;
+  const hash=await sha256('INYEON-v2:'+kw);
+
+  myClientId='inyeon-'+uid();
+  // Two possible roles: A (hash[0]<'8') and B
+  // We use sorted topic names so both sides know who publishes where
+  const base='inyeon/'+hash.slice(0,28);
+  // Each client gets a unique send channel; room channel is shared
+  myTopic   = base+'/'+myClientId;
+  roomTopic = base+'/presence';
+
+  myIdBox.textContent='채널: '+base.slice(7,19)+'…';
+
+  tryConnect();
 }
 
-async function start(kw){
-  const{hostId,guestId}=await getRoomIds(kw);
-  peer=new Peer(hostId,PCFG);
-  peer.on('open',id=>{myId=id;idBox.textContent=id;});
-  peer.on('connection',c=>wire(c));
-  peer.on('error',e=>{
-    if(e.type==='unavailable-id'){peer.destroy();asGuest(hostId,guestId);}
-    else addMsg('연결 오류: '+e.type,'system');
+function tryConnect(){
+  const url=BROKERS[brokerIdx%BROKERS.length];
+  addMsg('브로커 연결 중… ('+url.split('/')[2]+')', 'system');
+
+  mqttClient=mqtt.connect(url,{
+    clientId: myClientId,
+    keepalive: 30,
+    connectTimeout: 8000,
+    reconnectPeriod: 3000,
+    clean: true,
   });
-  peer.on('disconnected',()=>peer.reconnect());
-}
 
-function asGuest(hId,gId){
-  peer=new Peer(gId,PCFG);
-  peer.on('open',id=>{myId=id;idBox.textContent=id;wire(peer.connect(hId,{reliable:true}));});
-  peer.on('error',e=>{
-    if(e.type==='unavailable-id'){peer.destroy();asRand(hId);}
-    else addMsg('오류: '+e.type,'system');
+  mqttClient.on('connect',()=>{
+    addMsg('채널 개설됨 — 상대방 대기 중', 'system');
+
+    // Subscribe to presence room to discover peer
+    mqttClient.subscribe(roomTopic+'/+', {qos:0});
+
+    // Announce presence: publish my channel ID to room
+    publishPresence();
+
+    // Keep announcing every 4s so late joiner can discover us
+    window._presenceInterval=setInterval(publishPresence, 4000);
   });
-  peer.on('disconnected',()=>peer.reconnect());
+
+  mqttClient.on('error',(e)=>{
+    console.error('mqtt err',e);
+    brokerIdx++;
+    setTimeout(()=>{
+      mqttClient.end(true);
+      tryConnect();
+    },2000);
+  });
+
+  mqttClient.on('message',(topic,payload)=>{
+    const msg=payload.toString();
+    handleMqttMessage(topic,msg);
+  });
+
+  mqttClient.on('offline',()=>{
+    if(peerOnline){ setConnected(false); addMsg('연결이 끊어졌습니다','system'); }
+  });
 }
 
-function asRand(hId){
-  peer=new Peer(PCFG);
-  peer.on('open',id=>{myId=id;idBox.textContent=id;wire(peer.connect(hId,{reliable:true}));});
-  peer.on('error',e=>addMsg('오류: '+e.type,'system'));
+function publishPresence(){
+  if(!mqttClient||!mqttClient.connected)return;
+  // Publish own clientId to presence room so peer can subscribe to myTopic
+  mqttClient.publish(roomTopic+'/'+myClientId, myClientId, {qos:0, retain:false});
 }
 
-function destroy(){
-  try{conn&&conn.close();}catch(e){}
-  try{peer&&peer.destroy();}catch(e){}
-  conn=null;peer=null;
+function handleMqttMessage(topic,msg){
+  // Presence announcement from someone else
+  if(topic.startsWith(roomTopic+'/') && !topic.endsWith('/'+myClientId)){
+    const peerId=msg; // their clientId
+    const peerChannel=topic.split('/').slice(0,3).join('/')+'/'+peerId;
+
+    if(!peerTopic || peerTopic!==peerChannel){
+      peerTopic=peerChannel;
+      // Subscribe to their channel
+      mqttClient.subscribe(peerTopic,{qos:0});
+      // Respond with our presence so they subscribe back
+      publishPresence();
+    }
+
+    if(!peerOnline){
+      setConnected(true);
+      addMsg('붉은 실이 이어졌습니다','system');
+    }
+    return;
+  }
+
+  // Chat message on our subscribed peerTopic
+  if(topic===peerTopic){
+    try{
+      const obj=JSON.parse(msg);
+      if(obj.type==='chat') addMsg(obj.text,'other');
+      else if(obj.type==='bye'){ setConnected(false); addMsg('상대방이 나갔습니다','system'); peerTopic=''; }
+    }catch(e){ addMsg(msg,'other'); }
+  }
 }
 
 function sendMsg(){
   const t=msgI.value.trim();
-  if(!t||!conn||!conn.open)return;
-  conn.send(t);addMsg(t,'self');
-  msgI.value='';msgI.style.height='auto';
+  if(!t||!mqttClient||!mqttClient.connected)return;
+  const payload=JSON.stringify({type:'chat',text:t});
+  mqttClient.publish(myTopic, payload, {qos:0});
+  addMsg(t,'self');
+  msgI.value=''; msgI.style.height='auto';
 }
 
+function disconnectMQTT(){
+  clearInterval(window._presenceInterval);
+  if(mqttClient&&mqttClient.connected){
+    // Notify peer
+    if(peerTopic) mqttClient.publish(myTopic, JSON.stringify({type:'bye'}),{qos:0});
+    mqttClient.end(true);
+  }
+  mqttClient=null; peerTopic=''; peerOnline=false;
+}
+
+/* ── UI events ── */
 conB.addEventListener('click',async()=>{
-  const kw=kwI.value.trim();if(!kw){kwI.focus();return;}
+  const kw=kwI.value.trim(); if(!kw){kwI.focus();return;}
   conB.disabled=true;
   roomKw.textContent='"'+kw+'"';
-  ES.style.display='none';CS.style.display='flex';
-  setConn(false);await start(kw);
+  ES.style.display='none'; CS.style.display='flex';
+  setConnected(false);
+  await connectMQTT(kw);
 });
 
-kwI.addEventListener('keydown',e=>{if(e.key==='Enter')conB.click();});
+kwI.addEventListener('keydown',e=>{ if(e.key==='Enter')conB.click(); });
 
 backB.addEventListener('click',()=>{
-  destroy();conB.disabled=false;msgsEl.innerHTML='';
-  CS.style.display='none';ES.style.display='flex';
+  disconnectMQTT();
+  conB.disabled=false;
+  msgsEl.innerHTML='';
+  CS.style.display='none'; ES.style.display='flex';
 });
 
 sendB.addEventListener('click',sendMsg);
@@ -318,9 +589,7 @@ msgI.addEventListener('input',()=>{
   msgI.style.height=Math.min(msgI.scrollHeight,100)+'px';
 });
 
-window.addEventListener('beforeunload',e=>{
-  if(conn&&conn.open){e.preventDefault();e.returnValue='';}
-});
+window.addEventListener('beforeunload',()=>{ disconnectMQTT(); });
 </script>
 
 </body>
