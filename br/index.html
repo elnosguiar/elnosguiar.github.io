@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Backrooms - Mobile</title>
+    <title>The Pink Backrooms - Heart & Ribbon</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #000;
+            background-color: #fff;
             font-family: 'Courier New', Courier, monospace;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: none; /* 브라우저 기본 스크롤/바운스 방지 */
+            touch-action: none;
         }
         #canvas-container {
             width: 100vw;
@@ -25,25 +25,26 @@
             position: absolute;
             top: 15px;
             left: 15px;
-            color: #d4c590;
-            text-shadow: 2px 2px 3px #000;
+            color: #ffb6c1;
+            text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff;
             pointer-events: none;
             font-size: 14px;
             z-index: 10;
         }
         
-        /* 모바일 가상 조이스틱 (좌하단) */
+        /* 모바일 가상 조이스틱 */
         #joystick-zone {
             position: absolute;
             bottom: 40px;
             left: 40px;
             width: 120px;
             height: 120px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(212, 197, 144, 0.5);
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid rgba(255, 182, 193, 0.8);
             border-radius: 50%;
             z-index: 20;
             touch-action: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
         }
         #joystick-stick {
             position: absolute;
@@ -51,20 +52,20 @@
             left: 35px;
             width: 50px;
             height: 50px;
-            background: rgba(212, 197, 144, 0.8);
+            background: #ffb6c1;
             border-radius: 50%;
             transition: transform 0.05s linear;
         }
 
-        /* 우측 시선 전환 영역 터치 안내 */
         #touch-hint {
             position: absolute;
             bottom: 20px;
             right: 20px;
-            color: rgba(212, 197, 144, 0.4);
+            color: #ffb6c1;
             font-size: 12px;
             pointer-events: none;
             text-align: right;
+            font-weight: bold;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -74,24 +75,23 @@
     <div id="canvas-container"></div>
     
     <div id="ui">
-        <h3 style="margin:0;">LEVEL 0</h3>
-        <p style="margin:5px 0 0 0;">화면 우측을 쓸어 넘겨 둘러보세요.</p>
+        <h3 style="margin:0; color:#ff69b4;">♥ PINK ROOMS ♥</h3>
+        <p style="margin:5px 0 0 0; font-weight:bold;">하트와 리본의 무한 공간</p>
     </div>
 
-    <div id="touch-hint">화면 오른쪽 드래그: 시선 회전</div>
+    <div id="touch-hint">화면 우측 드래그: 시선 회전</div>
 
     <div id="joystick-zone">
         <div id="joystick-stick"></div>
     </div>
 
     <script>
-        // --- 게임 설정 및 최적화 ---
-        const CHUNK_SIZE = 30; // 모바일 최적화를 위해 청크 크기 축소 (기존 40)
+        const CHUNK_SIZE = 30; 
         const WALL_HEIGHT = 4;
-        const GRID_SIZE = 3;   // 내부 격자 단순화 (연산 감소 및 패스 확보)
+        const GRID_SIZE = 3;   
         
         let scene, camera, renderer;
-        let moveX = 0, moveZ = 0; // 조이스틱 입력값 (-1 ~ 1)
+        let moveX = 0, moveZ = 0; 
         let velocity = new THREE.Vector3();
         let prevTime = performance.now();
         
@@ -105,6 +105,101 @@
         const joystickZone = document.getElementById('joystick-zone');
         const joystickStick = document.getElementById('joystick-stick');
 
+        // --- 캔버스를 이용한 '하얀 바탕 + 연핑크 땡땡이' 동적 텍스처 생성 ---
+        function createPolkaDotTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // 배경: 하얀색
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 패턴: 작은 연핑크 땡땡이 (반복 격자 구조)
+            ctx.fillStyle = '#ffb6c1'; 
+            const dotRadius = 6; // 작은 크기
+            const spacing = 64;  // 조밀한 배치
+
+            for (let x = 0; x <= canvas.width; x += spacing) {
+                for (let y = 0; y <= canvas.height; y += spacing) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 엇갈린 배치 추가로 자연스럽게
+                    ctx.beginPath();
+                    ctx.arc(x + spacing/2, y + spacing/2, dotRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2, 2); // 청크 안에서 적당히 반복되도록 설정
+            return texture;
+        }
+
+        // --- 3D 대형 하트 형상 생성 함수 ---
+        function createHeartGeometry() {
+            const shape = new THREE.Shape();
+            // 하트 커브 방정식 베이스 매핑 (크게 구현하기 위해 스케일 업)
+            shape.moveTo(0, 0);
+            shape.bezierCurveTo(2, 3, 4, 3, 4, 0);
+            shape.bezierCurveTo(4, -3, 1, -5, 0, -7);
+            shape.bezierCurveTo(-1, -5, -4, -3, -4, 0);
+            shape.bezierCurveTo(-4, 3, -2, 3, 0, 0);
+
+            // 두께를 주어 3D 볼륨감 형성
+            const extrudeSettings = { depth: 0.8, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.2, bevelThickness: 0.2 };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.center();
+            // 위아래가 뒤집히는 것 방지 및 적정 크기 조절 (하트는 크게!)
+            geometry.rotateZ(Math.PI);
+            geometry.scale(0.5, 0.5, 0.5);
+            return geometry;
+        }
+
+        // --- 3D 리본 형상 생성 함수 ---
+        function createRibbonGeometry() {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0xff69b4, roughness: 0.4 }); // 진분홍 리본
+
+            // 왼쪽 날개 (원뿔 변형)
+            const leftWingGeo = new THREE.ConeGeometry(1.5, 3, 4);
+            leftWingGeo.rotateZ(Math.PI / 2);
+            const leftWing = new THREE.Mesh(leftWingGeo, material);
+            leftWing.position.x = -1.5;
+            group.add(leftWing);
+
+            // 오른쪽 날개
+            const rightWingGeo = new THREE.ConeGeometry(1.5, 3, 4);
+            rightWingGeo.rotateZ(-Math.PI / 2);
+            const rightWing = new THREE.Mesh(rightWingGeo, material);
+            rightWing.position.x = 1.5;
+            group.add(rightWing);
+
+            // 가운데 매듭 (구체)
+            const knotGeo = new THREE.SphereGeometry(0.7, 16, 16);
+            const knot = new THREE.Mesh(knotGeo, material);
+            group.add(knot);
+
+            // 아래로 늘어진 끈 2개
+            const tailGeo = new THREE.CylinderGeometry(0.2, 0.4, 2, 8);
+            tailGeo.rotateZ(0.3);
+            const leftTail = new THREE.Mesh(tailGeo, material);
+            leftTail.position.set(-0.6, -1.5, 0);
+            group.add(leftTail);
+
+            const rightTail = leftTail.clone();
+            rightTail.position.x = 0.6;
+            rightTail.rotation.z = -0.3;
+            group.add(rightTail);
+
+            return group;
+        }
+
         // --- 모바일 터치 이벤트 (시선 회전) ---
         let touchStartId = null;
         let prevTouchX = 0, prevTouchY = 0;
@@ -112,7 +207,6 @@
         window.addEventListener('touchstart', (e) => {
             for (let i = 0; i < e.changedTouches.length; i++) {
                 let touch = e.changedTouches[i];
-                // 화면 우측 절반을 터치했을 때만 시선 회전으로 인식
                 if (touch.clientX > window.innerWidth / 2 && touchStartId === null) {
                     touchStartId = touch.identifier;
                     prevTouchX = touch.clientX;
@@ -130,7 +224,7 @@
 
                     yaw -= deltaX * mobileSensitivity;
                     pitch -= deltaY * mobileSensitivity;
-                    pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch)); // 각도 제한
+                    pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
 
                     prevTouchX = touch.clientX;
                     prevTouchY = touch.clientY;
@@ -148,7 +242,7 @@
 
         // --- 가상 조이스틱 로직 (이동) ---
         let joystickTouchId = null;
-        const joystickCenter = { x: 60, y: 60 }; // 가상 패드 중심 (120의 절반)
+        const joystickCenter = { x: 60, y: 60 };
         const maxRadius = 45;
 
         joystickZone.addEventListener('touchstart', (e) => {
@@ -172,8 +266,7 @@
             for (let i = 0; i < e.changedTouches.length; i++) {
                 if (e.changedTouches[i].identifier === joystickTouchId) {
                     joystickTouchId = null;
-                    moveX = 0;
-                    moveZ = 0;
+                    moveX = 0; moveZ = 0;
                     joystickStick.style.transform = `translate(0px, 0px)`;
                 }
             }
@@ -195,33 +288,39 @@
             }
 
             joystickStick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-
-            // 이동 방향 벡터화 (-1 ~ 1 범위)
             moveX = deltaX / maxRadius;
-            moveZ = deltaY / maxRadius; // 조이스틱 상단이 -Z(전진) 방향이 됨
+            moveZ = deltaY / maxRadius; 
         }
 
-        // --- 게임 초기화 및 최적화 설정 ---
+        // --- 게임 초기화 ---
+        let polkaDotTexture;
+        let heartGeo;
+
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x8a7d55, 0.05); // 모바일 가시거리 최적화를 위해 안개 진하게
+            // 안개도 화사하고 몽환적인 핑크빛 연무로 교체
+            scene.fog = new THREE.FogExp2(0xfff0f5, 0.04); 
 
             camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
             camera.position.set(0, 1.6, 0);
 
-            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" }); // 성능 최적화 옵션 적용
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 고해상도 폰 기기 발열 방지 (최대 2단계 제한)
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x8a7d55);
+            renderer.setClearColor(0xfff0f5); // 베이스 배경색 (LavenderBlush 핑크)
             container.appendChild(renderer.domElement);
 
-            // 광원 최적화 (모바일은 연산 최소화가 필수)
-            const ambientLight = new THREE.AmbientLight(0xfffaed, 0.7);
+            // 공통 에셋 프리로드
+            polkaDotTexture = createPolkaDotTexture();
+            heartGeo = createHeartGeometry();
+
+            // 조명 (화사하고 밝은 백색광 + 핑크 무드광)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
 
-            const playerLight = new THREE.PointLight(0xfffee0, 0.8, 12);
-            playerLight.position.set(0, 1.5, 0);
-            camera.add(playerLight);
+            const pinkLight = new THREE.PointLight(0xffc0cb, 0.9, 15);
+            pinkLight.position.set(0, 2, 0);
+            camera.add(pinkLight);
             scene.add(camera);
 
             window.addEventListener('resize', onWindowResize);
@@ -235,7 +334,7 @@
             return cx - Math.floor(cx);
         }
 
-        // --- 절차적 맵 생성 ---
+        // --- 절차적 핑크룸 청크 생성 ---
         function createChunk(chunkX, chunkZ) {
             const chunkKey = `${chunkX},${chunkZ}`;
             if (loadedChunks.has(chunkKey)) return;
@@ -244,48 +343,59 @@
             const startX = chunkX * CHUNK_SIZE;
             const startZ = chunkZ * CHUNK_SIZE;
 
-            // 바닥/천장 통합 박스 모델로 레이어 개수 최적화 가능하나 직관성을 위해 유지
+            // 1. 바닥 (하얀 바탕 + 연핑크 땡땡이)
             const floorGeo = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x5a5238, roughness: 0.9 });
+            const floorMat = new THREE.MeshStandardMaterial({ map: polkaDotTexture, roughness: 0.8 });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
             floor.position.set(startX + CHUNK_SIZE/2, 0, startZ + CHUNK_SIZE/2);
             chunkGroup.add(floor);
 
-            const ceilGeo = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
-            const ceilMat = new THREE.MeshStandardMaterial({ color: 0x9c9273, roughness: 0.6 });
-            const ceiling = new THREE.Mesh(ceilGeo, ceilMat);
+            // 2. 천장 (바닥과 동일 패턴 매핑)
+            const ceiling = floor.clone();
             ceiling.rotation.x = Math.PI / 2;
-            ceiling.position.set(startX + CHUNK_SIZE/2, WALL_HEIGHT, startZ + CHUNK_SIZE/2);
+            ceiling.position.y = WALL_HEIGHT;
             chunkGroup.add(ceiling);
 
-            // 벽 생성 
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0xbaa977, roughness: 0.8 });
+            // 3. 미로 기둥 및 구조물 배치 (하트 & 리본)
+            const heartMat = new THREE.MeshStandardMaterial({ color: 0xff1493, roughness: 0.3, metalness: 0.1 }); // 핫핑크 대형 하트
             const step = CHUNK_SIZE / GRID_SIZE;
 
             for (let i = 0; i <= GRID_SIZE; i++) {
                 for (let j = 0; j <= GRID_SIZE; j++) {
-                    let rand = pseudoRandom(chunkX * 7 + i, chunkZ * 13 + j);
+                    let rand = pseudoRandom(chunkX * 9 + i, chunkZ * 11 + j);
                     
-                    if (rand > 0.62) { // 모바일 기기 통로 확보를 위해 벽 확률 살짝 낮춤
+                    if (rand > 0.6) { 
                         let wpX = startX + i * step;
                         let wpZ = startZ + j * step;
 
+                        // 스폰 구역 통로 보장
                         if (Math.abs(wpX) < 5 && Math.abs(wpZ) < 5) continue;
 
-                        let wallGeo = rand > 0.8 ? 
-                            new THREE.BoxGeometry(step, WALL_HEIGHT, 0.4) : 
-                            new THREE.BoxGeometry(0.4, WALL_HEIGHT, step);
+                        let objectContainer = new THREE.Group();
+                        objectContainer.position.set(wpX, WALL_HEIGHT / 2, wpZ);
 
-                        let wall = new THREE.Mesh(wallGeo, wallMat);
-                        wall.position.set(
-                            wpX + (rand > 0.8 ? step/2 : 0), 
-                            WALL_HEIGHT / 2, 
-                            wpZ + (rand > 0.8 ? 0 : step/2)
-                        );
+                        // 난수값에 따라 커다란 하트 또는 리본 배치
+                        if (rand > 0.8) {
+                            // 대형 하트 배치
+                            const heartMesh = new THREE.Mesh(heartGeo, heartMat);
+                            heartMesh.scale.set(1.4, 1.4, 1.4); // 크게 확장
+                            objectContainer.add(heartMesh);
+                        } else {
+                            // 리본 배치
+                            const ribbon = createRibbonGeometry();
+                            ribbon.scale.set(1.2, 1.2, 1.2);
+                            objectContainer.add(ribbon);
+                        }
 
-                        chunkGroup.add(wall);
-                        wallsArray.push(wall);
+                        // 충돌 영역 설정을 위한 보이지 않는 벽 컬라이더 결합
+                        const colliderGeo = new THREE.BoxGeometry(3.5, WALL_HEIGHT, 3.5);
+                        const colliderMat = new THREE.MeshBasicMaterial({ visible: false }); // 눈엔 안 보임
+                        const collider = new THREE.Mesh(colliderGeo, colliderMat);
+                        objectContainer.add(collider);
+
+                        chunkGroup.add(objectContainer);
+                        wallsArray.push(collider); // 안 보이는 컬라이더 박스로 벽 충돌 체크
                     }
                 }
             }
@@ -298,7 +408,7 @@
             const pX = Math.floor(camera.position.x / CHUNK_SIZE);
             const pZ = Math.floor(camera.position.z / CHUNK_SIZE);
             
-            const renderDistance = 1; // 모바일 연산부하 방지를 위해 주변 1타일만 유지 (안개로 가림)
+            const renderDistance = 1; 
             const currentKeys = new Set();
 
             for (let x = -renderDistance; x <= renderDistance; x++) {
@@ -311,9 +421,14 @@
             for (let [key, group] of loadedChunks.entries()) {
                 if (!currentKeys.has(key)) {
                     scene.remove(group);
-                    group.children.forEach(child => {
-                        let idx = wallsArray.indexOf(child);
-                        if(idx > -1) wallsArray.splice(idx, 1);
+                    group.children.forEach(container => {
+                        // 그룹 컨테이너 안의 투명 컬라이더를 찾아서 해제
+                        if(container.children) {
+                            container.children.forEach(child => {
+                                let idx = wallsArray.indexOf(child);
+                                if(idx > -1) wallsArray.splice(idx, 1);
+                            });
+                        }
                     });
                     loadedChunks.delete(key);
                 }
@@ -326,9 +441,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- 벽 충돌 체크 ---
+        // --- 충돌 감지 함수 ---
         function checkCollision(newPos) {
-            const playerRadius = 0.5;
+            const playerRadius = 0.8; // 플레이어 볼륨 확보
             for (let wall of wallsArray) {
                 let bbox = new THREE.Box3().setFromObject(wall);
                 if (newPos.x + playerRadius > bbox.min.x && newPos.x - playerRadius < bbox.max.x &&
@@ -339,35 +454,31 @@
             return false;
         }
 
-        // --- 메인 애니메이션 루프 ---
+        // --- 루프 애니메이션 ---
         function animate() {
             requestAnimationFrame(animate);
 
             const time = performance.now();
-            const delta = Math.min((time - prevTime) / 1000, 0.1); // 프레임 드랍 시 튕김 방지 예외처리
+            const delta = Math.min((time - prevTime) / 1000, 0.1);
             prevTime = time;
 
-            // 1. 시선 회전 계산
             const cameraTarget = new THREE.Vector3();
             cameraTarget.x = Math.sin(yaw) * Math.cos(pitch);
             cameraTarget.y = Math.sin(pitch);
             cameraTarget.z = Math.cos(yaw) * Math.cos(pitch);
             camera.lookAt(camera.position.clone().add(cameraTarget));
 
-            // 2. 조이스틱 값 기반 이동 연산
             if (moveX !== 0 || moveZ !== 0) {
                 const camLookXZ = new THREE.Vector3(cameraTarget.x, 0, cameraTarget.z).normalize();
                 const camRightXZ = new THREE.Vector3().crossVectors(camLookXZ, new THREE.Vector3(0, 1, 0)).normalize();
 
-                // 조이스틱 벡터를 카메라 시선 기준 실제 이동 벡터로 변환
                 let moveVector = new THREE.Vector3()
-                    .addScaledVector(camLookXZ, -moveZ * 4.5 * delta) // 앞뒤 속도
-                    .addScaledVector(camRightXZ, moveX * 4.5 * delta); // 좌우 속도
+                    .addScaledVector(camLookXZ, -moveZ * 5.0 * delta) 
+                    .addScaledVector(camRightXZ, moveX * 5.0 * delta); 
                 
                 let oldPosition = camera.position.clone();
                 let newPosition = camera.position.clone().add(moveVector);
 
-                // 슬라이딩 충돌 처리 (X, Z 분리 검증)
                 let testPos = oldPosition.clone();
                 testPos.x = newPosition.x;
                 if (!checkCollision(testPos)) {
