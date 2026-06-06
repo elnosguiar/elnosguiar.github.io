@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Backrooms - Mobile</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* 브라우저 기본 스크롤/바운스 방지 */
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #d4c590;
+            text-shadow: 2px 2px 3px #000;
+            pointer-events: none;
+            font-size: 14px;
+            z-index: 10;
+        }
+        
+        /* 모바일 가상 조이스틱 (좌하단) */
+        #joystick-zone {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(212, 197, 144, 0.5);
+            border-radius: 50%;
+            z-index: 20;
+            touch-action: none;
+        }
+        #joystick-stick {
+            position: absolute;
+            top: 35px;
+            left: 35px;
+            width: 50px;
+            height: 50px;
+            background: rgba(212, 197, 144, 0.8);
+            border-radius: 50%;
+            transition: transform 0.05s linear;
+        }
+
+        /* 우측 시선 전환 영역 터치 안내 */
+        #touch-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(212, 197, 144, 0.4);
+            font-size: 12px;
+            pointer-events: none;
+            text-align: right;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    
+    <div id="ui">
+        <h3 style="margin:0;">LEVEL 0</h3>
+        <p style="margin:5px 0 0 0;">화면 우측을 쓸어 넘겨 둘러보세요.</p>
+    </div>
+
+    <div id="touch-hint">화면 오른쪽 드래그: 시선 회전</div>
+
+    <div id="joystick-zone">
+        <div id="joystick-stick"></div>
+    </div>
+
+    <script>
+        // --- 게임 설정 및 최적화 ---
+        const CHUNK_SIZE = 30; // 모바일 최적화를 위해 청크 크기 축소 (기존 40)
+        const WALL_HEIGHT = 4;
+        const GRID_SIZE = 3;   // 내부 격자 단순화 (연산 감소 및 패스 확보)
+        
+        let scene, camera, renderer;
+        let moveX = 0, moveZ = 0; // 조이스틱 입력값 (-1 ~ 1)
+        let velocity = new THREE.Vector3();
+        let prevTime = performance.now();
+        
+        let yaw = 0, pitch = 0;
+        const mobileSensitivity = 0.005;
+
+        const loadedChunks = new Map();
+        const wallsArray = [];
+
+        const container = document.getElementById('canvas-container');
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickStick = document.getElementById('joystick-stick');
+
+        // --- 모바일 터치 이벤트 (시선 회전) ---
+        let touchStartId = null;
+        let prevTouchX = 0, prevTouchY = 0;
+
+        window.addEventListener('touchstart', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                let touch = e.changedTouches[i];
+                // 화면 우측 절반을 터치했을 때만 시선 회전으로 인식
+                if (touch.clientX > window.innerWidth / 2 && touchStartId === null) {
+                    touchStartId = touch.identifier;
+                    prevTouchX = touch.clientX;
+                    prevTouchY = touch.clientY;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                let touch = e.changedTouches[i];
+                if (touch.identifier === touchStartId) {
+                    let deltaX = touch.clientX - prevTouchX;
+                    let deltaY = touch.clientY - prevTouchY;
+
+                    yaw -= deltaX * mobileSensitivity;
+                    pitch -= deltaY * mobileSensitivity;
+                    pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch)); // 각도 제한
+
+                    prevTouchX = touch.clientX;
+                    prevTouchY = touch.clientY;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchStartId) {
+                    touchStartId = null;
+                }
+            }
+        });
+
+        // --- 가상 조이스틱 로직 (이동) ---
+        let joystickTouchId = null;
+        const joystickCenter = { x: 60, y: 60 }; // 가상 패드 중심 (120의 절반)
+        const maxRadius = 45;
+
+        joystickZone.addEventListener('touchstart', (e) => {
+            if (joystickTouchId === null) {
+                let touch = e.changedTouches[0];
+                joystickTouchId = touch.identifier;
+                handleJoystick(touch);
+            }
+        }, { passive: false });
+
+        joystickZone.addEventListener('touchmove', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                let touch = e.changedTouches[i];
+                if (touch.identifier === joystickTouchId) {
+                    handleJoystick(touch);
+                }
+            }
+        }, { passive: false });
+
+        joystickZone.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joystickTouchId) {
+                    joystickTouchId = null;
+                    moveX = 0;
+                    moveZ = 0;
+                    joystickStick.style.transform = `translate(0px, 0px)`;
+                }
+            }
+        });
+
+        function handleJoystick(touch) {
+            let rect = joystickZone.getBoundingClientRect();
+            let touchX = touch.clientX - rect.left;
+            let touchY = touch.clientY - rect.top;
+
+            let deltaX = touchX - joystickCenter.x;
+            let deltaY = touchY - joystickCenter.y;
+            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            if (distance > maxRadius) {
+                deltaX = (deltaX / distance) * maxRadius;
+                deltaY = (deltaY / distance) * maxRadius;
+                distance = maxRadius;
+            }
+
+            joystickStick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+            // 이동 방향 벡터화 (-1 ~ 1 범위)
+            moveX = deltaX / maxRadius;
+            moveZ = deltaY / maxRadius; // 조이스틱 상단이 -Z(전진) 방향이 됨
+        }
+
+        // --- 게임 초기화 및 최적화 설정 ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x8a7d55, 0.05); // 모바일 가시거리 최적화를 위해 안개 진하게
+
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 1.6, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" }); // 성능 최적화 옵션 적용
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 고해상도 폰 기기 발열 방지 (최대 2단계 제한)
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x8a7d55);
+            container.appendChild(renderer.domElement);
+
+            // 광원 최적화 (모바일은 연산 최소화가 필수)
+            const ambientLight = new THREE.AmbientLight(0xfffaed, 0.7);
+            scene.add(ambientLight);
+
+            const playerLight = new THREE.PointLight(0xfffee0, 0.8, 12);
+            playerLight.position.set(0, 1.5, 0);
+            camera.add(playerLight);
+            scene.add(camera);
+
+            window.addEventListener('resize', onWindowResize);
+            
+            updateChunks();
+            animate();
+        }
+
+        function pseudoRandom(x, z) {
+            let cx = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453123;
+            return cx - Math.floor(cx);
+        }
+
+        // --- 절차적 맵 생성 ---
+        function createChunk(chunkX, chunkZ) {
+            const chunkKey = `${chunkX},${chunkZ}`;
+            if (loadedChunks.has(chunkKey)) return;
+
+            const chunkGroup = new THREE.Group();
+            const startX = chunkX * CHUNK_SIZE;
+            const startZ = chunkZ * CHUNK_SIZE;
+
+            // 바닥/천장 통합 박스 모델로 레이어 개수 최적화 가능하나 직관성을 위해 유지
+            const floorGeo = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x5a5238, roughness: 0.9 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(startX + CHUNK_SIZE/2, 0, startZ + CHUNK_SIZE/2);
+            chunkGroup.add(floor);
+
+            const ceilGeo = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
+            const ceilMat = new THREE.MeshStandardMaterial({ color: 0x9c9273, roughness: 0.6 });
+            const ceiling = new THREE.Mesh(ceilGeo, ceilMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.set(startX + CHUNK_SIZE/2, WALL_HEIGHT, startZ + CHUNK_SIZE/2);
+            chunkGroup.add(ceiling);
+
+            // 벽 생성 
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0xbaa977, roughness: 0.8 });
+            const step = CHUNK_SIZE / GRID_SIZE;
+
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                for (let j = 0; j <= GRID_SIZE; j++) {
+                    let rand = pseudoRandom(chunkX * 7 + i, chunkZ * 13 + j);
+                    
+                    if (rand > 0.62) { // 모바일 기기 통로 확보를 위해 벽 확률 살짝 낮춤
+                        let wpX = startX + i * step;
+                        let wpZ = startZ + j * step;
+
+                        if (Math.abs(wpX) < 5 && Math.abs(wpZ) < 5) continue;
+
+                        let wallGeo = rand > 0.8 ? 
+                            new THREE.BoxGeometry(step, WALL_HEIGHT, 0.4) : 
+                            new THREE.BoxGeometry(0.4, WALL_HEIGHT, step);
+
+                        let wall = new THREE.Mesh(wallGeo, wallMat);
+                        wall.position.set(
+                            wpX + (rand > 0.8 ? step/2 : 0), 
+                            WALL_HEIGHT / 2, 
+                            wpZ + (rand > 0.8 ? 0 : step/2)
+                        );
+
+                        chunkGroup.add(wall);
+                        wallsArray.push(wall);
+                    }
+                }
+            }
+
+            scene.add(chunkGroup);
+            loadedChunks.set(chunkKey, chunkGroup);
+        }
+
+        function updateChunks() {
+            const pX = Math.floor(camera.position.x / CHUNK_SIZE);
+            const pZ = Math.floor(camera.position.z / CHUNK_SIZE);
+            
+            const renderDistance = 1; // 모바일 연산부하 방지를 위해 주변 1타일만 유지 (안개로 가림)
+            const currentKeys = new Set();
+
+            for (let x = -renderDistance; x <= renderDistance; x++) {
+                for (let z = -renderDistance; z <= renderDistance; z++) {
+                    createChunk(pX + x, pZ + z);
+                    currentKeys.add(`${pX + x},${pZ + z}`);
+                }
+            }
+
+            for (let [key, group] of loadedChunks.entries()) {
+                if (!currentKeys.has(key)) {
+                    scene.remove(group);
+                    group.children.forEach(child => {
+                        let idx = wallsArray.indexOf(child);
+                        if(idx > -1) wallsArray.splice(idx, 1);
+                    });
+                    loadedChunks.delete(key);
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- 벽 충돌 체크 ---
+        function checkCollision(newPos) {
+            const playerRadius = 0.5;
+            for (let wall of wallsArray) {
+                let bbox = new THREE.Box3().setFromObject(wall);
+                if (newPos.x + playerRadius > bbox.min.x && newPos.x - playerRadius < bbox.max.x &&
+                    newPos.z + playerRadius > bbox.min.z && newPos.z - playerRadius < bbox.max.z) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // --- 메인 애니메이션 루프 ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = Math.min((time - prevTime) / 1000, 0.1); // 프레임 드랍 시 튕김 방지 예외처리
+            prevTime = time;
+
+            // 1. 시선 회전 계산
+            const cameraTarget = new THREE.Vector3();
+            cameraTarget.x = Math.sin(yaw) * Math.cos(pitch);
+            cameraTarget.y = Math.sin(pitch);
+            cameraTarget.z = Math.cos(yaw) * Math.cos(pitch);
+            camera.lookAt(camera.position.clone().add(cameraTarget));
+
+            // 2. 조이스틱 값 기반 이동 연산
+            if (moveX !== 0 || moveZ !== 0) {
+                const camLookXZ = new THREE.Vector3(cameraTarget.x, 0, cameraTarget.z).normalize();
+                const camRightXZ = new THREE.Vector3().crossVectors(camLookXZ, new THREE.Vector3(0, 1, 0)).normalize();
+
+                // 조이스틱 벡터를 카메라 시선 기준 실제 이동 벡터로 변환
+                let moveVector = new THREE.Vector3()
+                    .addScaledVector(camLookXZ, -moveZ * 4.5 * delta) // 앞뒤 속도
+                    .addScaledVector(camRightXZ, moveX * 4.5 * delta); // 좌우 속도
+                
+                let oldPosition = camera.position.clone();
+                let newPosition = camera.position.clone().add(moveVector);
+
+                // 슬라이딩 충돌 처리 (X, Z 분리 검증)
+                let testPos = oldPosition.clone();
+                testPos.x = newPosition.x;
+                if (!checkCollision(testPos)) {
+                    camera.position.x = newPosition.x;
+                }
+                
+                testPos = oldPosition.clone();
+                testPos.z = newPosition.z;
+                if (!checkCollision(testPos)) {
+                    camera.position.z = newPosition.z;
+                }
+
+                updateChunks();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
