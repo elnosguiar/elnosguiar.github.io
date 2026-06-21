@@ -2,93 +2,81 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Online & Single</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Backrooms - Mobile & 3D</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: white; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: white; user-select: none; touch-action: none; }
         #menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; overflow-y: auto; padding: 20px 0; }
-        h1 { color: #d6c48f; text-shadow: 2px 2px 0 #000; margin-bottom: 30px; text-align: center; }
-        .box { background: #222; padding: 20px; border: 2px solid #d6c48f; margin: 10px; border-radius: 8px; width: 300px; text-align: center; }
+        h1 { color: #d6c48f; text-shadow: 2px 2px 0 #000; margin-bottom: 20px; text-align: center; }
+        .box { background: #222; padding: 15px; border: 2px solid #d6c48f; margin: 10px; border-radius: 8px; width: 280px; text-align: center; }
         input { width: 90%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #555; color: #fff; text-align: center; font-size: 16px; box-sizing: border-box; }
         button { background: #d6c48f; color: #000; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; transition: 0.2s; }
-        button:hover { background: #e3d2a4; transform: scale(1.02); }
+        button:hover { background: #e3d2a4; }
         .btn-single { background: #555; color: #fff; margin-top: 10px; }
-        .btn-single:hover { background: #777; }
-        #game-ui { position: absolute; top: 10px; left: 10px; z-index: 10; display: none; text-shadow: 1px 1px 0 #000; pointer-events: none; line-height: 1.5; }
+        
+        #game-ui { position: absolute; top: 10px; left: 10px; z-index: 10; display: none; text-shadow: 1px 1px 0 #000; pointer-events: none; line-height: 1.5; font-size: 14px; }
         .crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: rgba(255,255,255,0.8); transform: translate(-50%, -50%); border-radius: 50%; z-index: 10; display: none; pointer-events: none; }
+        
+        /* 모바일 가상 조이스틱 UI */
+        .joystick-zone { position: absolute; bottom: 20px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); display: none; z-index: 20; pointer-events: none; }
+        .joystick-knob { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); transform: translate(-50%, -50%); }
+        #joystick-left { left: 20px; }
+        #joystick-right { right: 20px; }
     </style>
 </head>
 <body>
 
     <div id="menu">
         <h1>THE BACKROOMS</h1>
-        
         <div class="box">
             <h3 style="color: #aaa; margin-top: 0;">싱글 플레이</h3>
             <button id="btn-single" class="btn-single">혼자 탐험하기</button>
         </div>
-
-        <h2 style="margin: 10px 0; color: #555;">OR MULTIPLAYER</h2>
-
+        <h2 style="margin: 5px 0; color: #555;">OR</h2>
         <div class="box">
             <h3 style="margin-top: 0;">방 만들기 (Host)</h3>
-            <p style="font-size: 12px; color: #aaa;">친구에게 아래 코드를 알려주세요</p>
             <input type="text" id="my-id" readonly value="발급 중...">
         </div>
-
         <div class="box">
             <h3 style="margin-top: 0;">방 접속 (Join)</h3>
-            <input type="text" id="join-id" placeholder="친구의 방 코드 입력">
+            <input type="text" id="join-id" placeholder="코드 입력">
             <button id="btn-join">접속하기</button>
         </div>
-        <p id="status-msg" style="color: #ff5555; margin-top: 10px; font-weight: bold;"></p>
+        <p id="status-msg" style="color: #ff5555; margin-top: 5px; font-weight: bold;"></p>
     </div>
 
     <div id="game-ui">
         상태: <span id="conn-status" style="color: #55ff55;">연결됨</span><br>
-        조작: [W A S D] 이동 / [← →] 시점 회전
+        [PC] WASD 이동 / 방향키 시점<br>
+        [모바일] 화면 양쪽 드래그
     </div>
     <div class="crosshair" id="crosshair"></div>
+
+    <div id="joystick-left" class="joystick-zone"><div class="joystick-knob" id="knob-left"></div></div>
+    <div id="joystick-right" class="joystick-zone"><div class="joystick-knob" id="knob-right"></div></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
     <script>
-        // === 1. P2P 네트워크 및 모드 설정 ===
+        // === 1. P2P 네트워크 설정 ===
         const peer = new Peer(); 
         let conn;
         let isGameStarted = false;
-        let isSinglePlayer = false; // 싱글 플레이어 여부 추적
+        let isSinglePlayer = false;
 
-        // 내 Peer ID 발급 완료 시
-        peer.on('open', (id) => {
-            document.getElementById('my-id').value = id;
-        });
+        peer.on('open', (id) => document.getElementById('my-id').value = id);
+        peer.on('connection', (connection) => { conn = connection; setupNetwork(); startGame(); });
 
-        // [방장 모드] 누군가 접속했을 때
-        peer.on('connection', (connection) => {
-            conn = connection;
-            setupNetworkListeners();
-            startGame();
-        });
-
-        // [참가자 모드] 접속 버튼
         document.getElementById('btn-join').addEventListener('click', () => {
             const joinId = document.getElementById('join-id').value.trim();
             if (!joinId) return;
             document.getElementById('status-msg').innerText = "연결 시도 중...";
-            
             conn = peer.connect(joinId);
-            conn.on('open', () => {
-                setupNetworkListeners();
-                startGame();
-            });
-            conn.on('error', (err) => {
-                document.getElementById('status-msg').innerText = "연결 실패. 코드를 확인하세요.";
-            });
+            conn.on('open', () => { setupNetwork(); startGame(); });
+            conn.on('error', () => document.getElementById('status-msg').innerText = "연결 실패!");
         });
 
-        // [싱글 플레이] 버튼
         document.getElementById('btn-single').addEventListener('click', () => {
             isSinglePlayer = true;
             document.getElementById('conn-status').innerText = "싱글 플레이 (오프라인)";
@@ -96,8 +84,7 @@
             startGame();
         });
 
-        // 네트워크 수신 리스너
-        function setupNetworkListeners() {
+        function setupNetwork() {
             conn.on('data', (data) => {
                 if (remotePlayer && data.x !== undefined) {
                     remotePlayer.position.set(data.x, 1, data.z);
@@ -105,26 +92,35 @@
                 }
             });
             conn.on('close', () => {
-                document.getElementById('conn-status').innerText = "상대방 연결 끊김";
+                document.getElementById('conn-status').innerText = "연결 끊김";
                 document.getElementById('conn-status').style.color = "#ff5555";
                 if(remotePlayer) scene.remove(remotePlayer);
             });
         }
 
-        // === 2. 3D 게임 환경 설정 ===
+        // === 2. 3D 엔진 및 조작 설정 ===
         let scene, camera, renderer;
-        let myPos = { x: 4, z: 4, ry: 0 };
+        let myPos = { x: 4, z: 4, rx: 0, ry: 0 }; // rx(상하 끄덕임), ry(좌우 도리도리)
         let remotePlayer;
         const keys = {};
+        
+        // 모바일 조이스틱 변수
+        let isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        let touchMove = { id: null, x: 0, y: 0 }; // 이동용 (왼쪽)
+        let touchLook = { id: null, x: 0, y: 0 }; // 시점용 (오른쪽)
 
         function startGame() {
             if (isGameStarted) return;
             isGameStarted = true;
 
-            // UI 전환
             document.getElementById('menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('crosshair').style.display = 'block';
+            
+            if (isMobile) {
+                document.getElementById('joystick-left').style.display = 'block';
+                document.getElementById('joystick-right').style.display = 'block';
+            }
 
             // 씬 셋업
             scene = new THREE.Scene();
@@ -132,30 +128,27 @@
             scene.fog = new THREE.Fog(0xd6c48f, 2, 20);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.rotation.order = 'YXZ'; // FPS 1인칭 카메라 필수 설정 (Y축 회전 후 X축 회전)
             
             renderer = new THREE.WebGLRenderer({ antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // 절차적 텍스처
-            function makeTex(color1, color2, isWall) {
-                const cvs = document.createElement('canvas');
-                cvs.width = 256; cvs.height = 256;
-                const ctx = cvs.getContext('2d');
-                ctx.fillStyle = color1; ctx.fillRect(0, 0, 256, 256);
-                
+            // 텍스처 생성 함수
+            function makeTex(c1, c2, isWall) {
+                const cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 256;
+                const ctx = cvs.getContext('2d'); ctx.fillStyle = c1; ctx.fillRect(0,0,256,256);
                 if (isWall) {
-                    ctx.strokeStyle = color2; ctx.lineWidth = 2;
+                    ctx.strokeStyle = c2; ctx.lineWidth = 2;
                     for(let i=0; i<=256; i+=32) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,256); ctx.stroke(); }
                 } else {
                     for(let i=0; i<8000; i++) {
-                        ctx.fillStyle = Math.random() > 0.5 ? color2 : color1;
+                        ctx.fillStyle = Math.random() > 0.5 ? c2 : c1;
                         ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
                     }
                 }
                 const tex = new THREE.CanvasTexture(cvs);
-                tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-                return tex;
+                tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; return tex;
             }
 
             const wallMat = new THREE.MeshLambertMaterial({ map: makeTex('#e3c778', '#c4aa5a', true) });
@@ -177,105 +170,152 @@
                 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
             ];
 
-            const TILE_SIZE = 4;
-            const geo = new THREE.BoxGeometry(TILE_SIZE, 3.5, TILE_SIZE);
+            const geo = new THREE.BoxGeometry(4, 3.5, 4);
             for(let z=0; z<mapData.length; z++) {
                 for(let x=0; x<mapData[z].length; x++) {
                     if(mapData[z][x] === 1) {
                         const wall = new THREE.Mesh(geo, wallMat);
-                        wall.position.set(x * TILE_SIZE, 1.75, z * TILE_SIZE);
+                        wall.position.set(x * 4, 1.75, z * 4);
                         scene.add(wall);
                     }
                 }
             }
 
-            // 바닥 및 천장
+            // 바닥/천장/조명
             const planeGeo = new THREE.PlaneGeometry(200, 200);
-            const floor = new THREE.Mesh(planeGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2; scene.add(floor);
-            
+            const floor = new THREE.Mesh(planeGeo, floorMat); floor.rotation.x = -Math.PI / 2; scene.add(floor);
             const ceil = new THREE.Mesh(planeGeo, new THREE.MeshLambertMaterial({color: '#d9d4c5'}));
             ceil.rotation.x = Math.PI / 2; ceil.position.y = 3.5; scene.add(ceil);
-
-            // 조명
+            
             scene.add(new THREE.AmbientLight(0xffffff, 0.4));
             for(let i=0; i<5; i++) {
                 const pt = new THREE.PointLight(0xfff5c2, 0.8, 20);
-                pt.position.set(Math.random()*40, 3.3, Math.random()*40);
-                scene.add(pt);
+                pt.position.set(Math.random()*40, 3.3, Math.random()*40); scene.add(pt);
             }
 
-            // 멀티플레이일 때만 상대방 모델 생성
             if (!isSinglePlayer) {
-                const remoteGeo = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
-                const remoteMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-                remotePlayer = new THREE.Mesh(remoteGeo, remoteMat);
+                remotePlayer = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2, 16), new THREE.MeshLambertMaterial({ color: 0x111111 }));
                 scene.add(remotePlayer);
             }
 
-            // 조작 이벤트
+            // 이벤트 리스너 등록
             window.addEventListener('keydown', (e) => keys[e.code] = true);
             window.addEventListener('keyup', (e) => keys[e.code] = false);
+            setupMobileControls();
 
             animate();
         }
 
+        // === 3. 모바일 터치 (조이스틱) 로직 ===
+        function setupMobileControls() {
+            const hw = window.innerWidth / 2;
+            const kL = document.getElementById('knob-left');
+            const kR = document.getElementById('knob-right');
+
+            window.addEventListener('touchstart', (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+                    if (t.clientX < hw && touchMove.id === null) {
+                        touchMove.id = t.identifier;
+                        touchMove.startX = t.clientX; touchMove.startY = t.clientY;
+                    } else if (t.clientX >= hw && touchLook.id === null) {
+                        touchLook.id = t.identifier;
+                        touchLook.startX = t.clientX; touchLook.startY = t.clientY;
+                    }
+                }
+            });
+
+            window.addEventListener('touchmove', (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+                    if (t.identifier === touchMove.id) {
+                        touchMove.x = Math.max(-40, Math.min(40, t.clientX - touchMove.startX));
+                        touchMove.y = Math.max(-40, Math.min(40, t.clientY - touchMove.startY));
+                        kL.style.transform = `translate(calc(-50% + ${touchMove.x}px), calc(-50% + ${touchMove.y}px))`;
+                    } else if (t.identifier === touchLook.id) {
+                        touchLook.x = Math.max(-40, Math.min(40, t.clientX - touchLook.startX));
+                        touchLook.y = Math.max(-40, Math.min(40, t.clientY - touchLook.startY));
+                        kR.style.transform = `translate(calc(-50% + ${touchLook.x}px), calc(-50% + ${touchLook.y}px))`;
+                    }
+                }
+            });
+
+            function resetTouch(id) {
+                if (touchMove.id === id) { touchMove.id = null; touchMove.x = 0; touchMove.y = 0; kL.style.transform = `translate(-50%, -50%)`; }
+                if (touchLook.id === id) { touchLook.id = null; touchLook.x = 0; touchLook.y = 0; kR.style.transform = `translate(-50%, -50%)`; }
+            }
+            window.addEventListener('touchend', (e) => { for(let i=0; i<e.changedTouches.length; i++) resetTouch(e.changedTouches[i].identifier); });
+            window.addEventListener('touchcancel', (e) => { for(let i=0; i<e.changedTouches.length; i++) resetTouch(e.changedTouches[i].identifier); });
+        }
+
         // 충돌 체크
         function canMove(nx, nz) {
-            const maxZ = 10;
-            const maxX = 14;
-            const gridX = Math.round(nx / 4);
-            const gridZ = Math.round(nz / 4);
-            
-            if (gridZ < 0 || gridZ > maxZ || gridX < 0 || gridX > maxX) return true; 
-            
             const mapData = [
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                [1,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
-                [1,0,1,0,1,0,1,1,1,1,1,0,1,0,1],
-                [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
-                [1,0,1,1,1,0,1,0,1,0,1,1,1,0,1],
-                [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
-                [1,1,1,0,1,1,1,0,1,1,1,0,1,0,1],
-                [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
-                [1,0,1,1,1,0,1,1,1,0,1,1,1,1,1],
-                [1,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], [1,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
+                [1,0,1,0,1,0,1,1,1,1,1,0,1,0,1], [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+                [1,0,1,1,1,0,1,0,1,0,1,1,1,0,1], [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+                [1,1,1,0,1,1,1,0,1,1,1,0,1,0,1], [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+                [1,0,1,1,1,0,1,1,1,0,1,1,1,1,1], [1,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
                 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
             ];
+            const gridX = Math.round(nx / 4), gridZ = Math.round(nz / 4);
+            if (gridZ < 0 || gridZ > 10 || gridX < 0 || gridX > 14) return true; 
             return mapData[gridZ][gridX] === 0;
         }
 
+        // === 4. 애니메이션 프레임 (FPS 로직 적용) ===
         function animate() {
             requestAnimationFrame(animate);
 
-            const speed = 0.1;
-            const rotSpeed = 0.04;
+            const speed = 0.08;
+            const rotSpeed = 0.03;
 
-            // 시점 회전
+            // 1. 시점 회전 (PC & 모바일)
             if (keys['ArrowLeft']) myPos.ry += rotSpeed;
             if (keys['ArrowRight']) myPos.ry -= rotSpeed;
+            if (keys['ArrowUp']) myPos.rx += rotSpeed;
+            if (keys['ArrowDown']) myPos.rx -= rotSpeed;
 
-            let dirX = -Math.sin(myPos.ry);
-            let dirZ = -Math.cos(myPos.ry);
+            if (touchLook.id !== null) {
+                myPos.ry -= touchLook.x * 0.0015;
+                myPos.rx -= touchLook.y * 0.0015;
+            }
 
-            let nx = myPos.x;
-            let nz = myPos.z;
+            // 고개 꺾임 방지 (상하 90도 제한)
+            myPos.rx = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, myPos.rx));
 
-            // 이동
-            if (keys['KeyW']) { nx += dirX * speed; nz += dirZ * speed; }
-            if (keys['KeyS']) { nx -= dirX * speed; nz -= dirZ * speed; }
-            if (keys['KeyA']) { nx -= Math.cos(myPos.ry) * speed; nz += Math.sin(myPos.ry) * speed; }
-            if (keys['KeyD']) { nx += Math.cos(myPos.ry) * speed; nz -= Math.sin(myPos.ry) * speed; }
+            // 2. 이동 벡터 계산 (카메라가 바라보는 방향 기준)
+            let moveX = 0, moveZ = 0;
 
-            // 충돌 처리
+            if (keys['KeyW']) moveZ = -1;
+            if (keys['KeyS']) moveZ = 1;
+            if (keys['KeyA']) moveX = -1;
+            if (keys['KeyD']) moveX = 1;
+
+            if (touchMove.id !== null) {
+                moveX = touchMove.x / 40;
+                moveZ = touchMove.y / 40;
+            }
+
+            // 카메라 회전(ry)을 적용한 이동 방향 계산
+            const cos = Math.cos(myPos.ry);
+            const sin = Math.sin(myPos.ry);
+            
+            let dx = (moveX * cos + moveZ * sin) * speed;
+            let dz = (-moveX * sin + moveZ * cos) * speed;
+
+            let nx = myPos.x + dx;
+            let nz = myPos.z + dz;
+
+            // 3. 충돌 처리
             if (canMove(nx, myPos.z)) myPos.x = nx;
             if (canMove(myPos.x, nz)) myPos.z = nz;
 
-            // 카메라 업데이트
+            // 4. 카메라 업데이트
             camera.position.set(myPos.x, 1.5, myPos.z);
-            camera.rotation.y = myPos.ry;
+            camera.rotation.set(myPos.rx, myPos.ry, 0);
 
-            // 멀티플레이 중일 때만 내 위치 전송
+            // 5. 네트워크 동기화
             if (!isSinglePlayer && conn && conn.open) {
                 conn.send({ x: myPos.x, z: myPos.z, ry: myPos.ry });
             }
