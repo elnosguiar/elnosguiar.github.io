@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Backrooms - Online & Single</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: white; user-select: none; }
+        #menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; overflow-y: auto; padding: 20px 0; }
+        h1 { color: #d6c48f; text-shadow: 2px 2px 0 #000; margin-bottom: 30px; text-align: center; }
+        .box { background: #222; padding: 20px; border: 2px solid #d6c48f; margin: 10px; border-radius: 8px; width: 300px; text-align: center; }
+        input { width: 90%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #555; color: #fff; text-align: center; font-size: 16px; box-sizing: border-box; }
+        button { background: #d6c48f; color: #000; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; transition: 0.2s; }
+        button:hover { background: #e3d2a4; transform: scale(1.02); }
+        .btn-single { background: #555; color: #fff; margin-top: 10px; }
+        .btn-single:hover { background: #777; }
+        #game-ui { position: absolute; top: 10px; left: 10px; z-index: 10; display: none; text-shadow: 1px 1px 0 #000; pointer-events: none; line-height: 1.5; }
+        .crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: rgba(255,255,255,0.8); transform: translate(-50%, -50%); border-radius: 50%; z-index: 10; display: none; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="menu">
+        <h1>THE BACKROOMS</h1>
+        
+        <div class="box">
+            <h3 style="color: #aaa; margin-top: 0;">싱글 플레이</h3>
+            <button id="btn-single" class="btn-single">혼자 탐험하기</button>
+        </div>
+
+        <h2 style="margin: 10px 0; color: #555;">OR MULTIPLAYER</h2>
+
+        <div class="box">
+            <h3 style="margin-top: 0;">방 만들기 (Host)</h3>
+            <p style="font-size: 12px; color: #aaa;">친구에게 아래 코드를 알려주세요</p>
+            <input type="text" id="my-id" readonly value="발급 중...">
+        </div>
+
+        <div class="box">
+            <h3 style="margin-top: 0;">방 접속 (Join)</h3>
+            <input type="text" id="join-id" placeholder="친구의 방 코드 입력">
+            <button id="btn-join">접속하기</button>
+        </div>
+        <p id="status-msg" style="color: #ff5555; margin-top: 10px; font-weight: bold;"></p>
+    </div>
+
+    <div id="game-ui">
+        상태: <span id="conn-status" style="color: #55ff55;">연결됨</span><br>
+        조작: [W A S D] 이동 / [← →] 시점 회전
+    </div>
+    <div class="crosshair" id="crosshair"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+
+    <script>
+        // === 1. P2P 네트워크 및 모드 설정 ===
+        const peer = new Peer(); 
+        let conn;
+        let isGameStarted = false;
+        let isSinglePlayer = false; // 싱글 플레이어 여부 추적
+
+        // 내 Peer ID 발급 완료 시
+        peer.on('open', (id) => {
+            document.getElementById('my-id').value = id;
+        });
+
+        // [방장 모드] 누군가 접속했을 때
+        peer.on('connection', (connection) => {
+            conn = connection;
+            setupNetworkListeners();
+            startGame();
+        });
+
+        // [참가자 모드] 접속 버튼
+        document.getElementById('btn-join').addEventListener('click', () => {
+            const joinId = document.getElementById('join-id').value.trim();
+            if (!joinId) return;
+            document.getElementById('status-msg').innerText = "연결 시도 중...";
+            
+            conn = peer.connect(joinId);
+            conn.on('open', () => {
+                setupNetworkListeners();
+                startGame();
+            });
+            conn.on('error', (err) => {
+                document.getElementById('status-msg').innerText = "연결 실패. 코드를 확인하세요.";
+            });
+        });
+
+        // [싱글 플레이] 버튼
+        document.getElementById('btn-single').addEventListener('click', () => {
+            isSinglePlayer = true;
+            document.getElementById('conn-status').innerText = "싱글 플레이 (오프라인)";
+            document.getElementById('conn-status').style.color = "#aaaaaa";
+            startGame();
+        });
+
+        // 네트워크 수신 리스너
+        function setupNetworkListeners() {
+            conn.on('data', (data) => {
+                if (remotePlayer && data.x !== undefined) {
+                    remotePlayer.position.set(data.x, 1, data.z);
+                    remotePlayer.rotation.y = data.ry;
+                }
+            });
+            conn.on('close', () => {
+                document.getElementById('conn-status').innerText = "상대방 연결 끊김";
+                document.getElementById('conn-status').style.color = "#ff5555";
+                if(remotePlayer) scene.remove(remotePlayer);
+            });
+        }
+
+        // === 2. 3D 게임 환경 설정 ===
+        let scene, camera, renderer;
+        let myPos = { x: 4, z: 4, ry: 0 };
+        let remotePlayer;
+        const keys = {};
+
+        function startGame() {
+            if (isGameStarted) return;
+            isGameStarted = true;
+
+            // UI 전환
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            document.getElementById('crosshair').style.display = 'block';
+
+            // 씬 셋업
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xd6c48f);
+            scene.fog = new THREE.Fog(0xd6c48f, 2, 20);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // 절차적 텍스처
+            function makeTex(color1, color2, isWall) {
+                const cvs = document.createElement('canvas');
+                cvs.width = 256; cvs.height = 256;
+                const ctx = cvs.getContext('2d');
+                ctx.fillStyle = color1; ctx.fillRect(0, 0, 256, 256);
+                
+                if (isWall) {
+                    ctx.strokeStyle = color2; ctx.lineWidth = 2;
+                    for(let i=0; i<=256; i+=32) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,256); ctx.stroke(); }
+                } else {
+                    for(let i=0; i<8000; i++) {
+                        ctx.fillStyle = Math.random() > 0.5 ? color2 : color1;
+                        ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+                    }
+                }
+                const tex = new THREE.CanvasTexture(cvs);
+                tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+                return tex;
+            }
+
+            const wallMat = new THREE.MeshLambertMaterial({ map: makeTex('#e3c778', '#c4aa5a', true) });
+            const floorMat = new THREE.MeshLambertMaterial({ map: makeTex('#7a6f50', '#61583d', false) });
+            floorMat.map.repeat.set(20, 20);
+
+            // 맵 생성
+            const mapData = [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
+                [1,0,1,0,1,0,1,1,1,1,1,0,1,0,1],
+                [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+                [1,0,1,1,1,0,1,0,1,0,1,1,1,0,1],
+                [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+                [1,1,1,0,1,1,1,0,1,1,1,0,1,0,1],
+                [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+                [1,0,1,1,1,0,1,1,1,0,1,1,1,1,1],
+                [1,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            ];
+
+            const TILE_SIZE = 4;
+            const geo = new THREE.BoxGeometry(TILE_SIZE, 3.5, TILE_SIZE);
+            for(let z=0; z<mapData.length; z++) {
+                for(let x=0; x<mapData[z].length; x++) {
+                    if(mapData[z][x] === 1) {
+                        const wall = new THREE.Mesh(geo, wallMat);
+                        wall.position.set(x * TILE_SIZE, 1.75, z * TILE_SIZE);
+                        scene.add(wall);
+                    }
+                }
+            }
+
+            // 바닥 및 천장
+            const planeGeo = new THREE.PlaneGeometry(200, 200);
+            const floor = new THREE.Mesh(planeGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2; scene.add(floor);
+            
+            const ceil = new THREE.Mesh(planeGeo, new THREE.MeshLambertMaterial({color: '#d9d4c5'}));
+            ceil.rotation.x = Math.PI / 2; ceil.position.y = 3.5; scene.add(ceil);
+
+            // 조명
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            for(let i=0; i<5; i++) {
+                const pt = new THREE.PointLight(0xfff5c2, 0.8, 20);
+                pt.position.set(Math.random()*40, 3.3, Math.random()*40);
+                scene.add(pt);
+            }
+
+            // 멀티플레이일 때만 상대방 모델 생성
+            if (!isSinglePlayer) {
+                const remoteGeo = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+                const remoteMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+                remotePlayer = new THREE.Mesh(remoteGeo, remoteMat);
+                scene.add(remotePlayer);
+            }
+
+            // 조작 이벤트
+            window.addEventListener('keydown', (e) => keys[e.code] = true);
+            window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+            animate();
+        }
+
+        // 충돌 체크
+        function canMove(nx, nz) {
+            const maxZ = 10;
+            const maxX = 14;
+            const gridX = Math.round(nx / 4);
+            const gridZ = Math.round(nz / 4);
+            
+            if (gridZ < 0 || gridZ > maxZ || gridX < 0 || gridX > maxX) return true; 
+            
+            const mapData = [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
+                [1,0,1,0,1,0,1,1,1,1,1,0,1,0,1],
+                [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+                [1,0,1,1,1,0,1,0,1,0,1,1,1,0,1],
+                [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+                [1,1,1,0,1,1,1,0,1,1,1,0,1,0,1],
+                [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+                [1,0,1,1,1,0,1,1,1,0,1,1,1,1,1],
+                [1,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            ];
+            return mapData[gridZ][gridX] === 0;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const speed = 0.1;
+            const rotSpeed = 0.04;
+
+            // 시점 회전
+            if (keys['ArrowLeft']) myPos.ry += rotSpeed;
+            if (keys['ArrowRight']) myPos.ry -= rotSpeed;
+
+            let dirX = -Math.sin(myPos.ry);
+            let dirZ = -Math.cos(myPos.ry);
+
+            let nx = myPos.x;
+            let nz = myPos.z;
+
+            // 이동
+            if (keys['KeyW']) { nx += dirX * speed; nz += dirZ * speed; }
+            if (keys['KeyS']) { nx -= dirX * speed; nz -= dirZ * speed; }
+            if (keys['KeyA']) { nx -= Math.cos(myPos.ry) * speed; nz += Math.sin(myPos.ry) * speed; }
+            if (keys['KeyD']) { nx += Math.cos(myPos.ry) * speed; nz -= Math.sin(myPos.ry) * speed; }
+
+            // 충돌 처리
+            if (canMove(nx, myPos.z)) myPos.x = nx;
+            if (canMove(myPos.x, nz)) myPos.z = nz;
+
+            // 카메라 업데이트
+            camera.position.set(myPos.x, 1.5, myPos.z);
+            camera.rotation.y = myPos.ry;
+
+            // 멀티플레이 중일 때만 내 위치 전송
+            if (!isSinglePlayer && conn && conn.open) {
+                conn.send({ x: myPos.x, z: myPos.z, ry: myPos.ry });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            if(!camera) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
