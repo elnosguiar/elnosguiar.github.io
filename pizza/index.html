@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍕 피자 비</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+    background: linear-gradient(#6ec6ff, #dff7ff);
+    height: 100vh;
+    font-family: sans-serif;
+}
+
+.pizza {
+    position: absolute;
+    top: -60px;
+    font-size: 40px;
+    animation: fall linear forwards;
+    user-select: none;
+}
+
+@keyframes fall {
+    from {
+        transform: translateY(-60px) rotate(0deg);
+    }
+    to {
+        transform: translateY(110vh) rotate(720deg);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<script>
+function createPizza() {
+    const pizza = document.createElement("div");
+    pizza.className = "pizza";
+    pizza.textContent = "🍕";
+
+    pizza.style.left = Math.random() * window.innerWidth + "px";
+
+    const duration = Math.random() * 3 + 2;
+    pizza.style.animationDuration = duration + "s";
+
+    pizza.style.fontSize = (Math.random() * 30 + 30) + "px";
+
+    document.body.appendChild(pizza);
+
+    setTimeout(() => {
+        pizza.remove();
+    }, duration * 1000);
+}
+
+// 0.2초마다 새로운 피자 생성
+setInterval(createPizza, 200);
+</script>
+
+</body>
+</html>
