@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Realistic 3D Pizza Rain</title>
+  <title>Interstellar Pizza Rain</title>
   <style>
     * {
       margin: 0;
@@ -16,18 +16,18 @@
     html, body {
       width: 100%;
       height: 100%;
-      height: -webkit-fill-available; /* 모바일 주소창 대응 풀스크린 */
+      height: -webkit-fill-available;
       overflow: hidden;
-      background: #020008;
+      background-color: #000000;
       touch-action: none;
-      position: fixed; /* 모바일 바운스 스크롤 방지 */
+      position: fixed;
       top: 0;
       left: 0;
     }
     #container {
       width: 100vw;
       height: 100vh;
-      height: 100dvh; /* Dynamic Viewport Height */
+      height: 100dvh;
       display: block;
     }
   </style>
@@ -39,7 +39,7 @@
 
   <script>
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const PIZZA_COUNT = isMobile ? 35 : 70;
+    const PIZZA_COUNT = isMobile ? 30 : 60;
 
     // --- 1. Real Pizza Texture Generator ---
     function generatePizzaTexture() {
@@ -48,7 +48,7 @@
       canvas.height = 1024;
       const ctx = canvas.getContext('2d');
 
-      // 1) 노릇한 치즈 바탕
+      // 치즈 및 노릇한 도우
       const grad = ctx.createRadialGradient(512, 1000, 50, 512, 1000, 950);
       grad.addColorStop(0, '#ffe17d');
       grad.addColorStop(0.5, '#f3b033');
@@ -57,18 +57,18 @@
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1024, 1024);
 
-      // 2) 토마토 소스 & 치즈 결
-      for (let i = 0; i < 400; i++) {
+      // 토마토 소스 마블링
+      for (let i = 0; i < 350; i++) {
         const x = Math.random() * 1024;
         const y = Math.random() * 1024;
         const r = Math.random() * 30 + 10;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle = Math.random() > 0.4 ? 'rgba(180, 40, 10, 0.25)' : 'rgba(255, 245, 200, 0.4)';
+        ctx.fillStyle = Math.random() > 0.4 ? 'rgba(180, 40, 10, 0.25)' : 'rgba(255, 245, 200, 0.35)';
         ctx.fill();
       }
 
-      // 3) 페퍼로니
+      // 페퍼로니
       const pepperoniPositions = [
         { x: 512, y: 720, r: 95 },
         { x: 360, y: 480, r: 85 },
@@ -88,27 +88,27 @@
         ctx.fillStyle = pGrad;
         ctx.fill();
 
-        for (let k = 0; k < 25; k++) {
+        for (let k = 0; k < 20; k++) {
           const ang = Math.random() * Math.PI * 2;
           const dist = Math.random() * (p.r - 10);
           ctx.beginPath();
-          ctx.arc(p.x + Math.cos(ang) * dist, p.y + Math.sin(ang) * dist, Math.random() * 4 + 1, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 220, 200, 0.7)';
+          ctx.arc(p.x + Math.cos(ang) * dist, p.y + Math.sin(ang) * dist, Math.random() * 3.5 + 1, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 220, 200, 0.65)';
           ctx.fill();
         }
       });
 
-      // 4) 올리브
+      // 올리브
       const olivePositions = [
         { x: 480, y: 530 }, { x: 580, y: 390 }, { x: 310, y: 350 }, { x: 690, y: 350 }
       ];
       olivePositions.forEach(o => {
         ctx.beginPath();
-        ctx.arc(o.x, o.y, 26, 0, Math.PI * 2);
+        ctx.arc(o.x, o.y, 25, 0, Math.PI * 2);
         ctx.fillStyle = '#111111';
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(o.x, o.y, 11, 0, Math.PI * 2);
+        ctx.arc(o.x, o.y, 10, 0, Math.PI * 2);
         ctx.fillStyle = '#e2a344';
         ctx.fill();
       });
@@ -116,67 +116,132 @@
       return new THREE.CanvasTexture(canvas);
     }
 
-    // --- 2. 3D Scene 및 예쁜 은하수/우주 배경 ---
+    // --- 2. 인터스텔라 '가르강튀아' 블랙홀 텍스처 Generator ---
+    function generateAccretionDiskTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createRadialGradient(512, 512, 100, 512, 512, 500);
+      grad.addColorStop(0.0, 'rgba(0, 0, 0, 0)');
+      grad.addColorStop(0.2, 'rgba(255, 240, 200, 0.95)'); // 강착디스크 중심 강렬한 빛
+      grad.addColorStop(0.4, 'rgba(255, 140, 30, 0.8)');   // 주황빛 열기
+      grad.addColorStop(0.7, 'rgba(160, 40, 0, 0.4)');     // 외곽 암붉은빛
+      grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      // 소용돌이 고리 결 추가
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 40; i++) {
+        ctx.beginPath();
+        ctx.arc(512, 512, 120 + i * 8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // --- 3. 3D Scene 및 인터스텔라 우주 구성 ---
     const container = document.getElementById('container');
     const scene = new THREE.Scene();
-    
-    // 깊이감 있는 은하수 안개
-    scene.fog = new THREE.FogExp2(0x0c061a, 0.02);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 16);
+    camera.position.set(0, 0, 17);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.3;
     container.appendChild(renderer.domElement);
 
-    // 반짝이는 별 입자(Stars Particle) 배경 추가
+    // [가르강튀아 블랙홀 구축]
+    const blackHoleGroup = new THREE.Group();
+
+    // 1) 사건의 지평선 (Event Horizon - 암흑 구체)
+    const holeGeo = new THREE.SphereGeometry(2.8, 64, 64);
+    const holeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const eventHorizon = new THREE.Mesh(holeGeo, holeMat);
+    blackHoleGroup.add(eventHorizon);
+
+    // 2) 회전하는 강착디스크 (Accretion Disk)
+    const diskGeo = new THREE.PlaneGeometry(16, 16);
+    const diskTexture = generateAccretionDiskTexture();
+    const diskMat = new THREE.MeshBasicMaterial({
+      map: diskTexture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const accretionDisk = new THREE.Mesh(diskGeo, diskMat);
+    accretionDisk.rotation.x = Math.PI / 2.3; // 살짝 기울인 각도
+    blackHoleGroup.add(accretionDisk);
+
+    // 3) 중력 렌즈 왜곡링 (아인슈타인 링 - 수직 빛 고리)
+    const haloGeo = new THREE.RingGeometry(3.0, 5.2, 64);
+    const haloMat = new THREE.MeshBasicMaterial({
+      map: diskTexture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      opacity: 0.75,
+      depthWrite: false
+    });
+    const haloRing = new THREE.Mesh(haloGeo, haloMat);
+    haloRing.rotation.y = 0.2;
+    blackHoleGroup.add(haloRing);
+
+    blackHoleGroup.position.set(0, 0, -10); // 배경 뒤쪽에 배치
+    scene.add(blackHoleGroup);
+
+    // [우주 성운 파티클 & 이동하는 별들]
+    const starCount = isMobile ? 400 : 900;
     const starGeo = new THREE.BufferGeometry();
-    const starCount = isMobile ? 300 : 700;
     const starPos = new Float32Array(starCount * 3);
+    const starSpeed = [];
+
     for (let i = 0; i < starCount * 3; i += 3) {
       starPos[i] = (Math.random() - 0.5) * 80;
       starPos[i + 1] = (Math.random() - 0.5) * 80;
-      starPos[i + 2] = (Math.random() - 0.5) * 50 - 10;
+      starPos[i + 2] = (Math.random() - 0.5) * 60 - 10;
+      starSpeed.push(Math.random() * 0.05 + 0.01);
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
     const starMat = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 0.15,
+      color: 0xffeedd,
+      size: 0.18,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.85
     });
     const starField = new THREE.Points(starGeo, starMat);
     scene.add(starField);
 
-    // --- 3. 조명 연출 ---
-    const ambientLight = new THREE.AmbientLight(0xffe8d6, 0.8);
+    // --- 4. 조명 연출 (블랙홀의 붉은 열기 + 우주 조명) ---
+    const ambientLight = new THREE.AmbientLight(0xffeacc, 0.7);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    mainLight.position.set(10, 20, 15);
+    // 강착디스크에서 뿜어져 나오는 자체 주황빛 Light
+    const holeLight = new THREE.PointLight(0xff7700, 5, 40);
+    holeLight.position.set(0, 0, -8);
+    scene.add(holeLight);
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    mainLight.position.set(10, 15, 10);
     scene.add(mainLight);
 
-    // 환상적인 보라/분홍 네온 림라이트
-    const rimLight1 = new THREE.PointLight(0xff0077, 3, 30);
-    rimLight1.position.set(-12, -10, 5);
-    scene.add(rimLight1);
-
-    const rimLight2 = new THREE.PointLight(0x00d2ff, 2, 30);
-    rimLight2.position.set(12, 10, 5);
-    scene.add(rimLight2);
-
-    // --- 4. 정밀 수정된 3D 피자 조각 ---
+    // --- 5. 피자 조각 3D 메쉬 생성 ---
     const pizzaTexture = generatePizzaTexture();
 
     function createRealisticPizzaSlice() {
       const group = new THREE.Group();
 
-      const radius = 3.6;        // 피자 반지름
-      const angle = Math.PI / 3; // 60도 부채꼴 (1/6 조각)
+      const radius = 3.6;
+      const angle = Math.PI / 3;
       const halfAngle = angle / 2;
 
       // 1) 피자 도우 메인 바디
@@ -200,7 +265,6 @@
 
       const pizzaGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
       
-      // UV 정밀 매핑
       pizzaGeo.computeBoundingBox();
       const max = pizzaGeo.boundingBox.max;
       const min = pizzaGeo.boundingBox.min;
@@ -228,7 +292,7 @@
       const sliceMesh = new THREE.Mesh(pizzaGeo, [topMaterial, crustMaterial]);
       group.add(sliceMesh);
 
-      // 2) 빵 끝 크러스트 위치 정밀 보정 (도우 곡선에 딱 맞춤)
+      // 2) 도우 테두리 크러스트 (정밀 고정)
       const crustGeo = new THREE.TorusGeometry(
         Math.sin(halfAngle) * radius * 1.02, 
         0.22, 
@@ -238,18 +302,15 @@
       );
       const crustMesh = new THREE.Mesh(crustGeo, crustMaterial);
       
-      // 정밀 위치 및 회전 정렬
       crustMesh.rotation.x = Math.PI / 2;
       crustMesh.rotation.z = Math.PI / 2 - halfAngle;
       crustMesh.position.set(0, Math.cos(halfAngle) * radius - 0.1, 0.08);
       group.add(crustMesh);
 
-      // 피자 그룹 중심점 피벗 배치
       pizzaGeo.center();
-      // 크러스트 중심점도 피자 전체 중심으로 수동 맞춤
       crustMesh.position.y -= (max.y + min.y) / 2;
 
-      group.scale.setScalar(0.75);
+      group.scale.setScalar(0.72);
       return group;
     }
 
@@ -278,13 +339,13 @@
       scene.add(pizza);
     }
 
-    // --- 5. 인터렉션 및 모바일 리사이즈 대응 ---
+    // --- 6. 모바일 제스처 & 센서 대응 ---
     let targetX = 0;
     let targetY = 0;
 
     function onMove(x, y) {
-      targetX = (x / window.innerWidth - 0.5) * 2.5;
-      targetY = (y / window.innerHeight - 0.5) * 2.5;
+      targetX = (x / window.innerWidth - 0.5) * 3;
+      targetY = (y / window.innerHeight - 0.5) * 3;
     }
 
     window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
@@ -295,8 +356,8 @@
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', (e) => {
         if (e.gamma !== null) {
-          targetX = (e.gamma / 40) * 1.5;
-          targetY = ((e.beta - 40) / 40) * 1.5;
+          targetX = (e.gamma / 40) * 2;
+          targetY = ((e.beta - 40) / 40) * 2;
         }
       }, true);
     }
@@ -312,22 +373,27 @@
     window.addEventListener('resize', resize);
     window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 
-    // --- 6. 애니메이션 루프 ---
+    // --- 7. 메인 루프 (인터스텔라 연출) ---
     const clock = new THREE.Clock();
 
     function animate() {
       requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
 
-      // 카메라 부드러운 움직임
+      // 카메라 시선 부드러운 반응
       camera.position.x += (targetX - camera.position.x) * 0.04;
       camera.position.y += (-targetY - camera.position.y) * 0.04;
       camera.lookAt(0, 0, 0);
 
-      // 별 반짝임 회전 효과
-      starField.rotation.y = elapsedTime * 0.02;
+      // 블랙홀 회전 애니메이션
+      accretionDisk.rotation.z = elapsedTime * 0.15; // 강착디스크 회전
+      haloRing.rotation.z = -elapsedTime * 0.08;      // 중력고리 서서히 회전
+      blackHoleGroup.rotation.y = Math.sin(elapsedTime * 0.2) * 0.1; // 은근한 유동성
 
-      // 피자 낙하 및 자이로 회전
+      // 우주 별자리 유동 효과
+      starField.rotation.y = elapsedTime * 0.015;
+
+      // 피자 낙하 및 회전
       pizzas.forEach(p => {
         p.mesh.position.y -= p.speedY;
         p.mesh.position.x = p.initialX + Math.sin(elapsedTime * 1.5 + p.initialX) * 0.4;
@@ -336,6 +402,7 @@
         p.mesh.rotation.y += p.rotSpeedY;
         p.mesh.rotation.z += p.rotSpeedZ;
 
+        // 바닥 도착시 리셋
         if (p.mesh.position.y < -17) {
           p.mesh.position.y = 17;
           p.mesh.position.x = (Math.random() - 0.5) * 28;
