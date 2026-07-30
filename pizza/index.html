@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>3D Pizza Rain</title>
+  <title>Realistic 3D Pizza Rain</title>
   <style>
     * {
       margin: 0;
@@ -17,206 +17,278 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #0d0714;
+      background: radial-gradient(circle at center, #1a0f2e 0%, #05020a 100%);
       touch-action: none;
     }
-    #webgl-container {
+    #container {
       width: 100%;
       height: 100%;
       display: block;
     }
   </style>
-  <!-- Three.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-  <div id="webgl-container"></div>
+  <div id="container"></div>
 
   <script>
-    // --- 1. 모바일 최적화 및 기본 씬 구성 ---
-    const container = document.getElementById('webgl-container');
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // 모바일에서는 피자 개수를 줄여 60fps 유지
-    const PIZZA_COUNT = isMobile ? 45 : 90;
-    
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0d0714, 0.035);
+    const PIZZA_COUNT = isMobile ? 35 : 70;
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 15);
+    // --- 1. Real Pizza Texture Procedural Generator ---
+    // 캔버스 연산으로 고화질 피자 표면 질감 생성
+    function generatePizzaTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    // 고해상도 모바일 디스플레이(Retina) 대응 (최대 2로 제한하여 과도한 발열 방지)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    container.appendChild(renderer.domElement);
+      // 1) 치즈 기본 바탕 (구워진 노릇한 느낌)
+      const grad = ctx.createRadialGradient(512, 1000, 50, 512, 1000, 950);
+      grad.addColorStop(0, '#ffe17d');
+      grad.addColorStop(0.5, '#f3b033');
+      grad.addColorStop(0.85, '#d47816');
+      grad.addColorStop(1, '#8c4108'); // 도우 테두리 근처 탄 느낌
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 1024);
 
-    // --- 2. 조명 설정 ---
-    const ambientLight = new THREE.AmbientLight(0xfff5ea, 0.8);
-    scene.add(ambientLight);
+      // 2) 토마토 소스 비침 & 치즈 마블링
+      for (let i = 0; i < 400; i++) {
+        const x = Math.random() * 1024;
+        const y = Math.random() * 1024;
+        const r = Math.random() * 30 + 10;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = Math.random() > 0.4 ? 'rgba(180, 40, 10, 0.25)' : 'rgba(255, 245, 200, 0.4)';
+        ctx.fill();
+      }
 
-    const dirLight = new THREE.DirectionalLight(0xffaa44, 2.0);
-    dirLight.position.set(5, 12, 8);
-    scene.add(dirLight);
-
-    const pointLight = new THREE.PointLight(0xff3366, 3, 20);
-    pointLight.position.set(0, 0, 5);
-    scene.add(pointLight);
-
-    // --- 3. 피자 3D 메쉬 Procedural 생성 ---
-    function createPizzaGroup() {
-      const pizzaGroup = new THREE.Group();
-
-      // 1) 도우 바닥 (치즈 layer 포함)
-      const crustGeo = new THREE.CylinderGeometry(1.2, 0.1, 0.25, 3, 1, false, 0, Math.PI / 3);
-      const crustMat = new THREE.MeshStandardMaterial({ 
-        color: 0xe09843, 
-        roughness: 0.6,
-        metalness: 0.1
-      });
-      const crust = new THREE.Mesh(crustGeo, crustMat);
-      crust.rotation.y = Math.PI / 6;
-      pizzaGroup.add(crust);
-
-      // 2) 토마토 소스 & 토핑 레이어
-      const cheeseGeo = new THREE.CylinderGeometry(1.1, 0.08, 0.27, 3, 1, false, 0, Math.PI / 3);
-      const cheeseMat = new THREE.MeshStandardMaterial({ 
-        color: 0xffcc00, 
-        roughness: 0.3,
-        metalness: 0.2
-      });
-      const cheese = new THREE.Mesh(cheeseGeo, cheeseMat);
-      cheese.rotation.y = Math.PI / 6;
-      pizzaGroup.add(cheese);
-
-      // 3) 도우 엣지 (빵 테두리)
-      const edgeGeo = new THREE.CylinderGeometry(1.22, 1.22, 0.3, 12, 1, false, -Math.PI / 6, Math.PI / 3);
-      const edgeMat = new THREE.MeshStandardMaterial({ color: 0xc87728, roughness: 0.7 });
-      const edge = new THREE.Mesh(edgeGeo, edgeMat);
-      edge.position.set(0, 0.02, 0);
-      pizzaGroup.add(edge);
-
-      // 4) 페퍼로니 토핑들
-      const pepGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.31, 12);
-      const pepMat = new THREE.MeshStandardMaterial({ color: 0xb22222, roughness: 0.4 });
-      
-      const pepPositions = [
-        { x: 0, z: -0.5 },
-        { x: -0.3, z: -0.1 },
-        { x: 0.3, z: -0.1 },
-        { x: 0, z: 0.3 }
+      // 3) 페퍼로니 그래픽
+      const pepperoniPositions = [
+        { x: 512, y: 700, r: 100 },
+        { x: 350, y: 450, r: 90 },
+        { x: 670, y: 480, r: 95 },
+        { x: 512, y: 300, r: 85 },
+        { x: 380, y: 200, r: 70 },
+        { x: 640, y: 220, r: 75 }
       ];
 
-      pepPositions.forEach(pos => {
-        const pep = new THREE.Mesh(pepGeo, pepMat);
-        pep.position.set(pos.x, 0, pos.z);
-        pizzaGroup.add(pep);
+      pepperoniPositions.forEach(p => {
+        // 페퍼로니 살코기 질감
+        const pGrad = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, p.r);
+        pGrad.addColorStop(0, '#a81c07');
+        pGrad.addColorStop(0.8, '#780f00');
+        pGrad.addColorStop(1, '#4a0800');
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = pGrad;
+        ctx.fill();
+
+        // 페퍼로니 기름기 & 하얀 지방 입자
+        for (let k = 0; k < 30; k++) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = Math.random() * (p.r - 10);
+          ctx.beginPath();
+          ctx.arc(p.x + Math.cos(ang) * dist, p.y + Math.sin(ang) * dist, Math.random() * 4 + 1, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 220, 200, 0.7)';
+          ctx.fill();
+        }
       });
 
-      // 피자 중심점 재정렬
-      pizzaGroup.scale.setScalar(0.8);
-      return pizzaGroup;
+      // 4) 블랙 올리브 토핑
+      const olivePositions = [
+        { x: 480, y: 500 }, { x: 580, y: 360 }, { x: 300, y: 320 }, { x: 700, y: 320 }
+      ];
+      olivePositions.forEach(o => {
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, 28, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, 12, 0, Math.PI * 2);
+        ctx.fillStyle = '#e2a344'; // 구멍 사이로 보이는 치즈
+        ctx.fill();
+      });
+
+      return new THREE.CanvasTexture(canvas);
     }
 
-    // InstancedMesh 스타일 효과를 위한 객체 관리 배열
+    // --- 2. 3D Scene 기본 설정 ---
+    const container = document.getElementById('container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0a0512, 0.025);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 16);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    // --- 3. 조명 (치즈 윤기와 광택) ---
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 0.7);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    mainLight.position.set(10, 20, 15);
+    scene.add(mainLight);
+
+    // 반사광 (식감을 돋우는 주황/분홍 림라이트)
+    const rimLight = new THREE.PointLight(0xff5500, 2.5, 30);
+    rimLight.position.set(-10, -10, 5);
+    scene.add(rimLight);
+
+    // --- 4. 3D 피자 조각 렌더링 ---
+    const pizzaTexture = generatePizzaTexture();
+
+    function createRealisticPizzaSlice() {
+      const group = new THREE.Group();
+
+      // 피자 형태 (부채꼴 조각 Shape)
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(-1.3, 3.2);
+      shape.quadraticCurveTo(0, 3.6, 1.3, 3.2);
+      shape.lineTo(0, 0);
+
+      const extrudeSettings = {
+        depth: 0.18,
+        bevelEnabled: true,
+        bevelSegments: 3,
+        steps: 1,
+        bevelSize: 0.05,
+        bevelThickness: 0.05
+      };
+
+      const pizzaGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      
+      // UV 좌표 재계산 (상단면 텍스처 정밀 매핑)
+      pizzaGeo.computeBoundingBox();
+      const max = pizzaGeo.boundingBox.max;
+      const min = pizzaGeo.boundingBox.min;
+      const uvs = pizzaGeo.attributes.uv;
+      
+      for (let i = 0; i < uvs.count; i++) {
+        const x = pizzaGeo.attributes.position.getX(i);
+        const y = pizzaGeo.attributes.position.getY(i);
+        uvs.setXY(i, (x - min.x) / (max.x - min.x), (y - min.y) / (max.y - min.y));
+      }
+
+      // 윗면 : 치즈&페퍼로니 텍스처 + 광택 / 측면&바닥 : 노릇한 빵 도우
+      const topMaterial = new THREE.MeshStandardMaterial({
+        map: pizzaTexture,
+        roughness: 0.35,  // 기름진 유광 느낌
+        metalness: 0.1,
+        bumpMap: pizzaTexture, // 질감 입체감
+        bumpScale: 0.02
+      });
+
+      const crustMaterial = new THREE.MeshStandardMaterial({
+        color: 0xd2893d,
+        roughness: 0.8,
+        metalness: 0.0
+      });
+
+      const sliceMesh = new THREE.Mesh(pizzaGeo, [topMaterial, crustMaterial]);
+      
+      // 중심점 보정
+      pizzaGeo.center();
+      group.add(sliceMesh);
+
+      // 입체 테두리 (빵 크러스트)
+      const crustGeo = new THREE.TorusGeometry(1.35, 0.18, 8, 12, Math.PI / 3);
+      const crustMesh = new THREE.Mesh(crustGeo, crustMaterial);
+      crustMesh.position.set(0, 1.25, 0);
+      crustMesh.rotation.x = Math.PI / 2;
+      crustMesh.rotation.z = -Math.PI / 6;
+      group.add(crustMesh);
+
+      group.scale.setScalar(0.85);
+      return group;
+    }
+
+    // 피자 개체 생성 및 배열 저장
     const pizzas = [];
-    const masterPizza = createPizzaGroup();
+    const masterPizza = createRealisticPizzaSlice();
 
     for (let i = 0; i < PIZZA_COUNT; i++) {
       const pizza = masterPizza.clone();
       
-      // 위치, 회전, 속도 무작위 할당
-      const x = (Math.random() - 0.5) * 24;
-      const y = (Math.random() - 0.5) * 30;
-      const z = (Math.random() - 0.5) * 20 - 2;
+      const x = (Math.random() - 0.5) * 26;
+      const y = (Math.random() - 0.5) * 32;
+      const z = (Math.random() - 0.5) * 18 - 2;
 
       pizza.position.set(x, y, z);
       
-      // 개별 속성 부여
-      const pizzaData = {
+      pizzas.push({
         mesh: pizza,
-        speedY: Math.random() * 0.08 + 0.04,
-        rotSpeedX: (Math.random() - 0.5) * 0.04,
-        rotSpeedY: (Math.random() - 0.5) * 0.04,
-        rotSpeedZ: (Math.random() - 0.5) * 0.04,
+        speedY: Math.random() * 0.07 + 0.03,
+        rotSpeedX: (Math.random() - 0.5) * 0.03,
+        rotSpeedY: (Math.random() - 0.5) * 0.03,
+        rotSpeedZ: (Math.random() - 0.5) * 0.03,
         initialX: x
-      };
+      });
 
-      pizzas.push(pizzaData);
       scene.add(pizza);
     }
 
-    // --- 4. 인터렉션 (터치 및 자이로스코프) ---
+    // --- 5. 모바일 센서 & 인터렉션 ---
     let targetX = 0;
     let targetY = 0;
 
-    // 터치/마우스 이동 반응
-    function handleMove(clientX, clientY) {
-      targetX = (clientX / window.innerWidth - 0.5) * 3;
-      targetY = (clientY / window.innerHeight - 0.5) * 3;
+    function onMove(x, y) {
+      targetX = (x / window.innerWidth - 0.5) * 2.5;
+      targetY = (y / window.innerHeight - 0.5) * 2.5;
     }
 
-    window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
     window.addEventListener('touchmove', (e) => {
-      if (e.touches.length > 0) {
-        handleMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
+      if(e.touches.length > 0) onMove(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
 
-    // 모바일 자이로스코프(기기 기울임) 센서 대응
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', (e) => {
-        if (e.gamma !== null && e.beta !== null) {
-          targetX = (e.gamma / 45) * 2; // 좌우 기울임
-          targetY = ((e.beta - 45) / 45) * 2; // 앞뒤 기울임
+        if (e.gamma !== null) {
+          targetX = (e.gamma / 40) * 1.5;
+          targetY = ((e.beta - 40) / 40) * 1.5;
         }
       }, true);
     }
 
-    // 리사이즈 처리
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // --- 5. 프레임 애니메이션 루프 ---
+    // --- 6. 애니메이션 루프 ---
     const clock = new THREE.Clock();
 
     function animate() {
       requestAnimationFrame(animate);
-
       const elapsedTime = clock.getElapsedTime();
 
-      // 카메라 부드러운 유동성 (Lerp)
-      camera.position.x += (targetX - camera.position.x) * 0.05;
-      camera.position.y += (-targetY - camera.position.y) * 0.05;
+      // 카메라 완충 시선 이동
+      camera.position.x += (targetX - camera.position.x) * 0.04;
+      camera.position.y += (-targetY - camera.position.y) * 0.04;
       camera.lookAt(0, 0, 0);
 
-      // 조명 이동으로 동적 광택 표현
-      pointLight.position.x = Math.sin(elapsedTime * 1.5) * 8;
-      pointLight.position.y = Math.cos(elapsedTime * 1.2) * 8;
-
-      // 피자 떨어짐 및 회전 로직
+      // 낙하 및 회전
       pizzas.forEach(p => {
         p.mesh.position.y -= p.speedY;
-        
-        // 살짝 좌우로 흔들리는 낙하 운동
-        p.mesh.position.x = p.initialX + Math.sin(elapsedTime * 2 + p.initialX) * 0.3;
+        p.mesh.position.x = p.initialX + Math.sin(elapsedTime * 1.5 + p.initialX) * 0.4;
 
-        // 회전
         p.mesh.rotation.x += p.rotSpeedX;
         p.mesh.rotation.y += p.rotSpeedY;
         p.mesh.rotation.z += p.rotSpeedZ;
 
-        // 바닥에 닿으면 다시 상단으로 리셋
         if (p.mesh.position.y < -16) {
           p.mesh.position.y = 16;
-          p.mesh.position.x = (Math.random() - 0.5) * 24;
+          p.mesh.position.x = (Math.random() - 0.5) * 26;
           p.initialX = p.mesh.position.x;
         }
       });
