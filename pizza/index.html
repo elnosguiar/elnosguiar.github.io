@@ -2,84 +2,229 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>하늘에서 피자가 내려와!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>3D Pizza Rain</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-    }
-
-    body {
-      background: linear-gradient(to bottom, #1d2b64, #f8cdda);
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: 'Arial', sans-serif;
-    }
-
-    h1 {
-      color: white;
-      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
-      font-size: 3rem;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    /* 피자 요소 기본 스타일 */
-    .pizza {
-      position: absolute;
-      top: -60px;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
       user-select: none;
-      pointer-events: none;
-      animation: fall linear infinite;
     }
-
-    /* 낙하 및 회전 애니메이션 */
-    @keyframes fall {
-      0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(105vh) rotate(360deg);
-        opacity: 0.7;
-      }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0d0714;
+      touch-action: none;
+    }
+    #webgl-container {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
   </style>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-  <h1>🍕 하늘에서 피자가 내려와! 🍕</h1>
+  <div id="webgl-container"></div>
 
   <script>
-    function createPizza() {
-      const pizza = document.createElement('div');
-      pizza.classList.add('pizza');
-      pizza.innerText = '🍕';
+    // --- 1. 모바일 최적화 및 기본 씬 구성 ---
+    const container = document.getElementById('webgl-container');
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // 모바일에서는 피자 개수를 줄여 60fps 유지
+    const PIZZA_COUNT = isMobile ? 45 : 90;
+    
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0d0714, 0.035);
 
-      // 무작위 속성 설정
-      const startLeft = Math.random() * 100; // 좌우 위치 (0vw ~ 100vw)
-      const duration = Math.random() * 3 + 2; // 떨어지는 시간 (2초 ~ 5초)
-      const size = Math.random() * 30 + 20; // 피자 크기 (20px ~ 50px)
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 15);
 
-      pizza.style.left = `${startLeft}vw`;
-      pizza.style.animationDuration = `${duration}s`;
-      pizza.style.fontSize = `${size}px`;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // 고해상도 모바일 디스플레이(Retina) 대응 (최대 2로 제한하여 과도한 발열 방지)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    container.appendChild(renderer.domElement);
 
-      document.body.appendChild(pizza);
+    // --- 2. 조명 설정 ---
+    const ambientLight = new THREE.AmbientLight(0xfff5ea, 0.8);
+    scene.add(ambientLight);
 
-      // 화면 아래로 사라진 후 메모리 정리를 위해 요소 삭제
-      setTimeout(() => {
-        pizza.remove();
-      }, duration * 1000);
+    const dirLight = new THREE.DirectionalLight(0xffaa44, 2.0);
+    dirLight.position.set(5, 12, 8);
+    scene.add(dirLight);
+
+    const pointLight = new THREE.PointLight(0xff3366, 3, 20);
+    pointLight.position.set(0, 0, 5);
+    scene.add(pointLight);
+
+    // --- 3. 피자 3D 메쉬 Procedural 생성 ---
+    function createPizzaGroup() {
+      const pizzaGroup = new THREE.Group();
+
+      // 1) 도우 바닥 (치즈 layer 포함)
+      const crustGeo = new THREE.CylinderGeometry(1.2, 0.1, 0.25, 3, 1, false, 0, Math.PI / 3);
+      const crustMat = new THREE.MeshStandardMaterial({ 
+        color: 0xe09843, 
+        roughness: 0.6,
+        metalness: 0.1
+      });
+      const crust = new THREE.Mesh(crustGeo, crustMat);
+      crust.rotation.y = Math.PI / 6;
+      pizzaGroup.add(crust);
+
+      // 2) 토마토 소스 & 토핑 레이어
+      const cheeseGeo = new THREE.CylinderGeometry(1.1, 0.08, 0.27, 3, 1, false, 0, Math.PI / 3);
+      const cheeseMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffcc00, 
+        roughness: 0.3,
+        metalness: 0.2
+      });
+      const cheese = new THREE.Mesh(cheeseGeo, cheeseMat);
+      cheese.rotation.y = Math.PI / 6;
+      pizzaGroup.add(cheese);
+
+      // 3) 도우 엣지 (빵 테두리)
+      const edgeGeo = new THREE.CylinderGeometry(1.22, 1.22, 0.3, 12, 1, false, -Math.PI / 6, Math.PI / 3);
+      const edgeMat = new THREE.MeshStandardMaterial({ color: 0xc87728, roughness: 0.7 });
+      const edge = new THREE.Mesh(edgeGeo, edgeMat);
+      edge.position.set(0, 0.02, 0);
+      pizzaGroup.add(edge);
+
+      // 4) 페퍼로니 토핑들
+      const pepGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.31, 12);
+      const pepMat = new THREE.MeshStandardMaterial({ color: 0xb22222, roughness: 0.4 });
+      
+      const pepPositions = [
+        { x: 0, z: -0.5 },
+        { x: -0.3, z: -0.1 },
+        { x: 0.3, z: -0.1 },
+        { x: 0, z: 0.3 }
+      ];
+
+      pepPositions.forEach(pos => {
+        const pep = new THREE.Mesh(pepGeo, pepMat);
+        pep.position.set(pos.x, 0, pos.z);
+        pizzaGroup.add(pep);
+      });
+
+      // 피자 중심점 재정렬
+      pizzaGroup.scale.setScalar(0.8);
+      return pizzaGroup;
     }
 
-    // 150밀리초마다 피자 생성 (숫자를 줄이면 더 많이 떨어짐)
-    setInterval(createPizza, 150);
+    // InstancedMesh 스타일 효과를 위한 객체 관리 배열
+    const pizzas = [];
+    const masterPizza = createPizzaGroup();
+
+    for (let i = 0; i < PIZZA_COUNT; i++) {
+      const pizza = masterPizza.clone();
+      
+      // 위치, 회전, 속도 무작위 할당
+      const x = (Math.random() - 0.5) * 24;
+      const y = (Math.random() - 0.5) * 30;
+      const z = (Math.random() - 0.5) * 20 - 2;
+
+      pizza.position.set(x, y, z);
+      
+      // 개별 속성 부여
+      const pizzaData = {
+        mesh: pizza,
+        speedY: Math.random() * 0.08 + 0.04,
+        rotSpeedX: (Math.random() - 0.5) * 0.04,
+        rotSpeedY: (Math.random() - 0.5) * 0.04,
+        rotSpeedZ: (Math.random() - 0.5) * 0.04,
+        initialX: x
+      };
+
+      pizzas.push(pizzaData);
+      scene.add(pizza);
+    }
+
+    // --- 4. 인터렉션 (터치 및 자이로스코프) ---
+    let targetX = 0;
+    let targetY = 0;
+
+    // 터치/마우스 이동 반응
+    function handleMove(clientX, clientY) {
+      targetX = (clientX / window.innerWidth - 0.5) * 3;
+      targetY = (clientY / window.innerHeight - 0.5) * 3;
+    }
+
+    window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    // 모바일 자이로스코프(기기 기울임) 센서 대응
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', (e) => {
+        if (e.gamma !== null && e.beta !== null) {
+          targetX = (e.gamma / 45) * 2; // 좌우 기울임
+          targetY = ((e.beta - 45) / 45) * 2; // 앞뒤 기울임
+        }
+      }, true);
+    }
+
+    // 리사이즈 처리
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- 5. 프레임 애니메이션 루프 ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const elapsedTime = clock.getElapsedTime();
+
+      // 카메라 부드러운 유동성 (Lerp)
+      camera.position.x += (targetX - camera.position.x) * 0.05;
+      camera.position.y += (-targetY - camera.position.y) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      // 조명 이동으로 동적 광택 표현
+      pointLight.position.x = Math.sin(elapsedTime * 1.5) * 8;
+      pointLight.position.y = Math.cos(elapsedTime * 1.2) * 8;
+
+      // 피자 떨어짐 및 회전 로직
+      pizzas.forEach(p => {
+        p.mesh.position.y -= p.speedY;
+        
+        // 살짝 좌우로 흔들리는 낙하 운동
+        p.mesh.position.x = p.initialX + Math.sin(elapsedTime * 2 + p.initialX) * 0.3;
+
+        // 회전
+        p.mesh.rotation.x += p.rotSpeedX;
+        p.mesh.rotation.y += p.rotSpeedY;
+        p.mesh.rotation.z += p.rotSpeedZ;
+
+        // 바닥에 닿으면 다시 상단으로 리셋
+        if (p.mesh.position.y < -16) {
+          p.mesh.position.y = 16;
+          p.mesh.position.x = (Math.random() - 0.5) * 24;
+          p.initialX = p.mesh.position.x;
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
   </script>
 </body>
 </html>
