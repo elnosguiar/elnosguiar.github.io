@@ -3,329 +3,495 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>리얼 피자 왁뿌볼 (iOS 타격감 강화판)</title>
+    <title>피자 왁뿌볼 (Wax to Slime)</title>
     <style>
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
+        body, html {
             margin: 0;
             padding: 0;
-            background: #2c3e50;
-            background: radial-gradient(circle, #34495e 0%, #1a252f 100%);
-            height: 100vh;
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a2e;
             overflow: hidden;
+            touch-action: none; /* 모바일에서 스크롤 방지 */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
         }
-
-        /* iOS 타격감을 위한 화면 흔들림 효과 */
-        @keyframes screenShake {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            20% { transform: translate(-3px, 3px) rotate(-1deg); }
-            40% { transform: translate(3px, -3px) rotate(1deg); }
-            60% { transform: translate(-3px, -3px) rotate(0deg); }
-            80% { transform: translate(3px, 3px) rotate(1deg); }
-            100% { transform: translate(0, 0) rotate(0deg); }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
-        
-        body.shake {
-            animation: screenShake 0.15s ease-in-out;
-        }
-
         #ui-layer {
             position: absolute;
             top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
             text-align: center;
-            z-index: 10;
             pointer-events: none;
+            color: white;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            transition: opacity 0.5s ease;
         }
-
-        h1 {
-            color: #f39c12;
-            margin: 0;
-            font-size: 2rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        #score {
-            color: #fff;
-            font-size: 4rem;
-            font-weight: 900;
-            margin-top: 10px;
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        #game-area {
+        h1 { margin: 0; font-size: 28px; color: #ffb703; }
+        p { margin: 10px 0 0 0; font-size: 16px; opacity: 0.9; }
+        .hidden { opacity: 0 !important; }
+        
+        #resetBtn {
             position: absolute;
-            bottom: 15%;
-            width: 100%;
-            height: 60%;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-        }
-
-        #pizza {
-            width: 160px;
-            height: 160px;
-            background: #e67e22;
-            border-radius: 50%;
-            position: relative;
-            box-shadow: 0 15px 25px rgba(0,0,0,0.5), inset 0 0 15px #d35400;
-            cursor: pointer;
-            will-change: transform;
-        }
-
-        #pizza::before {
-            content: '';
-            position: absolute;
-            top: 12px; left: 12px; right: 12px; bottom: 12px;
-            background: #f1c40f;
-            border-radius: 50%;
-            box-shadow: inset 0 0 10px #e67e22;
-        }
-
-        .pepperoni {
-            position: absolute;
-            width: 28px;
-            height: 28px;
-            background: #c0392b;
-            border-radius: 50%;
-            box-shadow: inset 0 0 8px #922b21, 2px 2px 4px rgba(0,0,0,0.2);
-            z-index: 2;
-        }
-        .p1 { top: 30px; left: 65px; }
-        .p2 { top: 60px; left: 30px; }
-        .p3 { top: 70px; left: 100px; }
-        .p4 { top: 105px; left: 60px; }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            pointer-events: none;
-            will-change: transform, opacity;
-        }
-
-        .combo-text {
-            position: absolute;
-            color: #e74c3c;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: #e63946;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
             font-weight: bold;
-            font-size: 1.5rem;
-            pointer-events: none;
-            animation: floatUp 0.8s ease-out forwards;
-            text-shadow: 1px 1px 2px #fff;
-        }
-
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.4);
+            cursor: pointer;
+            display: none;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
-        <h1>🍕 왁뿌볼 콤보!</h1>
-        <div id="score">0</div>
+        <h1>피자 왁뿌볼 🍕</h1>
+        <p id="instruction">화면을 톡톡 쳐서 왁스를 부수세요!</p>
     </div>
+    
+    <button id="resetBtn">다시 굳히기 (Reset)</button>
+    <canvas id="gameCanvas"></canvas>
 
-    <div id="game-area">
-        <div id="pizza">
-            <div class="pepperoni p1"></div>
-            <div class="pepperoni p2"></div>
-            <div class="pepperoni p3"></div>
-            <div class="pepperoni p4"></div>
-        </div>
-    </div>
+<script>
+/**
+ * ==========================================
+ * 피자 왁뿌볼 (Wax & Slime Softbody Engine)
+ * ==========================================
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const uiLayer = document.getElementById('ui-layer');
+const instruction = document.getElementById('instruction');
+const resetBtn = document.getElementById('resetBtn');
 
-    <script>
-        const pizza = document.getElementById('pizza');
-        const scoreEl = document.getElementById('score');
+let width, height;
+let cx, cy;
+let gamePhase = 0; // 0: 왁스(고체), 1: 슬라임(액체)
+let waxHealth = 10; // 부서지기까지 필요한 터치 횟수
+
+// 반응형 캔버스 리사이징
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    cx = width / 2;
+    cy = height / 2;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ==========================================
+// 웹 오디오 API (효과음 절차적 생성 - 외부 파일 필요 없음)
+// ==========================================
+let actx;
+function initAudio() {
+    if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+}
+
+// 왁스 부서지는 소리 (화이트 노이즈 기반)
+function playCrackSound(isFinal) {
+    if(!actx) return;
+    const bufferSize = actx.sampleRate * (isFinal ? 0.3 : 0.1);
+    const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+    const noise = actx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const filter = actx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = isFinal ? 500 : 1000;
+    
+    const gainNode = actx.createGain();
+    gainNode.gain.setValueAtTime(isFinal ? 1 : 0.5, actx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + (isFinal ? 0.3 : 0.1));
+
+    noise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(actx.destination);
+    noise.start();
+}
+
+// 슬라임 쫀득쫀득한 소리 (FM 합성)
+let squishTime = 0;
+function playSquishSound() {
+    if(!actx) return;
+    const now = Date.now();
+    if(now - squishTime < 150) return; // 딜레이로 너무 자주 안나게 함
+    squishTime = now;
+
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, actx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, actx.currentTime + 0.1);
+    
+    gain.gain.setValueAtTime(0, actx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.3, actx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.2);
+    
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.start();
+    osc.stop(actx.currentTime + 0.2);
+}
+
+// 모바일 진동 (Haptics)
+function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// ==========================================
+// 왁스 피자 시스템 (고체)
+// ==========================================
+const baseRadius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
+let cracks = [];
+let particles = [];
+
+// 피자 토핑 데이터 (페퍼로니)
+const pepperonis = [
+    { a: 0, r: 0.3 }, { a: Math.PI*2/3, r: 0.5 }, { a: Math.PI*4/3, r: 0.4 },
+    { a: Math.PI/2, r: 0.7 }, { a: Math.PI*1.5, r: 0.6 }
+];
+
+function addCrack(tx, ty) {
+    const angle = Math.random() * Math.PI * 2;
+    const length = 50 + Math.random() * 80;
+    cracks.push({
+        x1: tx, y1: ty,
+        x2: tx + Math.cos(angle) * length,
+        y2: ty + Math.sin(angle) * length,
+        branch: Math.random() > 0.5
+    });
+}
+
+function createShatterExplosion() {
+    for(let i=0; i<40; i++) {
+        particles.push({
+            x: cx + (Math.random() - 0.5) * baseRadius,
+            y: cy + (Math.random() - 0.5) * baseRadius,
+            vx: (Math.random() - 0.5) * 20,
+            vy: (Math.random() - 0.5) * 20 - 5,
+            size: 5 + Math.random() * 15,
+            color: Math.random() > 0.3 ? '#ffb703' : '#e63946', // 치즈 또는 페퍼로니 색
+            rot: Math.random() * Math.PI,
+            rotV: (Math.random() - 0.5) * 0.5,
+            life: 1.0
+        });
+    }
+}
+
+// ==========================================
+// 슬라임 물리 엔진 (Soft Body - Mass Spring System)
+// ==========================================
+let nodes = [];
+const NUM_NODES = 24;
+const STIFFNESS = 0.1;
+const DAMPING = 0.85;
+const CENTER_STIFFNESS = 0.03;
+
+function initSlime() {
+    nodes = [];
+    for(let i=0; i<NUM_NODES; i++) {
+        let angle = (i / NUM_NODES) * Math.PI * 2;
+        nodes.push({
+            x: cx + Math.cos(angle) * baseRadius,
+            y: cy + Math.sin(angle) * baseRadius,
+            vx: 0, vy: 0,
+            baseAngle: angle
+        });
+    }
+    gamePhase = 1;
+    instruction.innerText = "슬라임이 됐어요! 마음껏 늘려보세요 🤏";
+    resetBtn.style.display = "block";
+    uiLayer.classList.remove('hidden');
+    setTimeout(() => uiLayer.classList.add('hidden'), 3000); // 3초뒤 UI 숨김
+}
+
+function updateSlime() {
+    // 스프링 물리 연산
+    for(let i=0; i<NUM_NODES; i++) {
+        let n = nodes[i];
         
-        let score = 0;
-        let velocityY = 0;
-        let positionY = 0;
-        let rotation = 0;
-        let scaleX = 1, scaleY = 1;
+        // 1. 센터로 향하는 스프링 (원형 유지)
+        let dx = n.x - cx;
+        let dy = n.y - cy;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        let diff = dist - baseRadius;
         
-        const GRAVITY = -0.6;
-        const BOUNCE_DAMPING = 0.5;
-        let isAirborne = false;
+        n.vx -= (dx / dist) * diff * CENTER_STIFFNESS;
+        n.vy -= (dy / dist) * diff * CENTER_STIFFNESS;
+        
+        // 2. 이웃 노드와의 스프링 (형태 찢어짐 방지)
+        let next = nodes[(i + 1) % NUM_NODES];
+        let prev = nodes[(i - 1 + NUM_NODES) % NUM_NODES];
+        
+        let targetDist = (Math.PI * 2 * baseRadius) / NUM_NODES;
+        
+        [next, prev].forEach(adj => {
+            let adx = n.x - adj.x;
+            let ady = n.y - adj.y;
+            let adist = Math.sqrt(adx*adx + ady*ady);
+            let adiff = adist - targetDist;
+            n.vx -= (adx / adist) * adiff * STIFFNESS;
+            n.vy -= (ady / adist) * adiff * STIFFNESS;
+        });
+        
+        // 저항(Damping) 적용
+        n.vx *= DAMPING;
+        n.vy *= DAMPING;
+        
+        // 위치 업데이트
+        n.x += n.vx;
+        n.y += n.vy;
+    }
+}
 
-        // --- Web Audio API를 이용한 타격음 생성 (iOS 진동 대체용) ---
-        let audioCtx;
-        function playThudSound() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            // 오실레이터를 이용해 둔탁한 타격음(Thud) 합성
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            osc.type = 'triangle'; // 묵직한 소리
-            // 주파수를 빠르게 떨어뜨려 타격감 생성 (150Hz -> 0.01Hz)
-            osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
-            osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); 
-            
-            // 볼륨도 빠르게 줄어들게 설정
-            gain.gain.setValueAtTime(1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
-        }
+function drawPizzaSlime() {
+    if(nodes.length === 0) return;
+    
+    // 외곽선(크러스트) 및 내부(치즈)
+    ctx.beginPath();
+    let xc = (nodes[0].x + nodes[NUM_NODES-1].x) / 2;
+    let yc = (nodes[0].y + nodes[NUM_NODES-1].y) / 2;
+    ctx.moveTo(xc, yc);
+    
+    for(let i=0; i<NUM_NODES; i++) {
+        let next = nodes[(i + 1) % NUM_NODES];
+        let nxc = (nodes[i].x + next.x) / 2;
+        let nyc = (nodes[i].y + next.y) / 2;
+        ctx.quadraticCurveTo(nodes[i].x, nodes[i].y, nxc, nyc);
+    }
+    ctx.closePath();
+    
+    // 크러스트(테두리)
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = "#e07a5f";
+    ctx.stroke();
+    
+    // 치즈(내부)
+    ctx.fillStyle = "#ffb703";
+    ctx.fill();
 
-        // --- iOS용 화면 흔들림 효과 ---
-        function triggerScreenShake() {
-            document.body.classList.remove('shake');
-            // 리플로우 강제 발생 (애니메이션 재시작을 위해)
-            void document.body.offsetWidth;
-            document.body.classList.add('shake');
-        }
+    // 치즈 윤기 효과
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.stroke();
 
-        // 물리 엔진 루프
-        function gameLoop() {
-            if (isAirborne) {
-                velocityY += GRAVITY;
-                positionY += velocityY;
-                rotation += velocityY * 0.8;
+    // 페퍼로니 (클리핑 마스크 내부)
+    ctx.save();
+    ctx.clip();
+    
+    // 슬라임 변형에 따라 페퍼로니 위치 보정
+    let avgDist = 0;
+    nodes.forEach(n => avgDist += Math.sqrt(Math.pow(n.x-cx,2) + Math.pow(n.y-cy,2)));
+    avgDist /= NUM_NODES;
+    let stretchRatio = avgDist / baseRadius;
 
-                if (positionY <= 0) {
-                    positionY = 0;
-                    if (Math.abs(velocityY) > 2) {
-                        velocityY = -velocityY * BOUNCE_DAMPING;
-                        triggerVibration(40); // 안드로이드용 진동
-                        triggerScreenShake(); // iOS용 시각적 타격
-                        playThudSound();      // 청각적 타격
-                    } else {
-                        velocityY = 0;
-                        isAirborne = false;
-                        score = 0;
-                        updateScoreDisplay();
-                    }
-                }
+    pepperonis.forEach(p => {
+        let r = p.r * baseRadius * stretchRatio;
+        let px = cx + Math.cos(p.a) * r;
+        let py = cy + Math.sin(p.a) * r;
+        
+        ctx.beginPath();
+        ctx.arc(px, py, baseRadius * 0.15, 0, Math.PI*2);
+        ctx.fillStyle = "#e63946";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#9e2a2b";
+        ctx.stroke();
+    });
+    ctx.restore();
+}
+
+// ==========================================
+// 인터랙션 (터치 & 마우스)
+// ==========================================
+let draggedNode = null;
+let touchPos = {x: 0, y: 0};
+
+function handleDown(x, y) {
+    initAudio(); // 오디오 권한 획득
+    uiLayer.classList.add('hidden'); // 첫 터치시 UI 숨김
+
+    if (gamePhase === 0) {
+        // 왁스 모드 (부수기)
+        if(Math.hypot(x - cx, y - cy) < baseRadius + 20) {
+            waxHealth--;
+            addCrack(x, y);
+            
+            if (waxHealth > 0) {
+                playCrackSound(false);
+                vibrate([30]);
+                // 살짝 흔들림 효과
+                canvas.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
+                setTimeout(() => canvas.style.transform = 'none', 50);
             } else {
-                rotation *= 0.95;
+                // 부서짐!
+                playCrackSound(true);
+                vibrate([100, 50, 150]);
+                createShatterExplosion();
+                initSlime();
             }
-
-            scaleY = 1 + (velocityY * 0.01);
-            scaleX = 1 - (velocityY * 0.005);
-            scaleY = Math.max(0.8, Math.min(scaleY, 1.2));
-            scaleX = Math.max(0.8, Math.min(scaleX, 1.2));
-
-            pizza.style.transform = `translateY(${-positionY}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
-            requestAnimationFrame(gameLoop);
         }
+    } else {
+        // 슬라임 모드 (당기기)
+        let minDist = 9999;
+        nodes.forEach(n => {
+            let d = Math.hypot(n.x - x, n.y - y);
+            if(d < minDist) { minDist = d; draggedNode = n; }
+        });
+        if(minDist > 100) draggedNode = null; // 너무 멀면 안 잡힘
+        else vibrate([15]); // 잡을 때 미세 진동
+    }
+}
+
+function handleMove(x, y) {
+    if(gamePhase === 1 && draggedNode) {
+        draggedNode.x = x;
+        draggedNode.y = y;
+        playSquishSound();
+        if(Math.random() < 0.1) vibrate([10]); // 당길 때 간헐적 진동
+    }
+}
+
+function handleUp() {
+    if(draggedNode) {
+        vibrate([20]); // 놓을 때 진동
+        draggedNode = null;
+    }
+}
+
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleDown(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
+canvas.addEventListener('touchend', (e) => { e.preventDefault(); handleUp(); }, {passive: false});
+
+canvas.addEventListener('mousedown', (e) => handleDown(e.clientX, e.clientY));
+canvas.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+canvas.addEventListener('mouseup', handleUp);
+canvas.addEventListener('mouseleave', handleUp);
+
+// 리셋 버튼
+resetBtn.addEventListener('click', () => {
+    gamePhase = 0;
+    waxHealth = 10;
+    cracks = [];
+    particles = [];
+    resetBtn.style.display = "none";
+    instruction.innerText = "화면을 톡톡 쳐서 왁스를 부수세요!";
+    uiLayer.classList.remove('hidden');
+    vibrate([50, 50]);
+});
+
+// ==========================================
+// 메인 렌더링 루프
+// ==========================================
+function render() {
+    ctx.clearRect(0, 0, width, height);
+
+    if (gamePhase === 0) {
+        // --- 고체 왁스 피자 렌더링 ---
+        // 크러스트
+        ctx.beginPath();
+        ctx.arc(cx, cy, baseRadius, 0, Math.PI*2);
+        ctx.fillStyle = "#e07a5f"; // 빵 껍질
+        ctx.fill();
         
-        gameLoop();
+        // 치즈
+        ctx.beginPath();
+        ctx.arc(cx, cy, baseRadius * 0.85, 0, Math.PI*2);
+        ctx.fillStyle = "#ffb703"; 
+        ctx.fill();
+        
+        // 왁스 특유의 광택
+        ctx.beginPath();
+        ctx.arc(cx - baseRadius*0.3, cy - baseRadius*0.3, baseRadius * 0.4, 0, Math.PI*2);
+        let grad = ctx.createRadialGradient(cx - baseRadius*0.3, cy - baseRadius*0.3, 0, cx - baseRadius*0.3, cy - baseRadius*0.3, baseRadius*0.4);
+        grad.addColorStop(0, "rgba(255,255,255,0.4)");
+        grad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = grad;
+        ctx.fill();
 
-        pizza.addEventListener('touchstart', handleTap, { passive: false });
-        pizza.addEventListener('mousedown', handleTap);
+        // 페퍼로니
+        pepperonis.forEach(p => {
+            let px = cx + Math.cos(p.a) * (p.r * baseRadius);
+            let py = cy + Math.sin(p.a) * (p.r * baseRadius);
+            ctx.beginPath();
+            ctx.arc(px, py, baseRadius * 0.15, 0, Math.PI*2);
+            ctx.fillStyle = "#e63946";
+            ctx.fill();
+        });
 
-        function handleTap(e) {
-            e.preventDefault();
-            
-            score++;
-            updateScoreDisplay();
-            
-            velocityY = 16 + (Math.random() * 2);
-            isAirborne = true;
-            rotation += (Math.random() - 0.5) * 60;
-
-            // 안드로이드: 실제 진동 / iOS: 화면 진동 + 사운드
-            triggerVibration([20, 30, 20]);
-            triggerScreenShake(); 
-            playThudSound();
-            
-            createFlourParticles(e);
-            showComboText(e);
-            
-            scoreEl.style.transform = 'scale(1.3)';
-            setTimeout(() => scoreEl.style.transform = 'scale(1)', 100);
-        }
-
-        function updateScoreDisplay() {
-            scoreEl.innerText = score;
-            if(score === 0) {
-                scoreEl.style.color = '#fff';
-            } else if (score > 20) {
-                scoreEl.style.color = '#e74c3c';
-            } else if (score > 10) {
-                scoreEl.style.color = '#f1c40f';
+        // 갈라진 틈 (크랙)
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(40, 20, 10, 0.8)";
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        cracks.forEach(c => {
+            ctx.beginPath();
+            ctx.moveTo(c.x1, c.y1);
+            // 지그재그 효과
+            let midX = (c.x1 + c.x2)/2 + (Math.random()*10-5);
+            let midY = (c.y1 + c.y2)/2 + (Math.random()*10-5);
+            ctx.lineTo(midX, midY);
+            ctx.lineTo(c.x2, c.y2);
+            ctx.stroke();
+            if(c.branch) { // 잔가지
+                ctx.beginPath();
+                ctx.moveTo(midX, midY);
+                ctx.lineTo(midX + (c.x2-c.x1)*0.3 - (c.y2-c.y1)*0.3, midY + (c.y2-c.y1)*0.3 + (c.x2-c.x1)*0.3);
+                ctx.stroke();
             }
-        }
+        });
 
-        function createFlourParticles(e) {
-            const rect = pizza.getBoundingClientRect();
-            let touchX = rect.left + rect.width / 2;
-            let touchY = rect.top + rect.height / 2;
+    } else {
+        // --- 슬라임 렌더링 ---
+        updateSlime();
+        drawPizzaSlime();
+    }
 
-            if(e.touches && e.touches.length > 0) {
-                touchX = e.touches[0].clientX;
-                touchY = e.touches[0].clientY;
-            }
+    // --- 파티클 렌더링 (부서질 때 파편) ---
+    for(let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.vy += 0.5; // 중력
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.rotV;
+        p.life -= 0.02;
+        
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+        ctx.restore();
+        
+        if(p.life <= 0) particles.splice(i, 1);
+    }
 
-            for(let i=0; i<8; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                const size = Math.random() * 6 + 4;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                particle.style.left = `${touchX}px`;
-                particle.style.top = `${touchY}px`;
-                document.body.appendChild(particle);
+    requestAnimationFrame(render);
+}
 
-                let px = (Math.random() - 0.5) * 15;
-                let py = (Math.random() - 1) * 15;
-                let opacity = 1;
+// 루프 시작
+render();
 
-                function animateParticle() {
-                    py += 0.5;
-                    particle.style.transform = `translate(${px}px, ${py}px)`;
-                    opacity -= 0.03;
-                    particle.style.opacity = opacity;
-
-                    if (opacity > 0) {
-                        requestAnimationFrame(animateParticle);
-                    } else {
-                        particle.remove();
-                    }
-                }
-                animateParticle();
-            }
-        }
-
-        function showComboText(e) {
-            if (score % 5 !== 0 && score < 10) return;
-            const text = document.createElement('div');
-            text.classList.add('combo-text');
-            const comments = ["Nice!", "Great!", "Perfect!", "Crazy!", "Wow!!"];
-            text.innerText = comments[Math.floor(Math.random() * comments.length)];
-            const rect = pizza.getBoundingClientRect();
-            text.style.left = `${rect.left + 20 + Math.random() * 50}px`;
-            text.style.top = `${rect.top}px`;
-            document.body.appendChild(text);
-            setTimeout(() => text.remove(), 800);
-        }
-
-        function triggerVibration(pattern) {
-            if ("vibrate" in navigator) {
-                navigator.vibrate(pattern);
-            }
-        }
-    </script>
+</script>
 </body>
 </html>
