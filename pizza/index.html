@@ -2,230 +2,307 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Falling Pizzas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>리얼 피자 왁뿌볼</title>
     <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
         body {
             margin: 0;
+            padding: 0;
+            background: #2c3e50;
+            background: radial-gradient(circle, #34495e 0%, #1a252f 100%);
+            height: 100vh;
             overflow: hidden;
-            /* 먹음직스럽고 화창한 하늘 배경 */
-            background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; /* 모바일에서 스크롤 및 당겨서 새로고침 방지 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        canvas {
-            display: block;
-        }
+
         #ui-layer {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 10%;
             text-align: center;
-            color: white;
-            pointer-events: none; /* 클릭 이벤트가 캔버스로 통과하도록 설정 */
-            text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 10;
+            pointer-events: none;
         }
+
         h1 {
-            font-size: 3.5rem;
+            color: #f39c12;
             margin: 0;
-            letter-spacing: -1px;
-            animation: float 3s ease-in-out infinite;
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
-        p {
-            font-size: 1.2rem;
+
+        #score {
+            color: #fff;
+            font-size: 4rem;
+            font-weight: 900;
             margin-top: 10px;
-            opacity: 0.9;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+
+        #game-area {
+            position: absolute;
+            bottom: 15%;
+            width: 100%;
+            height: 60%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        /* 피자 디자인 (CSS만으로 구현) */
+        #pizza {
+            width: 160px;
+            height: 160px;
+            background: #e67e22; /* 크러스트 */
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.5), inset 0 0 15px #d35400;
+            cursor: pointer;
+            will-change: transform;
+        }
+
+        /* 치즈 */
+        #pizza::before {
+            content: '';
+            position: absolute;
+            top: 12px; left: 12px; right: 12px; bottom: 12px;
+            background: #f1c40f;
+            border-radius: 50%;
+            box-shadow: inset 0 0 10px #e67e22;
+        }
+
+        /* 페퍼로니들 */
+        .pepperoni {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background: #c0392b;
+            border-radius: 50%;
+            box-shadow: inset 0 0 8px #922b21, 2px 2px 4px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+        .p1 { top: 30px; left: 65px; }
+        .p2 { top: 60px; left: 30px; }
+        .p3 { top: 70px; left: 100px; }
+        .p4 { top: 105px; left: 60px; }
+
+        /* 밀가루 파티클 */
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        /* 콤보 이펙트 텍스트 */
+        .combo-text {
+            position: absolute;
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 1px 1px 2px #fff;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-    <!-- UI 오버레이 -->
     <div id="ui-layer">
-        <h1>하늘에서 피자가 내려와요! 🍕</h1>
-        <p>마우스를 움직여보세요. 화면을 클릭하면 <b>거대한 피자</b>가 떨어집니다!</p>
+        <h1>🍕 왁뿌볼 콤보!</h1>
+        <div id="score">0</div>
     </div>
 
-    <!-- Three.js 라이브러리 로드 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <div id="game-area">
+        <div id="pizza">
+            <div class="pepperoni p1"></div>
+            <div class="pepperoni p2"></div>
+            <div class="pepperoni p3"></div>
+            <div class="pepperoni p4"></div>
+        </div>
+    </div>
 
     <script>
-        // 1. 씬, 카메라, 렌더러 설정
-        const scene = new THREE.Scene();
-        // 배경을 투명하게 하여 CSS 그라데이션이 보이게 함
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        // 그림자 활성화
-        renderer.shadowMap.enabled = true; 
-        document.body.appendChild(renderer.domElement);
+        const pizza = document.getElementById('pizza');
+        const scoreEl = document.getElementById('score');
+        
+        let score = 0;
+        let velocityY = 0;
+        let positionY = 0;
+        let rotation = 0;
+        let scaleX = 1, scaleY = 1;
+        
+        const GRAVITY = -0.6;
+        const BOUNCE_DAMPING = 0.5;
+        let isAirborne = false;
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 80);
+        // 물리 엔진 루프
+        function gameLoop() {
+            if (isAirborne) {
+                velocityY += GRAVITY;
+                positionY += velocityY;
+                rotation += velocityY * 0.8; // 올라가고 내려갈 때 자연스러운 회전
 
-        // 2. 조명 설정 (입체감을 위한 그림자와 하이라이트)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(20, 50, 30);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
-
-        // 3. 3D 피자를 코드로 조형하는 함수
-        function createPizza() {
-            const pizzaGroup = new THREE.Group();
-
-            // 도우 (Crust)
-            const crustGeo = new THREE.CylinderGeometry(5, 5, 0.6, 32);
-            const crustMat = new THREE.MeshStandardMaterial({ color: 0xE2903C, roughness: 0.9 });
-            const crust = new THREE.Mesh(crustGeo, crustMat);
-            crust.castShadow = true;
-            pizzaGroup.add(crust);
-
-            // 치즈 (Cheese)
-            const cheeseGeo = new THREE.CylinderGeometry(4.6, 4.6, 0.7, 32);
-            const cheeseMat = new THREE.MeshStandardMaterial({ color: 0xF5C22D, roughness: 0.4 });
-            const cheese = new THREE.Mesh(cheeseGeo, cheeseMat);
-            cheese.position.y = 0.05; // 도우 위에 살짝 얹음
-            cheese.receiveShadow = true;
-            pizzaGroup.add(cheese);
-
-            // 페퍼로니 생성 (랜덤 배치)
-            const pepGeo = new THREE.CylinderGeometry(0.9, 0.9, 0.2, 16);
-            const pepMat = new THREE.MeshStandardMaterial({ color: 0xC92C23, roughness: 0.7 });
-            const numPeps = 6 + Math.floor(Math.random() * 5); // 6~10개
-            
-            for(let i = 0; i < numPeps; i++) {
-                const pep = new THREE.Mesh(pepGeo, pepMat);
-                // 반지름 3.5 안에서 랜덤한 x, z 좌표 생성
-                const r = 3.5 * Math.sqrt(Math.random());
-                const theta = Math.random() * 2 * Math.PI;
-                pep.position.set(r * Math.cos(theta), 0.45, r * Math.sin(theta));
-                pep.rotation.y = Math.random() * Math.PI;
-                pep.castShadow = true;
-                pizzaGroup.add(pep);
-            }
-
-            // 올리브 생성 (랜덤 배치)
-            const oliveGeo = new THREE.TorusGeometry(0.2, 0.08, 8, 16);
-            const oliveMat = new THREE.MeshStandardMaterial({ color: 0x2E2E2E, roughness: 0.8 });
-            const numOlives = 4 + Math.floor(Math.random() * 4); // 4~7개
-            
-            for(let i = 0; i < numOlives; i++) {
-                const olive = new THREE.Mesh(oliveGeo, oliveMat);
-                const r = 3.8 * Math.sqrt(Math.random());
-                const theta = Math.random() * 2 * Math.PI;
-                olive.position.set(r * Math.cos(theta), 0.45, r * Math.sin(theta));
-                olive.rotation.x = Math.PI / 2; // 누워있게 회전
-                olive.castShadow = true;
-                pizzaGroup.add(olive);
-            }
-
-            return pizzaGroup;
-        }
-
-        // 4. 피자 배열 생성 및 초기화
-        const pizzas = [];
-        const numPizzas = 60; // 화면에 내릴 피자의 수
-
-        for (let i = 0; i < numPizzas; i++) {
-            const pizza = createPizza();
-            
-            // 크기 랜덤
-            const scale = 0.5 + Math.random() * 0.8;
-            pizza.scale.set(scale, scale, scale);
-            
-            // 초기 위치 랜덤 (하늘 위 넓게 분포)
-            resetPizza(pizza, true);
-            
-            scene.add(pizza);
-            pizzas.push(pizza);
-        }
-
-        // 피자가 바닥으로 떨어지면 다시 하늘로 올리는 함수
-        function resetPizza(pizza, isInitial = false) {
-            pizza.position.x = (Math.random() - 0.5) * 120; // 좌우 범위
-            // 초기에는 화면 전역에, 리셋될 때는 항상 하늘 위에서
-            pizza.position.y = isInitial ? (Math.random() * 100 - 50) : (60 + Math.random() * 40); 
-            pizza.position.z = (Math.random() - 0.5) * 60; // 앞뒤 범위
-
-            // 각 피자마다의 떨어지는 속도 및 회전 속도 부여
-            pizza.userData = {
-                speedY: 0.2 + Math.random() * 0.4,
-                rotX: (Math.random() - 0.5) * 0.04,
-                rotY: (Math.random() - 0.5) * 0.04,
-                rotZ: (Math.random() - 0.5) * 0.04
-            };
-        }
-
-        // 5. 마우스 인터랙션 설정 (패럴랙스 효과)
-        let mouseX = 0;
-        let mouseY = 0;
-        document.addEventListener('mousemove', (event) => {
-            // 화면 중심을 0으로 맞추고 -1 ~ 1 사이의 값으로 정규화
-            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        // 클릭 시 거대한 피자 소환 이벤트
-        document.addEventListener('click', (event) => {
-            const giantPizza = createPizza();
-            giantPizza.scale.set(3.5, 3.5, 3.5); // 엄청 큰 사이즈
-            giantPizza.position.set((Math.random() - 0.5) * 40, 80, (Math.random() - 0.5) * 20);
-            
-            // 묵직하게 떨어지도록 설정
-            giantPizza.userData = {
-                speedY: 0.8 + Math.random() * 0.2, 
-                rotX: (Math.random() - 0.5) * 0.08,
-                rotY: (Math.random() - 0.5) * 0.08,
-                rotZ: (Math.random() - 0.5) * 0.08
-            };
-            
-            scene.add(giantPizza);
-            pizzas.push(giantPizza);
-        });
-
-        // 6. 렌더링 애니메이션 루프
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // 카메라 움직임 (마우스에 따라 부드럽게 시점 이동)
-            camera.position.x += (mouseX * 15 - camera.position.x) * 0.05;
-            camera.position.y += (mouseY * 15 + 10 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
-
-            // 모든 피자 애니메이션 적용
-            pizzas.forEach(pizza => {
-                // 떨어지기
-                pizza.position.y -= pizza.userData.speedY;
-                
-                // 회전하기
-                pizza.rotation.x += pizza.userData.rotX;
-                pizza.rotation.y += pizza.userData.rotY;
-                pizza.rotation.z += pizza.userData.rotZ;
-
-                // 화면 아래(-60)로 사라지면 다시 위로 리셋
-                if (pizza.position.y < -60) {
-                    resetPizza(pizza);
+                // 바닥에 닿았을 때
+                if (positionY <= 0) {
+                    positionY = 0;
+                    if (Math.abs(velocityY) > 2) {
+                        // 튕김 효과 및 바닥 충돌 진동
+                        velocityY = -velocityY * BOUNCE_DAMPING;
+                        triggerVibration(40); // 묵직한 진동
+                    } else {
+                        velocityY = 0;
+                        isAirborne = false;
+                        score = 0; // 바닥에 떨어지면 점수 초기화
+                        updateScoreDisplay();
+                    }
                 }
-            });
+            } else {
+                // 바닥에 있을 때 서서히 회전 멈춤
+                rotation *= 0.95;
+            }
 
-            renderer.render(scene, camera);
+            // 스쿼시 & 스트레치 (탄력있는 느낌)
+            scaleY = 1 + (velocityY * 0.01);
+            scaleX = 1 - (velocityY * 0.005);
+            
+            // 한계치 설정
+            scaleY = Math.max(0.8, Math.min(scaleY, 1.2));
+            scaleX = Math.max(0.8, Math.min(scaleX, 1.2));
+
+            pizza.style.transform = `translateY(${-positionY}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 게임 루프 시작
+        gameLoop();
+
+        // 터치 및 클릭 이벤트
+        pizza.addEventListener('touchstart', handleTap, { passive: false });
+        pizza.addEventListener('mousedown', handleTap);
+
+        function handleTap(e) {
+            e.preventDefault(); // 더블 탭 줌 방지
+            
+            score++;
+            updateScoreDisplay();
+            
+            // 공중으로 띄우기 (연타할수록 더 높이!)
+            velocityY = 16 + (Math.random() * 2);
+            isAirborne = true;
+            
+            // 타격 방향에 따른 스핀 방향 랜덤화
+            rotation += (Math.random() - 0.5) * 60;
+
+            // 리얼한 타격감! 진동 패턴 (안드로이드 지원)
+            triggerVibration([20, 30, 20]);
+            
+            // 시각적 이펙트
+            createFlourParticles(e);
+            showComboText(e);
+            
+            // 점수 팝 애니메이션
+            scoreEl.style.transform = 'scale(1.3)';
+            setTimeout(() => scoreEl.style.transform = 'scale(1)', 100);
         }
 
-        // 창 크기 조절 시 대응
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        function updateScoreDisplay() {
+            scoreEl.innerText = score;
+            if(score === 0) {
+                scoreEl.style.color = '#fff';
+            } else if (score > 20) {
+                scoreEl.style.color = '#e74c3c'; // 불타는 피자
+            } else if (score > 10) {
+                scoreEl.style.color = '#f1c40f'; // 골든 피자
+            }
+        }
 
-        // 애니메이션 시작
-        animate();
+        // 밀가루(파티클) 튀는 효과
+        function createFlourParticles(e) {
+            const rect = pizza.getBoundingClientRect();
+            let touchX = rect.left + rect.width / 2;
+            let touchY = rect.top + rect.height / 2;
+
+            // 터치 좌표가 있으면 터치한 곳에서 파티클 생성
+            if(e.touches && e.touches.length > 0) {
+                touchX = e.touches[0].clientX;
+                touchY = e.touches[0].clientY;
+            }
+
+            for(let i=0; i<8; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // 크기 랜덤
+                const size = Math.random() * 6 + 4;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                particle.style.left = `${touchX}px`;
+                particle.style.top = `${touchY}px`;
+                document.body.appendChild(particle);
+
+                // 파티클 물리
+                let px = (Math.random() - 0.5) * 15;
+                let py = (Math.random() - 1) * 15;
+                let opacity = 1;
+
+                function animateParticle() {
+                    py += 0.5; // 파티클 중력
+                    particle.style.transform = `translate(${px}px, ${py}px)`;
+                    opacity -= 0.03;
+                    particle.style.opacity = opacity;
+
+                    if (opacity > 0) {
+                        requestAnimationFrame(animateParticle);
+                    } else {
+                        particle.remove();
+                    }
+                }
+                animateParticle();
+            }
+        }
+
+        // 콤보 텍스트 이펙트
+        function showComboText(e) {
+            if (score % 5 !== 0 && score < 10) return; // 5배수이거나 10점 이상일 때만 표시
+
+            const text = document.createElement('div');
+            text.classList.add('combo-text');
+            
+            const comments = ["Nice!", "Great!", "Perfect!", "Crazy!", "Wow!!"];
+            text.innerText = comments[Math.floor(Math.random() * comments.length)];
+            
+            const rect = pizza.getBoundingClientRect();
+            text.style.left = `${rect.left + 20 + Math.random() * 50}px`;
+            text.style.top = `${rect.top}px`;
+            
+            document.body.appendChild(text);
+            
+            setTimeout(() => text.remove(), 800);
+        }
+
+        // 진동 헬퍼 함수
+        function triggerVibration(pattern) {
+            // iOS는 웹 진동 API를 99% 차단하므로 안드로이드 위주로 작동합니다.
+            if ("vibrate" in navigator) {
+                navigator.vibrate(pattern);
+            }
+        }
     </script>
 </body>
 </html>
