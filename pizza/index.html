@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>리얼 피자 왁뿌볼</title>
+    <title>리얼 피자 왁뿌볼 (iOS 타격감 강화판)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -17,10 +17,24 @@
             height: 100vh;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none; /* 모바일에서 스크롤 및 당겨서 새로고침 방지 */
+            touch-action: none;
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+
+        /* iOS 타격감을 위한 화면 흔들림 효과 */
+        @keyframes screenShake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-3px, 3px) rotate(-1deg); }
+            40% { transform: translate(3px, -3px) rotate(1deg); }
+            60% { transform: translate(-3px, -3px) rotate(0deg); }
+            80% { transform: translate(3px, 3px) rotate(1deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        
+        body.shake {
+            animation: screenShake 0.15s ease-in-out;
         }
 
         #ui-layer {
@@ -56,11 +70,10 @@
             align-items: flex-end;
         }
 
-        /* 피자 디자인 (CSS만으로 구현) */
         #pizza {
             width: 160px;
             height: 160px;
-            background: #e67e22; /* 크러스트 */
+            background: #e67e22;
             border-radius: 50%;
             position: relative;
             box-shadow: 0 15px 25px rgba(0,0,0,0.5), inset 0 0 15px #d35400;
@@ -68,7 +81,6 @@
             will-change: transform;
         }
 
-        /* 치즈 */
         #pizza::before {
             content: '';
             position: absolute;
@@ -78,7 +90,6 @@
             box-shadow: inset 0 0 10px #e67e22;
         }
 
-        /* 페퍼로니들 */
         .pepperoni {
             position: absolute;
             width: 28px;
@@ -93,7 +104,6 @@
         .p3 { top: 70px; left: 100px; }
         .p4 { top: 105px; left: 60px; }
 
-        /* 밀가루 파티클 */
         .particle {
             position: absolute;
             background: rgba(255, 255, 255, 0.8);
@@ -102,7 +112,6 @@
             will-change: transform, opacity;
         }
 
-        /* 콤보 이펙트 텍스트 */
         .combo-text {
             position: absolute;
             color: #e74c3c;
@@ -149,73 +158,101 @@
         const BOUNCE_DAMPING = 0.5;
         let isAirborne = false;
 
+        // --- Web Audio API를 이용한 타격음 생성 (iOS 진동 대체용) ---
+        let audioCtx;
+        function playThudSound() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // 오실레이터를 이용해 둔탁한 타격음(Thud) 합성
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'triangle'; // 묵직한 소리
+            // 주파수를 빠르게 떨어뜨려 타격감 생성 (150Hz -> 0.01Hz)
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+            osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); 
+            
+            // 볼륨도 빠르게 줄어들게 설정
+            gain.gain.setValueAtTime(1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // --- iOS용 화면 흔들림 효과 ---
+        function triggerScreenShake() {
+            document.body.classList.remove('shake');
+            // 리플로우 강제 발생 (애니메이션 재시작을 위해)
+            void document.body.offsetWidth;
+            document.body.classList.add('shake');
+        }
+
         // 물리 엔진 루프
         function gameLoop() {
             if (isAirborne) {
                 velocityY += GRAVITY;
                 positionY += velocityY;
-                rotation += velocityY * 0.8; // 올라가고 내려갈 때 자연스러운 회전
+                rotation += velocityY * 0.8;
 
-                // 바닥에 닿았을 때
                 if (positionY <= 0) {
                     positionY = 0;
                     if (Math.abs(velocityY) > 2) {
-                        // 튕김 효과 및 바닥 충돌 진동
                         velocityY = -velocityY * BOUNCE_DAMPING;
-                        triggerVibration(40); // 묵직한 진동
+                        triggerVibration(40); // 안드로이드용 진동
+                        triggerScreenShake(); // iOS용 시각적 타격
+                        playThudSound();      // 청각적 타격
                     } else {
                         velocityY = 0;
                         isAirborne = false;
-                        score = 0; // 바닥에 떨어지면 점수 초기화
+                        score = 0;
                         updateScoreDisplay();
                     }
                 }
             } else {
-                // 바닥에 있을 때 서서히 회전 멈춤
                 rotation *= 0.95;
             }
 
-            // 스쿼시 & 스트레치 (탄력있는 느낌)
             scaleY = 1 + (velocityY * 0.01);
             scaleX = 1 - (velocityY * 0.005);
-            
-            // 한계치 설정
             scaleY = Math.max(0.8, Math.min(scaleY, 1.2));
             scaleX = Math.max(0.8, Math.min(scaleX, 1.2));
 
             pizza.style.transform = `translateY(${-positionY}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
-            
             requestAnimationFrame(gameLoop);
         }
         
-        // 게임 루프 시작
         gameLoop();
 
-        // 터치 및 클릭 이벤트
         pizza.addEventListener('touchstart', handleTap, { passive: false });
         pizza.addEventListener('mousedown', handleTap);
 
         function handleTap(e) {
-            e.preventDefault(); // 더블 탭 줌 방지
+            e.preventDefault();
             
             score++;
             updateScoreDisplay();
             
-            // 공중으로 띄우기 (연타할수록 더 높이!)
             velocityY = 16 + (Math.random() * 2);
             isAirborne = true;
-            
-            // 타격 방향에 따른 스핀 방향 랜덤화
             rotation += (Math.random() - 0.5) * 60;
 
-            // 리얼한 타격감! 진동 패턴 (안드로이드 지원)
+            // 안드로이드: 실제 진동 / iOS: 화면 진동 + 사운드
             triggerVibration([20, 30, 20]);
+            triggerScreenShake(); 
+            playThudSound();
             
-            // 시각적 이펙트
             createFlourParticles(e);
             showComboText(e);
             
-            // 점수 팝 애니메이션
             scoreEl.style.transform = 'scale(1.3)';
             setTimeout(() => scoreEl.style.transform = 'scale(1)', 100);
         }
@@ -225,19 +262,17 @@
             if(score === 0) {
                 scoreEl.style.color = '#fff';
             } else if (score > 20) {
-                scoreEl.style.color = '#e74c3c'; // 불타는 피자
+                scoreEl.style.color = '#e74c3c';
             } else if (score > 10) {
-                scoreEl.style.color = '#f1c40f'; // 골든 피자
+                scoreEl.style.color = '#f1c40f';
             }
         }
 
-        // 밀가루(파티클) 튀는 효과
         function createFlourParticles(e) {
             const rect = pizza.getBoundingClientRect();
             let touchX = rect.left + rect.width / 2;
             let touchY = rect.top + rect.height / 2;
 
-            // 터치 좌표가 있으면 터치한 곳에서 파티클 생성
             if(e.touches && e.touches.length > 0) {
                 touchX = e.touches[0].clientX;
                 touchY = e.touches[0].clientY;
@@ -246,23 +281,19 @@
             for(let i=0; i<8; i++) {
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
-                
-                // 크기 랜덤
                 const size = Math.random() * 6 + 4;
                 particle.style.width = `${size}px`;
                 particle.style.height = `${size}px`;
-                
                 particle.style.left = `${touchX}px`;
                 particle.style.top = `${touchY}px`;
                 document.body.appendChild(particle);
 
-                // 파티클 물리
                 let px = (Math.random() - 0.5) * 15;
                 let py = (Math.random() - 1) * 15;
                 let opacity = 1;
 
                 function animateParticle() {
-                    py += 0.5; // 파티클 중력
+                    py += 0.5;
                     particle.style.transform = `translate(${px}px, ${py}px)`;
                     opacity -= 0.03;
                     particle.style.opacity = opacity;
@@ -277,28 +308,20 @@
             }
         }
 
-        // 콤보 텍스트 이펙트
         function showComboText(e) {
-            if (score % 5 !== 0 && score < 10) return; // 5배수이거나 10점 이상일 때만 표시
-
+            if (score % 5 !== 0 && score < 10) return;
             const text = document.createElement('div');
             text.classList.add('combo-text');
-            
             const comments = ["Nice!", "Great!", "Perfect!", "Crazy!", "Wow!!"];
             text.innerText = comments[Math.floor(Math.random() * comments.length)];
-            
             const rect = pizza.getBoundingClientRect();
             text.style.left = `${rect.left + 20 + Math.random() * 50}px`;
             text.style.top = `${rect.top}px`;
-            
             document.body.appendChild(text);
-            
             setTimeout(() => text.remove(), 800);
         }
 
-        // 진동 헬퍼 함수
         function triggerVibration(pattern) {
-            // iOS는 웹 진동 API를 99% 차단하므로 안드로이드 위주로 작동합니다.
             if ("vibrate" in navigator) {
                 navigator.vibrate(pattern);
             }
