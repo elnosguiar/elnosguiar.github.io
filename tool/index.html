@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>10x10 평면도 그리기</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 16px;
+            background-color: #f5f5f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        /* 팔레트 설정 */
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 360px;
+        }
+        .tool-btn {
+            padding: 8px 12px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background: white;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tool-btn.active {
+            border-color: #007aff;
+            background-color: #e5f1ff;
+        }
+
+        /* 10x10 Grid Style */
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 1px;
+            background-color: #ccc;
+            border: 2px solid #333;
+            width: 100%;
+            max-width: 360px;
+            aspect-ratio: 1 / 1;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .cell {
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            user-select: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* 요소 스타일링 */
+        .cell.wall { background-color: #2c3e50; }
+        .cell.door { 
+            background-color: #e74c3c; 
+            color: white;
+        }
+        .cell.door::after {
+            content: "🚪";
+            font-size: 1rem;
+        }
+        .cell.stairs { 
+            background-color: #f39c12; 
+            color: white;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.2) 3px, rgba(0,0,0,0.2) 6px);
+        }
+        .cell.stairs::after {
+            content: "ST";
+            font-size: 0.7rem;
+        }
+        .cell.elevator { 
+            background-color: #9b59b6; 
+            color: white;
+        }
+        .cell.elevator::after {
+            content: "EV";
+            font-size: 0.75rem;
+        }
+
+        /* 컨트롤 버튼 */
+        .action-btn {
+            width: 100%;
+            max-width: 360px;
+            padding: 12px;
+            background-color: #34c759;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .reset-btn {
+            width: 100%;
+            max-width: 360px;
+            padding: 8px;
+            background-color: #8e8e93;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>10x10 평면도 스케치북</h1>
+
+    <!-- 도구 선택 영역 -->
+    <div class="toolbar">
+        <button class="tool-btn active" onclick="selectTool('wall', this)">🧱 벽</button>
+        <button class="tool-btn" onclick="selectTool('door', this)">🚪 문</button>
+        <button class="tool-btn" onclick="selectTool('stairs', this)">🪵 계단</button>
+        <button class="tool-btn" onclick="selectTool('elevator', this)">🛗 EV</button>
+        <button class="tool-btn" onclick="selectTool('empty', this)">🧹 지우개</button>
+    </div>
+
+    <!-- 10x10 그리드 영역 -->
+    <div id="grid-container"></div>
+
+    <!-- 다운로드 및 초기화 버튼 -->
+    <button class="action-btn" onclick="downloadImage()">2D 이미지(PNG) 다운로드</button>
+    <button class="reset-btn" onclick="resetGrid()">전체 초기화</button>
+
+    <script>
+        const GRID_SIZE = 10;
+        let selectedTool = 'wall';
+        const gridContainer = document.getElementById('grid-container');
+        
+        // 10x10 상태 저장 배열
+        let gridData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('empty'));
+
+        // 그리드 화면 생성
+        function initGrid() {
+            gridContainer.innerHTML = '';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    // 터치 및 클릭 이벤트 지원
+                    cell.addEventListener('click', () => applyTool(r, c, cell));
+                    
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        // 도구 선택
+        function selectTool(tool, btn) {
+            selectedTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // 셀 상태 변경
+        function applyTool(row, col, element) {
+            gridData[row][col] = selectedTool;
+            element.className = 'cell'; // 초기화
+            if (selectedTool !== 'empty') {
+                element.classList.add(selectedTool);
+            }
+        }
+
+        // 전체 초기화
+        function resetGrid() {
+            gridData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('empty'));
+            document.querySelectorAll('.cell').forEach(cell => cell.className = 'cell');
+        }
+
+        // Canvas를 이용한 2D PNG 이미지 다운로드
+        function downloadImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const cellSize = 60; // 이미지 해상도를 높이기 위해 60px 지정
+            
+            canvas.width = GRID_SIZE * cellSize;
+            canvas.height = GRID_SIZE * cellSize;
+
+            // 배경 그리기
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 셀 상태 및 오버레이 그리기
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const type = gridData[r][col = c];
+                    const x = c * cellSize;
+                    const y = r * cellSize;
+
+                    // 요소별 색상
+                    if (type === 'wall') {
+                        ctx.fillStyle = '#2c3e50';
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    } else if (type === 'door') {
+                        ctx.fillStyle = '#e74c3c';
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                        // 문 아이콘 대체 텍스트
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 20px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('DOOR', x + cellSize/2, y + cellSize/2);
+                    } else if (type === 'stairs') {
+                        ctx.fillStyle = '#f39c12';
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                        // 계단 패턴 선 그리기
+                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                        ctx.lineWidth = 2;
+                        for (let i = 1; i < 5; i++) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, y + (cellSize / 5) * i);
+                            ctx.lineTo(x + cellSize, y + (cellSize / 5) * i);
+                            ctx.stroke();
+                        }
+                    } else if (type === 'elevator') {
+                        ctx.fillStyle = '#9b59b6';
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 24px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('EV', x + cellSize/2, y + cellSize/2);
+                    }
+
+                    // 그리드 테두리
+                    ctx.strokeStyle = '#cccccc';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+                }
+            }
+
+            // 다운로드 링크 동작
+            const link = document.createElement('a');
+            link.download = 'floor_plan_10x10.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // 앱 초기화 실행
+        initGrid();
+    </script>
+</body>
+</html>
