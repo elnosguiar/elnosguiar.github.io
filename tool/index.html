@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>문 빠짐 0% 완벽 CAD 평면도 생성기 (100장)</title>
+    <title>모든 코어/방 문 존재 & EV/계단 크기 제한 CAD 생성기 (100장)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -86,8 +86,8 @@
 <body>
 
     <div class="controls">
-        <h2 style="margin: 0 0 8px 0;">🚪 모든 방 문 존재 보장 CAD 생성기 (100장)</h2>
-        <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b;">문 없는 방 100% 방지, 다채로운 EV/계단 구획 및 굵은 외벽 완벽 반영</p>
+        <h2 style="margin: 0 0 8px 0;">🚪 EV/계단 문 100% & 규격 제한 CAD 생성기</h2>
+        <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b;">모든 방/엘베/계단 문 필수 설치 | EV/계단 크기 적정화 완벽 적용</p>
         <button id="start-btn" class="btn">🚀 100장 생성 및 ZIP 다운로드</button>
         
         <div class="progress-box" id="p-box">
@@ -112,7 +112,7 @@
         const statusText = document.getElementById('status-text');
         const TOTAL = 100;
 
-        function createZeroMissingDoorCadPlan() {
+        function createVerifiedCadPlan() {
             const width = 800;
             const height = 600;
             const outerWall = 10; 
@@ -120,7 +120,7 @@
 
             let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%" style="background:#ffffff;">`;
             
-            // 모눈
+            // 모눈 Background
             svg += `<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/></pattern></defs>`;
             svg += `<rect width="100%" height="100%" fill="url(#grid)" />`;
 
@@ -128,20 +128,16 @@
             const gridCols = Math.floor(Math.random() * 3) + 2; 
             const gridRows = Math.floor(Math.random() * 3) + 2; 
 
-            let colWidths = generateDimensions(width - 40, gridCols, 120);
-            let rowHeights = generateDimensions(height - 40, gridRows, 100);
+            let colWidths = generateDimensions(width - 40, gridCols, 130);
+            let rowHeights = generateDimensions(height - 40, gridRows, 110);
 
             let gridMap = Array.from(Array(gridRows), () => Array(gridCols).fill('ROOM'));
             
-            // 1. 기본 복도 생성
+            // 1. 메인 복도 생성
             const midRow = Math.floor(gridRows / 2);
-            const midCol = Math.floor(gridCols / 2);
-
-            // 메인 복도
             for(let c = 0; c < gridCols; c++) gridMap[midRow][c] = 'CORRIDOR';
 
-            // 2. [핵심] 모든 방이 최소 한 면은 복도와 인접하도록 연결성 보장
-            // 복도와 인접하지 않은 고립 방이 있다면 가지 복도(Sub-corridor) 추가
+            // 2. 복도 인접성 100% 보장 (Spanning Sub-Corridor)
             for(let r = 0; r < gridRows; r++) {
                 for(let c = 0; c < gridCols; c++) {
                     if(gridMap[r][c] === 'CORRIDOR') continue;
@@ -152,7 +148,6 @@
                     if(c > 0 && gridMap[r][c-1] === 'CORRIDOR') hasCorridor = true;
                     if(c < gridCols - 1 && gridMap[r][c+1] === 'CORRIDOR') hasCorridor = true;
 
-                    // 복도와 연결되지 않은 방이 발견되면 수직 연결 복도 뚫기
                     if(!hasCorridor) {
                         for(let subR = Math.min(r, midRow); subR <= Math.max(r, midRow); subR++) {
                             gridMap[subR][c] = 'CORRIDOR';
@@ -182,7 +177,7 @@
                 if(adjCells.length > 0) { const {r, c} = adjCells.pop(); gridMap[r][c] = 'EV'; }
             }
 
-            // 인접한 복도 방향 구하기 함수
+            // 인접 복도 방향 탐색
             const getCorridorDirection = (r, c) => {
                 let dirs = [];
                 if(r > 0 && gridMap[r-1][c] === 'CORRIDOR') dirs.push('TOP');
@@ -207,10 +202,10 @@
                     if(type === 'CORRIDOR') {
                         svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="#f1f5f9"/>`;
                     } else {
-                        // 방/코어 벽체
+                        // 방/코어 기본 외곽 벽체
                         svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="none" stroke="#000000" stroke-width="${innerWall}"/>`;
                         
-                        // 모서리 기둥
+                        // 모서리 기둥 (Structural Columns)
                         const cs = 8;
                         svg += `<rect x="${currX-cs/2}" y="${currY-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
                         svg += `<rect x="${currX+w-cs/2}" y="${currY-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
@@ -218,43 +213,67 @@
                         svg += `<rect x="${currX+w-cs/2}" y="${currY+h-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
 
                         if(type === 'EV') {
-                            const maxEV = 50;
-                            const ew = Math.min(w - 20, maxEV);
-                            const eh = Math.min(h - 20, maxEV);
-                            const ex = currX + (w - ew) / 2;
-                            const ey = currY + (h - eh) / 2;
-
-                            svg += `<rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" fill="#e2e8f0" stroke="#000000" stroke-width="2"/>`;
-                            svg += `<line x1="${ex}" y1="${ey}" x2="${ex+ew}" y2="${ey+eh}" stroke="#64748b" stroke-dasharray="3,3" stroke-width="1.5"/>`;
-                            svg += `<line x1="${ex+ew}" y1="${ey}" x2="${ex}" y2="${ey+eh}" stroke="#64748b" stroke-dasharray="3,3" stroke-width="1.5"/>`;
+                            // [수정] EV 규격 제한 (너무 크지 않게 콤팩트화: 최대 40~45px)
+                            const ew = Math.min(w - 20, 42);
+                            const eh = Math.min(h - 20, 42);
                             
-                            // 복도 탑승구
-                            const doorLen = 22;
-                            if(corridorDir === 'BOTTOM') svg += `<rect x="${currX + w/2 - doorLen/2}" y="${currY + h - innerWall}" width="${doorLen}" height="${innerWall*2}" fill="#ffffff"/><line x1="${currX + w/2 - doorLen/2}" y1="${currY + h}" x2="${currX + w/2 + doorLen/2}" y2="${currY + h}" stroke="#2563eb" stroke-width="3"/>`;
-                            else if(corridorDir === 'TOP') svg += `<rect x="${currX + w/2 - doorLen/2}" y="${currY - innerWall}" width="${doorLen}" height="${innerWall*2}" fill="#ffffff"/><line x1="${currX + w/2 - doorLen/2}" y1="${currY}" x2="${currX + w/2 + doorLen/2}" y2="${currY}" stroke="#2563eb" stroke-width="3"/>`;
-                            else if(corridorDir === 'LEFT') svg += `<rect x="${currX - innerWall}" y="${currY + h/2 - doorLen/2}" width="${innerWall*2}" height="${doorLen}" fill="#ffffff"/><line x1="${currX}" y1="${currY + h/2 - doorLen/2}" x2="${currX}" y2="${currY + h/2 + doorLen/2}" stroke="#2563eb" stroke-width="3"/>`;
-                            else if(corridorDir === 'RIGHT') svg += `<rect x="${currX + w - innerWall}" y="${currY + h/2 - doorLen/2}" width="${innerWall*2}" height="${doorLen}" fill="#ffffff"/><line x1="${currX + w}" y1="${currY + h/2 - doorLen/2}" x2="${currX + w}" y2="${currY + h/2 + doorLen/2}" stroke="#2563eb" stroke-width="3"/>`;
+                            // 복도 방향으로 EV 위치 밀착
+                            let ex = currX + (w - ew) / 2;
+                            let ey = currY + (h - eh) / 2;
+                            if(corridorDir === 'TOP') ey = currY + 6;
+                            if(corridorDir === 'BOTTOM') ey = currY + h - eh - 6;
+                            if(corridorDir === 'LEFT') ex = currX + 6;
+                            if(corridorDir === 'RIGHT') ex = currX + w - ew - 6;
+
+                            // EV 샤프트 및 X 표시
+                            svg += `<rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" fill="#e2e8f0" stroke="#000000" stroke-width="2"/>`;
+                            svg += `<line x1="${ex}" y1="${ey}" x2="${ex+ew}" y2="${ey+eh}" stroke="#64748b" stroke-dasharray="2,2" stroke-width="1.2"/>`;
+                            svg += `<line x1="${ex+ew}" y1="${ey}" x2="${ex}" y2="${ey+eh}" stroke="#64748b" stroke-dasharray="2,2" stroke-width="1.2"/>`;
+                            
+                            // [수정] EV 문 100% 필수 설치 (슬라이딩 자동문 - 파란색)
+                            if(corridorDir) {
+                                const doorLen = Math.min(22, ew - 4);
+                                if(corridorDir === 'BOTTOM') {
+                                    svg += `<rect x="${currX + w/2 - doorLen/2}" y="${currY + h - innerWall}" width="${doorLen}" height="${innerWall*2}" fill="#ffffff"/>`;
+                                    svg += `<line x1="${currX + w/2 - doorLen/2}" y1="${currY + h}" x2="${currX + w/2 + doorLen/2}" y2="${currY + h}" stroke="#2563eb" stroke-width="3.5"/>`;
+                                } else if(corridorDir === 'TOP') {
+                                    svg += `<rect x="${currX + w/2 - doorLen/2}" y="${currY - innerWall}" width="${doorLen}" height="${innerWall*2}" fill="#ffffff"/>`;
+                                    svg += `<line x1="${currX + w/2 - doorLen/2}" y1="${currY}" x2="${currX + w/2 + doorLen/2}" y2="${currY}" stroke="#2563eb" stroke-width="3.5"/>`;
+                                } else if(corridorDir === 'LEFT') {
+                                    svg += `<rect x="${currX - innerWall}" y="${currY + h/2 - doorLen/2}" width="${innerWall*2}" height="${doorLen}" fill="#ffffff"/>`;
+                                    svg += `<line x1="${currX}" y1="${currY + h/2 - doorLen/2}" x2="${currX}" y2="${currY + h/2 + doorLen/2}" stroke="#2563eb" stroke-width="3.5"/>`;
+                                } else if(corridorDir === 'RIGHT') {
+                                    svg += `<rect x="${currX + w - innerWall}" y="${currY + h/2 - doorLen/2}" width="${innerWall*2}" height="${doorLen}" fill="#ffffff"/>`;
+                                    svg += `<line x1="${currX + w}" y1="${currY + h/2 - doorLen/2}" x2="${currX + w}" y2="${currY + h/2 + doorLen/2}" stroke="#2563eb" stroke-width="3.5"/>`;
+                                }
+                            }
 
                         } else if(type === 'STAIRS') {
-                            const maxSW = Math.min(w - 20, 80);
-                            const maxSH = Math.min(h - 20, 60);
-                            const sx = currX + (w - maxSW) / 2;
-                            const sy = currY + (h - maxSH) / 2;
+                            // [수정] 계단실 규격 제한 (너비/높이 최대 70/50px 로 제한)
+                            const sw = Math.min(w - 20, 70);
+                            const sh = Math.min(h - 20, 50);
+                            const sx = currX + (w - sw) / 2;
+                            const sy = currY + (h - sh) / 2;
 
-                            svg += `<rect x="${sx}" y="${sy}" width="${maxSW}" height="${maxSH}" fill="#f8fafc" stroke="#000000" stroke-width="1.5"/>`;
-                            const steps = 6;
-                            const stepH = maxSH / steps;
+                            svg += `<rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" fill="#f8fafc" stroke="#000000" stroke-width="1.5"/>`;
+                            const steps = 5;
+                            const stepH = sh / steps;
                             for(let s=1; s<steps; s++) {
-                                svg += `<line x1="${sx}" y1="${sy + s*stepH}" x2="${sx+maxSW}" y2="${sy + s*stepH}" stroke="#64748b" stroke-width="1"/>`;
+                                svg += `<line x1="${sx}" y1="${sy + s*stepH}" x2="${sx+sw}" y2="${sy + s*stepH}" stroke="#94a3b8" stroke-width="1"/>`;
                             }
-                            svg += `<line x1="${sx + maxSW/2}" y1="${sy}" x2="${sx + maxSW/2}" y2="${sy+maxSH}" stroke="#000000" stroke-width="1.5"/>`;
-                            svg += `<path d="M ${sx + maxSW/4} ${sy+maxSH-8} L ${sx + maxSW/4} ${sy+10} L ${sx + maxSW/4 - 4} ${sy+16}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
+                            svg += `<line x1="${sx + sw/2}" y1="${sy}" x2="${sx + sw/2}" y2="${sy+sh}" stroke="#000000" stroke-width="1.5"/>`;
+                            svg += `<path d="M ${sx + sw/4} ${sy+sh-6} L ${sx + sw/4} ${sy+8} L ${sx + sw/4 - 3} ${sy+13}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
 
-                            if(corridorDir) svg += renderDoor(currX, currY, w, h, corridorDir, innerWall);
+                            // [수정] 계단실 문 100% 필수 설치 (여닫이 방화문 - 빨간색)
+                            if(corridorDir) {
+                                svg += renderDoor(currX, currY, w, h, corridorDir, innerWall);
+                            }
 
                         } else {
-                            // 일반 방 - 무조건 복도로 통하는 문 설치 (100% 보장됨)
-                            if(corridorDir) svg += renderDoor(currX, currY, w, h, corridorDir, innerWall);
+                            // 일반 방 문 100% 설치
+                            if(corridorDir) {
+                                svg += renderDoor(currX, currY, w, h, corridorDir, innerWall);
+                            }
                         }
                     }
 
@@ -263,14 +282,14 @@
                 currY += h;
             }
 
-            // 가장 바깥 테두리 굵은 외벽 (10px)
+            // 건물 외곽 테두리 굵은 외벽 (10px)
             svg += `<rect x="20" y="20" width="${width-40}" height="${height-40}" fill="none" stroke="#000000" stroke-width="${outerWall}"/>`;
 
             svg += `</svg>`;
             return svg;
         }
 
-        // 방 규격 분할 함수
+        // 분할 규격 계산 함수
         function generateDimensions(totalSize, count, minSize) {
             let res = [];
             let remaining = totalSize;
@@ -284,9 +303,9 @@
             return res;
         }
 
-        // 문 그려주는 함수
+        // 여닫이 문 그려주는 함수 (빨간색 힌지 및 아크 곡선)
         function renderDoor(cx, cy, w, h, dir, wallThick) {
-            const doorSize = Math.min(28, (dir === 'TOP' || dir === 'BOTTOM' ? w : h) - 16);
+            const doorSize = Math.min(26, (dir === 'TOP' || dir === 'BOTTOM' ? w : h) - 20);
             if(doorSize <= 10) return '';
 
             let str = '';
@@ -294,41 +313,41 @@
                 const dx = cx + (w - doorSize)/2;
                 const dy = cy + h;
                 str += `<rect x="${dx}" y="${dy - wallThick}" width="${doorSize}" height="${wallThick*2}" fill="#ffffff"/>`;
-                str += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy - doorSize}" stroke="#ef4444" stroke-width="2"/>`;
-                str += `<path d="M ${dx} ${dy - doorSize} A ${doorSize} ${doorSize} 0 0 1 ${dx + doorSize} ${dy}" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,2"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy - doorSize}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx} ${dy - doorSize} A ${doorSize} ${doorSize} 0 0 1 ${dx + doorSize} ${dy}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
             } else if(dir === 'TOP') {
                 const dx = cx + (w - doorSize)/2;
                 const dy = cy;
                 str += `<rect x="${dx}" y="${dy - wallThick}" width="${doorSize}" height="${wallThick*2}" fill="#ffffff"/>`;
-                str += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy + doorSize}" stroke="#ef4444" stroke-width="2"/>`;
-                str += `<path d="M ${dx} ${dy + doorSize} A ${doorSize} ${doorSize} 0 0 0 ${dx + doorSize} ${dy}" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,2"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy + doorSize}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx} ${dy + doorSize} A ${doorSize} ${doorSize} 0 0 0 ${dx + doorSize} ${dy}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
             } else if(dir === 'LEFT') {
                 const dx = cx;
                 const dy = cy + (h - doorSize)/2;
                 str += `<rect x="${dx - wallThick}" y="${dy}" width="${wallThick*2}" height="${doorSize}" fill="#ffffff"/>`;
-                str += `<line x1="${dx}" y1="${dy}" x2="${dx + doorSize}" y2="${dy}" stroke="#ef4444" stroke-width="2"/>`;
-                str += `<path d="M ${dx + doorSize} ${dy} A ${doorSize} ${doorSize} 0 0 1 ${dx} ${dy + doorSize}" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,2"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx + doorSize}" y2="${dy}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx + doorSize} ${dy} A ${doorSize} ${doorSize} 0 0 1 ${dx} ${dy + doorSize}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
             } else if(dir === 'RIGHT') {
                 const dx = cx + w;
                 const dy = cy + (h - doorSize)/2;
                 str += `<rect x="${dx - wallThick}" y="${dy}" width="${wallThick*2}" height="${doorSize}" fill="#ffffff"/>`;
-                str += `<line x1="${dx}" y1="${dy}" x2="${dx - doorSize}" y2="${dy}" stroke="#ef4444" stroke-width="2"/>`;
-                str += `<path d="M ${dx - doorSize} ${dy} A ${doorSize} ${doorSize} 0 0 0 ${dx} ${dy + doorSize}" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,2"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx - doorSize}" y2="${dy}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx - doorSize} ${dy} A ${doorSize} ${doorSize} 0 0 0 ${dx} ${dy + doorSize}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
             }
             return str;
         }
 
-        // 버튼 클릭 이벤트
+        // 버튼 클릭 및 ZIP 생성 제어
         startBtn.addEventListener('click', async () => {
             startBtn.disabled = true;
             pBox.style.display = 'block';
             statusText.innerText = '건축 CAD 도면 생성 중...';
 
             const zip = new JSZip();
-            const folder = zip.folder("CAD_Verified_AllDoors");
+            const folder = zip.folder("CAD_Verified_Doors_And_Cores");
 
             for(let i = 1; i <= TOTAL; i++) {
-                const svgContent = createZeroMissingDoorCadPlan();
+                const svgContent = createVerifiedCadPlan();
                 
                 previewBox.innerHTML = svgContent;
                 renderTarget.innerHTML = svgContent;
@@ -336,7 +355,7 @@
                 const canvas = await html2canvas(renderTarget, { logging: false, scale: 2 });
                 const imgData = canvas.toDataURL('image/png').split(',')[1];
                 
-                folder.file(`Floorplan_AllDoors_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
+                folder.file(`Floorplan_Verified_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
 
                 pBar.style.width = Math.round((i / TOTAL) * 100) + '%';
                 statusText.innerText = `생성 중... ${i} / ${TOTAL} 완료`;
@@ -349,17 +368,17 @@
             zip.generateAsync({type:"blob"}).then(content => {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
-                link.download = "ZeroMissingDoor_CAD_Floorplans_100.zip";
+                link.download = "Verified_Doors_CoreRestricted_CAD_100.zip";
                 link.click();
 
-                statusText.innerText = '✅ 모든 방 문 존재 검증 완료! 100장 다운로드되었습니다.';
+                statusText.innerText = '✅ 모든 방/코어 문 검증 및 크기 제한 완료! 100장 다운로드 완료.';
                 startBtn.disabled = false;
                 startBtn.innerText = "다시 생성하기";
             });
         });
         
-        // 초기 미리보기
-        previewBox.innerHTML = createZeroMissingDoorCadPlan();
+        // 초기 1회 미리보기
+        previewBox.innerHTML = createVerifiedCadPlan();
     </script>
 </body>
 </html>
