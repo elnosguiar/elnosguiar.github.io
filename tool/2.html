@@ -3,30 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>순수 구조 CAD 도면 자동 생성기 (100장)</title>
+    <title>동일 벽체 두께 & 모서리 정리 CAD 생성기</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background-color: #f1f5f9; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #0f172a; margin: 0; }
-        .controls { background: #ffffff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: 100%; max-width: 850px; text-align: center; margin-bottom: 20px; box-sizing: border-box; }
-        .btn { background: #0f172a; color: #ffffff; border: none; padding: 14px 28px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .controls {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .input-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .input-box label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .input-box input {
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            width: 80px;
+            text-align: center;
+            outline: none;
+        }
+
+        .input-box input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+        }
+
+        .btn {
+            background: #0f172a;
+            color: #ffffff;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            max-width: 400px;
+        }
         .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn:hover:not(:disabled) { background: #1e293b; }
+
         .progress-box { margin-top: 15px; display: none; }
         .progress-bar-bg { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
         .progress-bar { width: 0%; height: 100%; background: #2563eb; transition: width 0.1s; }
         .status-text { font-size: 14px; font-weight: 600; color: #2563eb; }
-        .preview-wrapper { width: 100%; max-width: 850px; background: #fff; border: 2px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border-radius: 6px; overflow: hidden; cursor: pointer; }
-        .preview-title { background: #f8fafc; padding: 12px; font-size: 14px; font-weight: 700; color: #475569; border-bottom: 1px solid #cbd5e1; text-align: center; }
+
+        .preview-wrapper {
+            width: 100%;
+            max-width: 800px;
+            background: #fff;
+            border: 2px solid #cbd5e1;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            position: relative;
+            box-sizing: border-box;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .preview-title {
+            background: #f8fafc;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #475569;
+            border-bottom: 1px solid #cbd5e1;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .refresh-btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .refresh-btn:hover { background: #cbd5e1; }
+
         #preview-box { width: 100%; height: auto; display: block; }
-        #render-target { position: absolute; left: -9999px; top: -9999px; width: 850px; height: 650px; background-color: #ffffff; }
+
+        #render-target {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 800px;
+            height: 600px;
+            background-color: #ffffff;
+        }
     </style>
 </head>
 <body>
 
     <div class="controls">
-        <h2 style="margin: 0 0 8px 0;">📐 순수 구조 CAD 도면 생성기 (창문/텍스트 제거)</h2>
-        <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b;">동일 두께 벽체 | 모서리 최적화 | 문/계단/코어 포함 (창문·텍스트 제외)</p>
-        <button id="start-btn" class="btn">🚀 100장 생성 및 ZIP 다운로드</button>
+        <h2 style="margin: 0 0 8px 0;">📐 맞춤형 건축 CAD 도면 생성기</h2>
+        <p style="margin: 0 0 20px 0; font-size: 14px; color: #64748b;">모든 벽체 두께 동일화 | 모서리 기둥 100% 제거 | 코어(엘리베이터/계단) 제거 완료</p>
+        
+        <div class="input-group">
+            <div class="input-box">
+                <label for="input-cols">가로 분할 (방 열)</label>
+                <input type="number" id="input-cols" value="3" min="2" max="6">
+            </div>
+            <div class="input-box">
+                <label for="input-rows">세로 분할 (방 행)</label>
+                <input type="number" id="input-rows" value="3" min="2" max="6">
+            </div>
+            <div class="input-box">
+                <label for="input-total">생성할 도면 수</label>
+                <input type="number" id="input-total" value="10" min="1" max="500">
+            </div>
+        </div>
+
+        <button id="start-btn" class="btn">🚀 <span id="btn-count">10</span>장 생성 및 ZIP 다운로드</button>
         
         <div class="progress-box" id="p-box">
             <div class="progress-bar-bg"><div class="progress-bar" id="p-bar"></div></div>
@@ -34,8 +164,11 @@
         </div>
     </div>
 
-    <div class="preview-wrapper" title="클릭하면 새로운 도면 미리보기가 생성됩니다">
-        <div class="preview-title">🔴 실시간 도면 미리보기 (클릭하여 새로고침)</div>
+    <div class="preview-wrapper">
+        <div class="preview-title">
+            <span>🔴 실시간 도면 미리보기</span>
+            <button class="refresh-btn" id="refresh-preview">새로고침 🔄</button>
+        </div>
         <div id="preview-box"></div>
     </div>
 
@@ -45,178 +178,121 @@
         const previewBox = document.getElementById('preview-box');
         const renderTarget = document.getElementById('render-target');
         const startBtn = document.getElementById('start-btn');
-        const TOTAL = 100;
-        const T = 3; // 완벽하게 통일된 벽체 두께 (3px)
+        const pBox = document.getElementById('p-box');
+        const pBar = document.getElementById('p-bar');
+        const statusText = document.getElementById('status-text');
+        
+        const inputCols = document.getElementById('input-cols');
+        const inputRows = document.getElementById('input-rows');
+        const inputTotal = document.getElementById('input-total');
+        const btnCount = document.getElementById('btn-count');
+        const refreshBtn = document.getElementById('refresh-preview');
 
-        function createRealCadPlan() {
-            const width = 850;
-            const height = 650;
-            const margin = 50; 
-            const bW = width - margin * 2;
-            const bH = height - margin * 2;
+        // 입력값 변경 시 버튼 숫자 및 미리보기 업데이트
+        inputTotal.addEventListener('input', () => {
+            btnCount.innerText = inputTotal.value;
+        });
 
-            // 1. 동적 그리드 생성 (3~5 등분)
-            const R = Math.floor(Math.random() * 3) + 3; 
-            const C = Math.floor(Math.random() * 4) + 3;
-            
-            let cWidths = generateDimensions(bW, C, 80);
-            let rHeights = generateDimensions(bH, R, 80);
-            
-            let X = [margin]; for(let w of cWidths) X.push(X[X.length-1] + w);
-            let Y = [margin]; for(let h of rHeights) Y.push(Y[Y.length-1] + h);
+        const updatePreview = () => {
+            let cols = parseInt(inputCols.value) || 3;
+            let rows = parseInt(inputRows.value) || 3;
+            if(cols < 2) cols = 2; if(rows < 2) rows = 2;
+            previewBox.innerHTML = createVerifiedCleanCadPlan(cols, rows);
+        };
 
-            let map = Array.from({length: R}, () => Array(C).fill(0));
+        inputCols.addEventListener('change', updatePreview);
+        inputRows.addEventListener('change', updatePreview);
+        refreshBtn.addEventListener('click', updatePreview);
 
-            // 2. 메인 복도 랜덤 생성
-            const cStyle = Math.floor(Math.random() * 3);
-            if (cStyle === 0) {
-                let mr = Math.floor(Math.random()*(R-2))+1;
-                for(let c=0; c<C; c++) map[mr][c] = 'C';
-            } else if (cStyle === 1) {
-                let mc = Math.floor(Math.random()*(C-2))+1;
-                for(let r=0; r<R; r++) map[r][mc] = 'C';
-            } else {
-                let mr = Math.floor(Math.random()*(R-2))+1;
-                let mc = Math.floor(Math.random()*(C-2))+1;
-                for(let c=0; c<C; c++) map[mr][c] = 'C';
-                for(let r=0; r<R; r++) map[r][mc] = 'C';
-            }
+        function createVerifiedCleanCadPlan(gridCols, gridRows) {
+            const width = 800;
+            const height = 600;
+            const wallThickness = 3;  
 
-            // 3. 룸 ID 부여 및 불규칙 병합
-            let idCounter = 1;
-            for(let r=0; r<R; r++) {
-                for(let c=0; c<C; c++) {
-                    if(map[r][c] !== 'C') map[r][c] = idCounter++;
-                }
-            }
-
-            for(let r=0; r<R; r++) {
-                for(let c=0; c<C; c++) {
-                    if(map[r][c] === 'C') continue;
-                    if(c < C-1 && map[r][c+1] !== 'C' && Math.random() < 0.35) {
-                        let oldId = map[r][c+1]; let newId = map[r][c];
-                        for(let i=0; i<R; i++) for(let j=0; j<C; j++) if(map[i][j] === oldId) map[i][j] = newId;
-                    }
-                    if(r < R-1 && map[r+1][c] !== 'C' && Math.random() < 0.35) {
-                        let oldId = map[r+1][c]; let newId = map[r][c];
-                        for(let i=0; i<R; i++) for(let j=0; j<C; j++) if(map[i][j] === oldId) map[i][j] = newId;
-                    }
-                }
-            }
-
-            // 고립된 방 복도로 변환
-            let touching = new Set();
-            for(let r=0; r<R; r++) {
-                for(let c=0; c<C; c++) {
-                    if(map[r][c] === 'C') continue;
-                    if((r>0 && map[r-1][c]==='C') || (r<R-1 && map[r+1][c]==='C') || 
-                       (c>0 && map[r][c-1]==='C') || (c<C-1 && map[r][c+1]==='C')) {
-                        touching.add(map[r][c]);
-                    }
-                }
-            }
-            for(let r=0; r<R; r++) {
-                for(let c=0; c<C; c++) {
-                    if(map[r][c] !== 'C' && !touching.has(map[r][c])) map[r][c] = 'C'; 
-                }
-            }
-
-            // 4. 룸 특성(코어 등) 무작위 할당
-            let uniqueIds = [...new Set(map.flat().filter(id => id !== 'C'))];
-            uniqueIds.sort(() => Math.random() - 0.5);
-            let roomTypes = {};
-            let typesPool = ['EV', 'STAIRS', 'WC'];
-            
-            uniqueIds.forEach(id => {
-                roomTypes[id] = typesPool.length > 0 ? typesPool.shift() : 'ROOM';
-            });
-
-            // ================= SVG 렌더링 시작 =================
             let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%" style="background:#ffffff;">`;
             
-            svg += `<defs>
-                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20 M 0 20 L 20 20" fill="none" stroke="#f8fafc" stroke-width="0.5"/></pattern>
-            </defs>`;
+            // 모눈 Background
+            svg += `<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/></pattern></defs>`;
             svg += `<rect width="100%" height="100%" fill="url(#grid)" />`;
 
-            // 복도 및 구역 기본 바탕색 채우기
-            for(let r=0; r<R; r++) {
-                for(let c=0; c<C; c++) {
-                    let id = map[r][c];
-                    let fill = '#ffffff';
-                    if(id === 'C') fill = '#f8fafc';
-                    else if(roomTypes[id] === 'EV') fill = '#e2e8f0';
-                    else if(roomTypes[id] === 'STAIRS') fill = '#f1f5f9';
-                    
-                    svg += `<rect x="${X[c]}" y="${Y[r]}" width="${X[c+1]-X[c]}" height="${Y[r+1]-Y[r]}" fill="${fill}" stroke="none"/>`;
-                }
-            }
+            let colWidths = generateDimensions(width - 40, gridCols, 120);
+            let rowHeights = generateDimensions(height - 40, gridRows, 100);
 
-            // 내부 구조 기호만 렌더링 (텍스트 제외)
-            uniqueIds.forEach(id => {
-                let minX = 9999, maxX = 0, minY = 9999, maxY = 0;
-                for(let r=0; r<R; r++) {
-                    for(let c=0; c<C; c++) {
-                        if(map[r][c] === id) {
-                            minX = Math.min(minX, X[c]); maxX = Math.max(maxX, X[c+1]);
-                            minY = Math.min(minY, Y[r]); maxY = Math.max(maxY, Y[r+1]);
+            let gridMap = Array.from(Array(gridRows), () => Array(gridCols).fill('ROOM'));
+            
+            // 1. 메인 복도 생성
+            const midRow = Math.floor(gridRows / 2);
+            for(let c = 0; c < gridCols; c++) gridMap[midRow][c] = 'CORRIDOR';
+
+            // 2. 복도 인접성 보장 (모든 방이 복도에 닿도록 Sub-Corridor 연결)
+            for(let r = 0; r < gridRows; r++) {
+                for(let c = 0; c < gridCols; c++) {
+                    if(gridMap[r][c] === 'CORRIDOR') continue;
+
+                    let hasCorridor = false;
+                    if(r > 0 && gridMap[r-1][c] === 'CORRIDOR') hasCorridor = true;
+                    if(r < gridRows - 1 && gridMap[r+1][c] === 'CORRIDOR') hasCorridor = true;
+                    if(c > 0 && gridMap[r][c-1] === 'CORRIDOR') hasCorridor = true;
+                    if(c < gridCols - 1 && gridMap[r][c+1] === 'CORRIDOR') hasCorridor = true;
+
+                    if(!hasCorridor) {
+                        for(let subR = Math.min(r, midRow); subR <= Math.max(r, midRow); subR++) {
+                            gridMap[subR][c] = 'CORRIDOR';
                         }
                     }
                 }
-                let cx = (minX + maxX)/2, cy = (minY + maxY)/2;
-                let type = roomTypes[id];
-
-                if(type === 'EV') {
-                    svg += `<line x1="${minX+6}" y1="${minY+6}" x2="${maxX-6}" y2="${maxY-6}" stroke="#94a3b8" stroke-width="1.5"/>`;
-                    svg += `<line x1="${maxX-6}" y1="${minY+6}" x2="${minX+6}" y2="${maxY-6}" stroke="#94a3b8" stroke-width="1.5"/>`;
-                } else if (type === 'STAIRS') {
-                    for(let sy=minY+15; sy<maxY-15; sy+=12) svg += `<line x1="${minX+4}" y1="${sy}" x2="${maxX-4}" y2="${sy}" stroke="#cbd5e1" stroke-width="1.2"/>`;
-                    svg += `<line x1="${cx}" y1="${minY+4}" x2="${cx}" y2="${maxY-4}" stroke="#94a3b8" stroke-width="2"/>`;
-                }
-            });
-
-            // 5. 벽체 Line 추출 (동일 두께 & 모서리 최적화)
-            let walls = [];
-            
-            for(let r=0; r<=R; r++) {
-                for(let c=0; c<C; c++) {
-                    let id1 = r>0 ? map[r-1][c] : 'OUT';
-                    let id2 = r<R ? map[r][c] : 'OUT';
-                    if(id1 !== id2) walls.push({type: 'H', id1, id2, x1: X[c], x2: X[c+1], y: Y[r]});
-                }
-            }
-            for(let c=0; c<=C; c++) {
-                for(let r=0; r<R; r++) {
-                    let id1 = c>0 ? map[r][c-1] : 'OUT';
-                    let id2 = c<C ? map[r][c] : 'OUT';
-                    if(id1 !== id2) walls.push({type: 'V', id1, id2, y1: Y[r], y2: Y[r+1], x: X[c]});
-                }
             }
 
-            // 벽체 렌더링 (창문 제거됨)
-            walls.forEach(w => {
-                svg += `<line x1="${w.x1||w.x}" y1="${w.y1||w.y}" x2="${w.x2||w.x}" y2="${w.y2||w.y}" stroke="#0f172a" stroke-width="${T}" stroke-linecap="square"/>`;
-            });
+            // 인접 복도 방향 탐색 (문 위치 선정을 위해)
+            const getCorridorDirection = (r, c) => {
+                let dirs = [];
+                if(r > 0 && gridMap[r-1][c] === 'CORRIDOR') dirs.push('TOP');
+                if(r < gridRows - 1 && gridMap[r+1][c] === 'CORRIDOR') dirs.push('BOTTOM');
+                if(c > 0 && gridMap[r][c-1] === 'CORRIDOR') dirs.push('LEFT');
+                if(c < gridCols - 1 && gridMap[r][c+1] === 'CORRIDOR') dirs.push('RIGHT');
+                return dirs.length > 0 ? dirs[Math.floor(Math.random() * dirs.length)] : null; // 여러 방향 중 랜덤 선택
+            };
 
-            // 6. 구획 별 문(Door) 렌더링
-            uniqueIds.forEach(id => {
-                let doorWalls = walls.filter(w => (w.id1 === id && w.id2 === 'C') || (w.id2 === id && w.id1 === 'C'));
-                if(doorWalls.length > 0) {
-                    let dw = doorWalls[Math.floor(Math.random() * doorWalls.length)];
-                    svg += renderDoorCAD(dw, roomTypes[id], T);
+            // 3. 셀 렌더링 (EV/계단 삭제됨, 오직 방과 복도만 렌더링)
+            let currY = 20;
+
+            for(let r = 0; r < gridRows; r++) {
+                let currX = 20;
+                let h = rowHeights[r];
+
+                for(let c = 0; c < gridCols; c++) {
+                    let w = colWidths[c];
+                    let type = gridMap[r][c];
+                    let corridorDir = getCorridorDirection(r, c);
+
+                    if(type === 'CORRIDOR') {
+                        svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="#f1f5f9"/>`;
+                    } else {
+                        // 일반 방 벽체
+                        svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="none" stroke="#000000" stroke-width="${wallThickness}"/>`;
+                        
+                        // 일반 방 여닫이문
+                        if(corridorDir) {
+                            svg += renderDoor(currX, currY, w, h, corridorDir, wallThickness);
+                        }
+                    }
+                    currX += w;
                 }
-            });
+                currY += h;
+            }
 
-            // 외부 테두리선
-            svg += `<rect x="${margin}" y="${margin}" width="${bW}" height="${bH}" fill="none" stroke="#0f172a" stroke-width="${T}"/>`;
+            // 건물 전체 외곽 벽체
+            svg += `<rect x="20" y="20" width="${width-40}" height="${height-40}" fill="none" stroke="#000000" stroke-width="${wallThickness}"/>`;
 
             svg += `</svg>`;
             return svg;
         }
 
+        // 분할 규격 계산 함수
         function generateDimensions(totalSize, count, minSize) {
-            let res = [], remaining = totalSize;
-            for(let i=0; i<count-1; i++) {
+            let res = [];
+            let remaining = totalSize;
+            for(let i = 0; i < count - 1; i++) {
                 let maxAlloc = remaining - (count - 1 - i) * minSize;
                 let val = Math.floor(Math.random() * (maxAlloc - minSize + 1)) + minSize;
                 res.push(val);
@@ -226,80 +302,86 @@
             return res;
         }
 
-        // 문 뚫기 및 기호 렌더링
-        function renderDoorCAD(w, type, t) {
-            let str = '', doorW = 28;
-            if (w.type === 'H') {
-                if (w.x2 - w.x1 < 36) return ''; 
-                let cx = (w.x1 + w.x2) / 2;
-                str += `<rect x="${cx - doorW/2}" y="${w.y - t}" width="${doorW}" height="${t*2}" fill="#ffffff"/>`;
-                
-                if(type === 'EV') {
-                    str += `<line x1="${cx - doorW/2}" y1="${w.y}" x2="${cx + doorW/2}" y2="${w.y}" stroke="#0284c7" stroke-width="2.5"/>`;
-                } else {
-                    let dir = (w.id1 === 'C') ? 1 : -1; 
-                    let dx = cx - doorW/2, dy = w.y;
-                    str += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy + doorW * dir}" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round"/>`;
-                    let sweep = dir > 0 ? 0 : 1;
-                    str += `<path d="M ${dx} ${dy + doorW * dir} A ${doorW} ${doorW} 0 0 ${sweep} ${dx + doorW} ${dy}" fill="none" stroke="#e11d48" stroke-width="1.2" stroke-dasharray="4 3"/>`;
-                }
-            } else { 
-                if (w.y2 - w.y1 < 36) return '';
-                let cy = (w.y1 + w.y2) / 2;
-                str += `<rect x="${w.x - t}" y="${cy - doorW/2}" width="${t*2}" height="${doorW}" fill="#ffffff"/>`;
-                
-                if(type === 'EV') {
-                    str += `<line x1="${w.x}" y1="${cy - doorW/2}" x2="${w.x}" y2="${cy + doorW/2}" stroke="#0284c7" stroke-width="2.5"/>`;
-                } else {
-                    let dir = (w.id1 === 'C') ? 1 : -1; 
-                    let dx = w.x, dy = cy - doorW/2;
-                    str += `<line x1="${dx}" y1="${dy}" x2="${dx + doorW * dir}" y2="${dy}" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round"/>`;
-                    let sweep = dir > 0 ? 1 : 0;
-                    str += `<path d="M ${dx + doorW * dir} ${dy} A ${doorW} ${doorW} 0 0 ${sweep} ${dx} ${dx + doorW}" fill="none" stroke="#e11d48" stroke-width="1.2" stroke-dasharray="4 3"/>`;
-                }
+        // 여닫이 문 렌더링 함수
+        function renderDoor(cx, cy, w, h, dir, wallThick) {
+            const doorSize = Math.min(26, (dir === 'TOP' || dir === 'BOTTOM' ? w : h) - 20);
+            if(doorSize <= 10) return '';
+
+            let str = '';
+            if(dir === 'BOTTOM') {
+                const dx = cx + (w - doorSize)/2;
+                const dy = cy + h;
+                str += `<rect x="${dx}" y="${dy - wallThick}" width="${doorSize}" height="${wallThick*2}" fill="#ffffff"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy - doorSize}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx} ${dy - doorSize} A ${doorSize} ${doorSize} 0 0 1 ${dx + doorSize} ${dy}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+            } else if(dir === 'TOP') {
+                const dx = cx + (w - doorSize)/2;
+                const dy = cy;
+                str += `<rect x="${dx}" y="${dy - wallThick}" width="${doorSize}" height="${wallThick*2}" fill="#ffffff"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy + doorSize}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx} ${dy + doorSize} A ${doorSize} ${doorSize} 0 0 0 ${dx + doorSize} ${dy}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+            } else if(dir === 'LEFT') {
+                const dx = cx;
+                const dy = cy + (h - doorSize)/2;
+                str += `<rect x="${dx - wallThick}" y="${dy}" width="${wallThick*2}" height="${doorSize}" fill="#ffffff"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx + doorSize}" y2="${dy}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx + doorSize} ${dy} A ${doorSize} ${doorSize} 0 0 1 ${dx} ${dy + doorSize}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+            } else if(dir === 'RIGHT') {
+                const dx = cx + w;
+                const dy = cy + (h - doorSize)/2;
+                str += `<rect x="${dx - wallThick}" y="${dy}" width="${wallThick*2}" height="${doorSize}" fill="#ffffff"/>`;
+                str += `<line x1="${dx}" y1="${dy}" x2="${dx - doorSize}" y2="${dy}" stroke="#ef4444" stroke-width="2.5"/>`;
+                str += `<path d="M ${dx - doorSize} ${dy} A ${doorSize} ${doorSize} 0 0 0 ${dx} ${dy + doorSize}" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,2"/>`;
             }
             return str;
         }
 
-        // 제어 및 다운로드 로직
+        // 다운로드 실행 제어
         startBtn.addEventListener('click', async () => {
+            const total = parseInt(inputTotal.value) || 10;
+            const cols = parseInt(inputCols.value) || 3;
+            const rows = parseInt(inputRows.value) || 3;
+
             startBtn.disabled = true;
             pBox.style.display = 'block';
-            statusText.innerText = '순수 CAD 도면 생성 중...';
-            const zip = new JSZip();
-            const folder = zip.folder("Pure_CAD_Floorplans");
+            statusText.innerText = '건축 CAD 도면 생성 중...';
 
-            for(let i = 1; i <= TOTAL; i++) {
-                const svgContent = createRealCadPlan();
+            const zip = new JSZip();
+            const folder = zip.folder(`CAD_EqualWalls_NoCore_${cols}x${rows}`);
+
+            for(let i = 1; i <= total; i++) {
+                const svgContent = createVerifiedCleanCadPlan(cols, rows);
+                
                 previewBox.innerHTML = svgContent;
                 renderTarget.innerHTML = svgContent;
-                
+
                 const canvas = await html2canvas(renderTarget, { logging: false, scale: 2 });
                 const imgData = canvas.toDataURL('image/png').split(',')[1];
-                folder.file(`Pure_Plan_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
+                
+                folder.file(`Floorplan_${cols}x${rows}_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
 
-                pBar.style.width = Math.round((i / TOTAL) * 100) + '%';
-                statusText.innerText = `생성 중... ${i} / ${TOTAL} 완료`;
-                await new Promise(r => setTimeout(r, 30)); 
+                pBar.style.width = Math.round((i / total) * 100) + '%';
+                statusText.innerText = `생성 중... ${i} / ${total} 완료`;
+
+                await new Promise(r => setTimeout(r, 35)); 
             }
-            
+
             statusText.innerText = 'ZIP 파일 패키징 중...';
+            
             zip.generateAsync({type:"blob"}).then(content => {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
-                link.download = "Pure_Structure_CAD_100.zip";
+                link.download = `Custom_CAD_${cols}x${rows}_${total}ea.zip`;
                 link.click();
-                statusText.innerText = '✅ 생성 및 100장 다운로드 완료!';
+
+                statusText.innerText = `✅ 도면 ${total}장 다운로드 완료!`;
                 startBtn.disabled = false;
-                startBtn.innerText = "다시 생성하기";
+                startBtn.innerHTML = `🚀 <span id="btn-count">${total}</span>장 다시 생성하기`;
             });
         });
         
-        // 초기 로드 및 미리보기 클릭 시 갱신
-        previewBox.innerHTML = createRealCadPlan();
-        previewBox.addEventListener('click', () => {
-            previewBox.innerHTML = createRealCadPlan();
-        });
+        // 최초 로드 시 미리보기 렌더링
+        updatePreview();
     </script>
 </body>
 </html>
