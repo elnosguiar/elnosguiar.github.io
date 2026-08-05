@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>최종 완벽 CAD 평면도 생성기 (100장)</title>
+    <title>다양성 보정 CAD 평면도 생성기 (100장)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -86,8 +86,8 @@
 <body>
 
     <div class="controls">
-        <h2 style="margin: 0 0 8px 0;">🏛️ 최종 완성형 순수 CAD 평면도 (100장)</h2>
-        <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b;">굵은 외벽 테두리, 창문/방간 직통문 완전 제거, 오직 복도 연결문 구성</p>
+        <h2 style="margin: 0 0 8px 0;">🏢 적정 규격 & 다채로운 구획 CAD 생성기 (100장)</h2>
+        <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b;">방 최소 크기 보장, EV/계단 무작위 유무, 다양한 형태/개수 및 굵은 외벽 반영</p>
         <button id="start-btn" class="btn">🚀 100장 생성 및 ZIP 다운로드</button>
         
         <div class="progress-box" id="p-box">
@@ -112,58 +112,46 @@
         const statusText = document.getElementById('status-text');
         const TOTAL = 100;
 
-        function createFinalCadPlan() {
+        function createDiverseCadPlan() {
             const width = 800;
             const height = 600;
-            const outerWall = 10; // 항상 가장 바깥 테두리는 두껍게 (10px)
-            const innerWall = 3;  // 방 사이 내벽 (3px)
+            const outerWall = 10; 
+            const innerWall = 3;  
 
             let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%" style="background:#ffffff;">`;
             
-            // 모눈 그리드
+            // 격자 배경
             svg += `<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/></pattern></defs>`;
             svg += `<rect width="100%" height="100%" fill="url(#grid)" />`;
 
-            // 그리드 분할 (3~4열, 3~4행)
-            const gridCols = Math.floor(Math.random() * 2) + 3;
-            const gridRows = Math.floor(Math.random() * 2) + 3;
-            
-            let colWidths = [];
-            let rowHeights = [];
-            
-            let totalW = width - 40;
-            for(let i=0; i<gridCols; i++) {
-                if(i === gridCols - 1) colWidths.push(totalW);
-                else {
-                    let w = Math.floor((Math.random() * 0.2 + 0.2) * (width - 40));
-                    colWidths.push(w);
-                    totalW -= w;
-                }
-            }
+            // 1. 다채로운 그리드 개수 지정 (2~4열, 2~4행)
+            const gridCols = Math.floor(Math.random() * 3) + 2; 
+            const gridRows = Math.floor(Math.random() * 3) + 2; 
 
-            let totalH = height - 40;
-            for(let i=0; i<gridRows; i++) {
-                if(i === gridRows - 1) rowHeights.push(totalH);
-                else {
-                    let h = Math.floor((Math.random() * 0.2 + 0.2) * (height - 40));
-                    rowHeights.push(h);
-                    totalH -= h;
-                }
-            }
+            // 너비/높이 분할 (방이 너무 작아지지 않도록 최소 비율 설정)
+            let colWidths = generateDimensions(width - 40, gridCols, 120);
+            let rowHeights = generateDimensions(height - 40, gridRows, 100);
 
             let gridMap = Array.from(Array(gridRows), () => Array(gridCols).fill('ROOM'));
             
-            // 복도(CORRIDOR) 생성 - 중앙 관통 행 + 열
-            const corridorRow = Math.floor(gridRows / 2);
-            for(let c = 0; c < gridCols; c++) {
-                gridMap[corridorRow][c] = 'CORRIDOR';
-            }
-            const corridorCol = Math.floor(gridCols / 2);
-            for(let r = 0; r < gridRows; r++) {
-                gridMap[r][corridorCol] = 'CORRIDOR';
+            // 2. 복도 배치 다양화 (가로형 / 세로형 / L자형 / T자형 무작위 선택)
+            const corridorStyle = Math.floor(Math.random() * 4);
+            const midRow = Math.floor(gridRows / 2);
+            const midCol = Math.floor(gridCols / 2);
+
+            if(corridorStyle === 0) { // 가로 복도
+                for(let c = 0; c < gridCols; c++) gridMap[midRow][c] = 'CORRIDOR';
+            } else if(corridorStyle === 1) { // 세로 복도
+                for(let r = 0; r < gridRows; r++) gridMap[r][midCol] = 'CORRIDOR';
+            } else { // Cross / T자형 복도
+                for(let c = 0; c < gridCols; c++) gridMap[midRow][c] = 'CORRIDOR';
+                for(let r = 0; r < gridRows; r++) gridMap[r][midCol] = 'CORRIDOR';
             }
 
-            // 복도와 접한 방 목록 추출
+            // 3. 엘리베이터/계단실 무작위 유무 결정
+            // 0: 둘다 있음, 1: 계단만, 2: EV만, 3: 둘다 없음
+            const coreOption = Math.floor(Math.random() * 4); 
+
             let adjCells = [];
             for(let r = 0; r < gridRows; r++) {
                 for(let c = 0; c < gridCols; c++) {
@@ -173,21 +161,27 @@
             }
             adjCells.sort(() => Math.random() - 0.5);
 
-            // EV / 계단실 무작위 배치
-            if(adjCells.length > 0) { const {r, c} = adjCells.pop(); gridMap[r][c] = 'EV'; }
-            if(adjCells.length > 0) { const {r, c} = adjCells.pop(); gridMap[r][c] = 'STAIRS'; }
+            if (coreOption === 0) { // 둘 다 있음
+                if(adjCells.length > 0) { const {r, c} = adjCells.pop(); gridMap[r][c] = 'EV'; }
+                if(adjCells.length > 0) { const {r, c} = adjCells.pop(); gridMap[r][c] = 'STAIRS'; }
+            } else if (coreOption === 1) { // 계단만
+                if(adjCells.length > 0) { const {r, c} = adjCells.pop(); gridMap[r][c] = 'STAIRS'; }
+            } else if (coreOption === 2) { // EV만
+                if(adjCells.length > 0) { const {r, c} = adjCells.pop(); gridMap[r][c] = 'EV'; }
+            }
+            // coreOption === 3 일 때는 순수 방과 복도만 존재
 
-            // ★ 인접한 벽면 중 '오직 복도'가 있는 방향만 탐색
+            // 복도 인접 방향 감지 함수
             const getCorridorDirection = (r, c) => {
                 let dirs = [];
                 if(r > 0 && gridMap[r-1][c] === 'CORRIDOR') dirs.push('TOP');
                 if(r < gridRows - 1 && gridMap[r+1][c] === 'CORRIDOR') dirs.push('BOTTOM');
                 if(c > 0 && gridMap[r][c-1] === 'CORRIDOR') dirs.push('LEFT');
                 if(c < gridCols - 1 && gridMap[r][c+1] === 'CORRIDOR') dirs.push('RIGHT');
-                return dirs.length > 0 ? dirs[0] : null; // 복도와 접하지 않은 방향은 절대 반환 안함
+                return dirs.length > 0 ? dirs[0] : null;
             };
 
-            // 셀 렌더링
+            // 4. 세부 그래픽 렌더링
             let currY = 20;
 
             for(let r = 0; r < gridRows; r++) {
@@ -200,7 +194,6 @@
                     let corridorDir = getCorridorDirection(r, c);
 
                     if(type === 'CORRIDOR') {
-                        // 복도 바닥
                         svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="#f1f5f9"/>`;
                     } else {
                         // 방/코어 내벽
@@ -213,13 +206,10 @@
                         svg += `<rect x="${currX-cs/2}" y="${currY+h-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
                         svg += `<rect x="${currX+w-cs/2}" y="${currY+h-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
 
-                        // (창문 관련 코드 완전히 제거됨)
-
                         if(type === 'EV') {
-                            // 엘리베이터 (적정 크기)
                             const maxEV = 50;
-                            const ew = Math.min(w - 16, maxEV);
-                            const eh = Math.min(h - 16, maxEV);
+                            const ew = Math.min(w - 20, maxEV);
+                            const eh = Math.min(h - 20, maxEV);
                             const ex = currX + (w - ew) / 2;
                             const ey = currY + (h - eh) / 2;
 
@@ -227,7 +217,7 @@
                             svg += `<line x1="${ex}" y1="${ey}" x2="${ex+ew}" y2="${ey+eh}" stroke="#64748b" stroke-dasharray="3,3" stroke-width="1.5"/>`;
                             svg += `<line x1="${ex+ew}" y1="${ey}" x2="${ex}" y2="${ey+eh}" stroke="#64748b" stroke-dasharray="3,3" stroke-width="1.5"/>`;
                             
-                            // 복도 전면 탑승구
+                            // 복도 탑승구
                             const doorLen = 22;
                             if(corridorDir === 'BOTTOM') svg += `<rect x="${currX + w/2 - doorLen/2}" y="${currY + h - innerWall}" width="${doorLen}" height="${innerWall*2}" fill="#ffffff"/><line x1="${currX + w/2 - doorLen/2}" y1="${currY + h}" x2="${currX + w/2 + doorLen/2}" y2="${currY + h}" stroke="#2563eb" stroke-width="3"/>`;
                             else if(corridorDir === 'TOP') svg += `<rect x="${currX + w/2 - doorLen/2}" y="${currY - innerWall}" width="${doorLen}" height="${innerWall*2}" fill="#ffffff"/><line x1="${currX + w/2 - doorLen/2}" y1="${currY}" x2="${currX + w/2 + doorLen/2}" y2="${currY}" stroke="#2563eb" stroke-width="3"/>`;
@@ -235,9 +225,8 @@
                             else if(corridorDir === 'RIGHT') svg += `<rect x="${currX + w - innerWall}" y="${currY + h/2 - doorLen/2}" width="${innerWall*2}" height="${doorLen}" fill="#ffffff"/><line x1="${currX + w}" y1="${currY + h/2 - doorLen/2}" x2="${currX + w}" y2="${currY + h/2 + doorLen/2}" stroke="#2563eb" stroke-width="3"/>`;
 
                         } else if(type === 'STAIRS') {
-                            // 계단실 (적정 크기)
-                            const maxSW = Math.min(w - 16, 80);
-                            const maxSH = Math.min(h - 16, 60);
+                            const maxSW = Math.min(w - 20, 80);
+                            const maxSH = Math.min(h - 20, 60);
                             const sx = currX + (w - maxSW) / 2;
                             const sy = currY + (h - maxSH) / 2;
 
@@ -250,11 +239,10 @@
                             svg += `<line x1="${sx + maxSW/2}" y1="${sy}" x2="${sx + maxSW/2}" y2="${sy+maxSH}" stroke="#000000" stroke-width="1.5"/>`;
                             svg += `<path d="M ${sx + maxSW/4} ${sy+maxSH-8} L ${sx + maxSW/4} ${sy+10} L ${sx + maxSW/4 - 4} ${sy+16}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
 
-                            // 복도 향한 출입문
                             if(corridorDir) svg += renderDoor(currX, currY, w, h, corridorDir, innerWall);
 
                         } else {
-                            // 일반 방 - 오직 복도와 접한 면에만 문 설치 (방과 방 사이 문 100% 없음)
+                            // 일반 방 (오직 복도와 연결된 문만 전면에 설치)
                             if(corridorDir) svg += renderDoor(currX, currY, w, h, corridorDir, innerWall);
                         }
                     }
@@ -264,16 +252,30 @@
                 currY += h;
             }
 
-            // ★ 가장 바깥 외벽 테두리를 최상단에 굵게(10px) 덮어씌움
+            // 가장 바깥 테두리 굵은 외벽 (10px)
             svg += `<rect x="20" y="20" width="${width-40}" height="${height-40}" fill="none" stroke="#000000" stroke-width="${outerWall}"/>`;
 
             svg += `</svg>`;
             return svg;
         }
 
-        // 복도 전면 연결 여닫이문 그려주는 함수
+        // 최소 방 크기 보장 분할 함수
+        function generateDimensions(totalSize, count, minSize) {
+            let res = [];
+            let remaining = totalSize;
+            for(let i = 0; i < count - 1; i++) {
+                let maxAlloc = remaining - (count - 1 - i) * minSize;
+                let val = Math.floor(Math.random() * (maxAlloc - minSize + 1)) + minSize;
+                res.push(val);
+                remaining -= val;
+            }
+            res.push(remaining);
+            return res;
+        }
+
+        // 복도 연결 여닫이문 그려주는 함수
         function renderDoor(cx, cy, w, h, dir, wallThick) {
-            const doorSize = Math.min(26, (dir === 'TOP' || dir === 'BOTTOM' ? w : h) - 10);
+            const doorSize = Math.min(28, (dir === 'TOP' || dir === 'BOTTOM' ? w : h) - 16);
             if(doorSize <= 10) return '';
 
             let str = '';
@@ -305,17 +307,17 @@
             return str;
         }
 
-        // 실행 프로세스
+        // 실행
         startBtn.addEventListener('click', async () => {
             startBtn.disabled = true;
             pBox.style.display = 'block';
             statusText.innerText = '건축 CAD 도면 생성 중...';
 
             const zip = new JSZip();
-            const folder = zip.folder("CAD_Floorplans_Final");
+            const folder = zip.folder("CAD_Diverse_Floorplans");
 
             for(let i = 1; i <= TOTAL; i++) {
-                const svgContent = createFinalCadPlan();
+                const svgContent = createDiverseCadPlan();
                 
                 previewBox.innerHTML = svgContent;
                 renderTarget.innerHTML = svgContent;
@@ -323,7 +325,7 @@
                 const canvas = await html2canvas(renderTarget, { logging: false, scale: 2 });
                 const imgData = canvas.toDataURL('image/png').split(',')[1];
                 
-                folder.file(`Final_Floorplan_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
+                folder.file(`Diverse_Floorplan_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
 
                 pBar.style.width = Math.round((i / TOTAL) * 100) + '%';
                 statusText.innerText = `생성 중... ${i} / ${TOTAL} 완료`;
@@ -336,17 +338,17 @@
             zip.generateAsync({type:"blob"}).then(content => {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
-                link.download = "Final_CAD_Floorplans_100.zip";
+                link.download = "Diverse_CAD_Floorplans_100.zip";
                 link.click();
 
-                statusText.innerText = '✅ 최종 완성본 100장 다운로드 완료!';
+                statusText.innerText = '✅ 다채로운 CAD 100장 다운로드 완료!';
                 startBtn.disabled = false;
                 startBtn.innerText = "다시 생성하기";
             });
         });
         
         // 초기 미리보기
-        previewBox.innerHTML = createFinalCadPlan();
+        previewBox.innerHTML = createDiverseCadPlan();
     </script>
 </body>
 </html>
