@@ -2,273 +2,255 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>10x10 평면도 그리기</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>평면도 400장 ZIP 압축 다운로드</title>
+    <!-- 필수 라이브러리 로드 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            touch-action: manipulation;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        :root {
+            --wall-color: #333;
+            --floor-color: #f0f0f0;
+            --room-color: #e3f2fd;
+            --entrance-color: #ffcc80;
+            --text-color: #555;
         }
+
         body {
-            margin: 0;
-            padding: 16px;
-            background-color: #f5f5f7;
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #fafafa;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        h1 {
-            font-size: 1.2rem;
-            margin-bottom: 12px;
-            color: #333;
-        }
-        /* 팔레트 설정 */
-        .toolbar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 360px;
-        }
-        .tool-btn {
-            padding: 8px 12px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            background: white;
-            font-size: 0.85rem;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .tool-btn.active {
-            border-color: #007aff;
-            background-color: #e5f1ff;
+            padding: 20px;
         }
 
-        /* 10x10 Grid Style */
-        #grid-container {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            grid-template-rows: repeat(10, 1fr);
-            gap: 1px;
+        /* 다운로드할 도면 영역 (화면 밖으로 숨김 처리) */
+        #floorplan-container {
+            position: absolute;
+            left: -10000px;
+            top: -10000px;
+            width: 800px;
+            height: 600px;
+            background-color: var(--floor-color);
+            border: 4px solid var(--wall-color);
+            overflow: hidden;
+            display: block;
+        }
+
+        .room {
+            position: absolute;
+            background-color: var(--room-color);
+            border: 2px solid var(--wall-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+
+        .room.entrance {
+            background-color: var(--entrance-color);
+        }
+
+        /* 상태 박스 및 버튼 */
+        #status-box {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        #start-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #start-btn:disabled {
             background-color: #ccc;
-            border: 2px solid #333;
-            width: 100%;
-            max-width: 360px;
-            aspect-ratio: 1 / 1;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .cell {
-            background-color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-            user-select: none;
-            cursor: pointer;
-            position: relative;
+            cursor: not-allowed;
         }
 
-        /* 요소 스타일링 */
-        .cell.wall { background-color: #2c3e50; }
-        .cell.door { 
-            background-color: #e74c3c; 
-            color: white;
-        }
-        .cell.door::after {
-            content: "🚪";
-            font-size: 1rem;
-        }
-        .cell.stairs { 
-            background-color: #f39c12; 
-            color: white;
-            background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.2) 3px, rgba(0,0,0,0.2) 6px);
-        }
-        .cell.stairs::after {
-            content: "ST";
-            font-size: 0.7rem;
-        }
-        .cell.elevator { 
-            background-color: #9b59b6; 
-            color: white;
-        }
-        .cell.elevator::after {
-            content: "EV";
-            font-size: 0.75rem;
+        /* 로딩 애니메이션 */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #333;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 10px auto;
         }
 
-        /* 컨트롤 버튼 */
-        .action-btn {
-            width: 100%;
-            max-width: 360px;
-            padding: 12px;
-            background-color: #34c759;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 8px;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        .reset-btn {
-            width: 100%;
-            max-width: 360px;
-            padding: 8px;
-            background-color: #8e8e93;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
+
     </style>
 </head>
 <body>
 
-    <h1>10x10 평면도 스케치북</h1>
+    <h1>평면도 400장 ZIP 압축 다운로드</h1>
+    <p>가구 없는 골조 도면 400장을 생성하여 하나의 ZIP 파일로 압축합니다.</p>
 
-    <!-- 도구 선택 영역 -->
-    <div class="toolbar">
-        <button class="tool-btn active" onclick="selectTool('wall', this)">🧱 벽</button>
-        <button class="tool-btn" onclick="selectTool('door', this)">🚪 문</button>
-        <button class="tool-btn" onclick="selectTool('stairs', this)">🪵 계단</button>
-        <button class="tool-btn" onclick="selectTool('elevator', this)">🛗 EV</button>
-        <button class="tool-btn" onclick="selectTool('empty', this)">🧹 지우개</button>
+    <div id="status-box">
+        <div id="status-text">아래 버튼을 누르면 시작합니다.</div>
+        <div class="loader" id="loader"></div>
+        <div id="progress-text"></div>
+        <button id="start-btn">400장 생성 및 압축 다운로드 시작</button>
     </div>
 
-    <!-- 10x10 그리드 영역 -->
-    <div id="grid-container"></div>
-
-    <!-- 다운로드 및 초기화 버튼 -->
-    <button class="action-btn" onclick="downloadImage()">2D 이미지(PNG) 다운로드</button>
-    <button class="reset-btn" onclick="resetGrid()">전체 초기화</button>
+    <!-- JavaScript로 도면이 생성되는 숨겨진 영역 -->
+    <div id="floorplan-container"></div>
 
     <script>
-        const GRID_SIZE = 10;
-        let selectedTool = 'wall';
-        const gridContainer = document.getElementById('grid-container');
-        
-        // 10x10 상태 저장 배열
-        let gridData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('empty'));
+        const container = document.getElementById('floorplan-container');
+        const startBtn = document.getElementById('start-btn');
+        const statusText = document.getElementById('status-text');
+        const progressText = document.getElementById('progress-text');
+        const loader = document.getElementById('loader');
+        const totalImages = 400; // 총 개수
 
-        // 그리드 화면 생성
-        function initGrid() {
-            gridContainer.innerHTML = '';
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell');
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-                    
-                    // 터치 및 클릭 이벤트 지원
-                    cell.addEventListener('click', () => applyTool(r, c, cell));
-                    
-                    gridContainer.appendChild(cell);
+        // 방 목록
+        const roomTypes = [
+            { name: '현관', class: 'entrance' },
+            { name: '로비', class: 'lobby' },
+            { name: '사무실 A', class: 'office' },
+            { name: '사무실 B', class: 'office' },
+            { name: '회의실', class: 'meeting' },
+            { name: '창고', class: 'storage' },
+            { name: '계단실', class: 'stairs' },
+            { name: '엘리베이터', class: 'elevator' }
+        ];
+
+        // 겹침 확인
+        function isOverlapping(newRoom, existingRooms) {
+            for (let room of existingRooms) {
+                if (!(newRoom.x + newRoom.width < room.x ||
+                      newRoom.x > room.x + room.width ||
+                      newRoom.y + newRoom.height < room.y ||
+                      newRoom.y > room.y + room.height)) {
+                    return true;
                 }
             }
+            return false;
         }
 
-        // 도구 선택
-        function selectTool(tool, btn) {
-            selectedTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
+        // 도면 생성
+        function generateRandomFloorPlan() {
+            container.innerHTML = '';
+            const placedRooms = [];
 
-        // 셀 상태 변경
-        function applyTool(row, col, element) {
-            gridData[row][col] = selectedTool;
-            element.className = 'cell'; // 초기화
-            if (selectedTool !== 'empty') {
-                element.classList.add(selectedTool);
-            }
-        }
+            roomTypes.forEach(type => {
+                let room = {};
+                let attempts = 0;
+                let placed = false;
 
-        // 전체 초기화
-        function resetGrid() {
-            gridData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('empty'));
-            document.querySelectorAll('.cell').forEach(cell => cell.className = 'cell');
-        }
-
-        // Canvas를 이용한 2D PNG 이미지 다운로드
-        function downloadImage() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const cellSize = 60; // 이미지 해상도를 높이기 위해 60px 지정
-            
-            canvas.width = GRID_SIZE * cellSize;
-            canvas.height = GRID_SIZE * cellSize;
-
-            // 배경 그리기
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 셀 상태 및 오버레이 그리기
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const type = gridData[r][col = c];
-                    const x = c * cellSize;
-                    const y = r * cellSize;
-
-                    // 요소별 색상
-                    if (type === 'wall') {
-                        ctx.fillStyle = '#2c3e50';
-                        ctx.fillRect(x, y, cellSize, cellSize);
-                    } else if (type === 'door') {
-                        ctx.fillStyle = '#e74c3c';
-                        ctx.fillRect(x, y, cellSize, cellSize);
-                        // 문 아이콘 대체 텍스트
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = 'bold 20px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText('DOOR', x + cellSize/2, y + cellSize/2);
-                    } else if (type === 'stairs') {
-                        ctx.fillStyle = '#f39c12';
-                        ctx.fillRect(x, y, cellSize, cellSize);
-                        // 계단 패턴 선 그리기
-                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                        ctx.lineWidth = 2;
-                        for (let i = 1; i < 5; i++) {
-                            ctx.beginPath();
-                            ctx.moveTo(x, y + (cellSize / 5) * i);
-                            ctx.lineTo(x + cellSize, y + (cellSize / 5) * i);
-                            ctx.stroke();
+                while (!placed && attempts < 100) {
+                    const width = Math.floor(Math.random() * (250 - 100)) + 100;
+                    const height = Math.floor(Math.random() * (250 - 100)) + 100;
+                    
+                    if (type.class === 'entrance') {
+                        const edge = Math.floor(Math.random() * 4);
+                        if (edge === 0 || edge === 2) {
+                            room.x = Math.floor(Math.random() * (800 - width));
+                            room.y = (edge === 0) ? 0 : 600 - height;
+                        } else {
+                            room.x = (edge === 1) ? 800 - width : 0;
+                            room.y = Math.floor(Math.random() * (600 - height));
                         }
-                    } else if (type === 'elevator') {
-                        ctx.fillStyle = '#9b59b6';
-                        ctx.fillRect(x, y, cellSize, cellSize);
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = 'bold 24px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText('EV', x + cellSize/2, y + cellSize/2);
+                    } else {
+                        room.x = Math.floor(Math.random() * (800 - width));
+                        room.y = Math.floor(Math.random() * (600 - height));
                     }
 
-                    // 그리드 테두리
-                    ctx.strokeStyle = '#cccccc';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(x, y, cellSize, cellSize);
+                    room.width = width;
+                    room.height = height;
+
+                    if (!isOverlapping(room, placedRooms)) {
+                        const roomEl = document.createElement('div');
+                        roomEl.className = `room ${type.class}`;
+                        roomEl.style.width = `${room.width}px`;
+                        roomEl.style.height = `${room.height}px`;
+                        roomEl.style.left = `${room.x}px`;
+                        roomEl.style.top = `${room.y}px`;
+                        roomEl.innerHTML = `<span>${type.name}</span>`;
+                        container.appendChild(roomEl);
+                        placedRooms.push(room);
+                        placed = true;
+                    }
+                    attempts++;
+                }
+            });
+        }
+
+        // 메인 로직: 생성 -> 압축 -> 다운로드
+        startBtn.addEventListener('click', async () => {
+            startBtn.disabled = true;
+            loader.style.display = 'block';
+            statusText.innerText = '이미지를 생성하고 있습니다...';
+            
+            const zip = new JSZip(); // JSZip 객체 생성
+            const imgFolder = zip.folder("floorplans"); // zip 내부 폴더 생성
+
+            for (let i = 1; i <= totalImages; i++) {
+                // 1. 도면 생성
+                generateRandomFloorPlan();
+                progressText.innerText = `생성 중: ${i} / ${totalImages}`;
+                
+                // 2. HTML을 캔버스로 변환 (html2canvas)
+                // 중요: 렌더링 시간을 주기 위해 비동기 처리
+                const canvas = await html2canvas(container, {
+                    logging: false,
+                    width: 800,
+                    height: 600
+                });
+                
+                // 3. 캔버스 데이터를 Base64 PNG로 변환
+                const imgData = canvas.toDataURL('image/png').split(',')[1];
+                
+                // 4. ZIP 폴더에 이미지 파일 추가
+                imgFolder.file(`floorplan_${i}.png`, imgData, {base64: true});
+
+                // 브라우저 멈춤 방지를 위한 약간의 대기
+                if (i % 20 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 10));
                 }
             }
 
-            // 다운로드 링크 동작
-            const link = document.createElement('a');
-            link.download = 'floor_plan_10x10.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
+            // 5. 압축 및 다운로드
+            statusText.innerText = 'ZIP 파일로 압축하고 있습니다... (시간 소요)';
+            progressText.innerText = '';
 
-        // 앱 초기화 실행
-        initGrid();
+            // 압축 생성 (비동기)
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                statusText.innerText = '압축 완료! 다운로드를 시작합니다.';
+                loader.style.display = 'none';
+
+                // 다운로드 링크 생성 및 클릭
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = "floorplans_400.zip"; // 저장될 파일명
+                link.click();
+                
+                startBtn.disabled = false;
+            });
+        });
+
     </script>
 </body>
 </html>
