@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>다양한 구조의 CAD 평면도 생성기 (100장)</title>
+    <title>텍스트 제로 무작위 CAD 평면도 생성기 (100장)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body {
-            font-family: 'Pretendard', -apple-system, sans-serif;
-            background-color: #eef2f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
-            color: #222;
+            color: #0f172a;
             margin: 0;
         }
 
         .controls {
             background: #ffffff;
-            padding: 20px;
+            padding: 24px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             width: 100%;
             max-width: 800px;
             text-align: center;
@@ -36,7 +36,7 @@
             border: none;
             padding: 14px 28px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 700;
             border-radius: 8px;
             cursor: pointer;
             transition: 0.2s;
@@ -54,18 +54,18 @@
             max-width: 800px;
             background: #fff;
             border: 2px solid #cbd5e1;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             position: relative;
             box-sizing: border-box;
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
         }
         
         .preview-title {
-            background: #f1f5f9;
-            padding: 10px;
+            background: #f8fafc;
+            padding: 12px;
             font-size: 14px;
-            font-weight: bold;
+            font-weight: 700;
             color: #475569;
             border-bottom: 1px solid #cbd5e1;
             text-align: center;
@@ -86,8 +86,8 @@
 <body>
 
     <div class="controls">
-        <h2 style="margin: 0 0 10px 0;">🎲 무작위 다양한 구조 CAD 평면도 (100장)</h2>
-        <p style="margin: 0 0 15px 0; font-size: 14px; color: #64748b;">방 개수(3~12개), 복도 형태, 공간 크기가 매번 완전히 다르게 생성됩니다.</p>
+        <h2 style="margin: 0 0 8px 0;">🚫 텍스트 제거 순수 CAD 평면도 (100장)</h2>
+        <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b;">방 이름, 숫자 표기 없이 복도, 벽체, 문, 계단, 엘리베이터 구조만 표현됩니다.</p>
         <button id="start-btn" class="btn">🚀 100장 생성 및 ZIP 다운로드</button>
         
         <div class="progress-box" id="p-box">
@@ -97,7 +97,7 @@
     </div>
 
     <div class="preview-wrapper">
-        <div class="preview-title">🔴 실시간 무작위 생성 미리보기</div>
+        <div class="preview-title">🔴 실시간 생성 미리보기 (Text-Free)</div>
         <div id="preview-box"></div>
     </div>
 
@@ -112,27 +112,26 @@
         const statusText = document.getElementById('status-text');
         const TOTAL = 100;
 
-        // 완전 무작위 구획 기반 CAD SVG 생성기
-        function createDiverseCadPlan(index) {
+        // 완전 무작위 텍스트 제로 CAD SVG 생성기
+        function createNoTextCadPlan() {
             const width = 800;
             const height = 600;
-            const t = 6;  // 외벽
-            const it = 3; // 내벽
+            const t = 6;  // 외벽 두께
+            const it = 3; // 내벽 두께
 
-            let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%" style="background:#ffffff; font-family: sans-serif;">`;
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%" style="background:#ffffff;">`;
             
-            // 모눈종이 격자
+            // 모눈 격자
             svg += `<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/></pattern></defs>`;
             svg += `<rect width="100%" height="100%" fill="url(#grid)" />`;
 
-            // 외곽 테두리
-            svg += `<rect x="20" y="20" width="${width-40}" height="${height-40}" fill="none" stroke="#000" stroke-width="${t}"/>`;
+            // 외곽 외벽 테두리
+            svg += `<rect x="20" y="20" width="${width-40}" height="${height-40}" fill="none" stroke="#000000" stroke-width="${t}"/>`;
 
-            // --- 1. 무작위 그리드 시스템 (가로/세로 분할 수 다변화) ---
-            const gridCols = Math.floor(Math.random() * 3) + 2; // 2 ~ 4열
-            const gridRows = Math.floor(Math.random() * 3) + 2; // 2 ~ 4행
+            // 그리드 무작위 분할 (2~4열, 2~4행)
+            const gridCols = Math.floor(Math.random() * 3) + 2;
+            const gridRows = Math.floor(Math.random() * 3) + 2;
             
-            // 컬럼 및 로우 크기를 무작위 비율로 나눔
             let colWidths = [];
             let rowHeights = [];
             
@@ -156,21 +155,21 @@
                 }
             }
 
-            // 공간 타입 타일 배치 (무작위)
+            // 공간 타입 배치
             let totalCells = gridCols * gridRows;
             let roomTypes = ['EV', 'STAIRS', 'CORRIDOR'];
-            // 나머지는 일반 방으로 채움
             while(roomTypes.length < totalCells) {
-                const types = ['OFFICE', 'MEETING', 'STORAGE', 'CORRIDOR', 'OFFICE'];
+                const types = ['ROOM', 'ROOM', 'ROOM', 'CORRIDOR', 'ROOM'];
                 roomTypes.push(types[Math.floor(Math.random() * types.length)]);
             }
-            // 배열 섞기
+            
+            // 타입 무작위 셔플
             for (let i = roomTypes.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [roomTypes[i], roomTypes[j]] = [roomTypes[j], roomTypes[i]];
             }
 
-            // --- 2. 공간 그려넣기 ---
+            // 공간 그리기
             let currY = 20;
             let typeIdx = 0;
 
@@ -183,56 +182,50 @@
                     let type = roomTypes[typeIdx++];
 
                     if(type === 'CORRIDOR') {
-                        // 복도 영역
-                        svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="#f8fafc"/>`;
-                        svg += `<text x="${currX + w/2}" y="${currY + h/2 + 4}" font-size="12" font-weight="bold" fill="#cbd5e1" text-anchor="middle">CORRIDOR</text>`;
+                        // 복도 영역 (연한 바닥 톤으로 구분, 글자 전혀 없음)
+                        svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="#f1f5f9"/>`;
                     } else {
-                        // 일반 방/계단/엘리베이터 벽체
-                        svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="none" stroke="#000" stroke-width="${it}"/>`;
+                        // 내벽 선
+                        svg += `<rect x="${currX}" y="${currY}" width="${w}" height="${h}" fill="none" stroke="#000000" stroke-width="${it}"/>`;
                         
-                        // 기둥
+                        // 모서리 기둥 (Columns)
                         const cs = 8;
-                        svg += `<rect x="${currX-cs/2}" y="${currY-cs/2}" width="${cs}" height="${cs}" fill="#000"/>`;
-                        svg += `<rect x="${currX+w-cs/2}" y="${currY-cs/2}" width="${cs}" height="${cs}" fill="#000"/>`;
-                        svg += `<rect x="${currX-cs/2}" y="${currY+h-cs/2}" width="${cs}" height="${cs}" fill="#000"/>`;
-                        svg += `<rect x="${currX+w-cs/2}" y="${currY+h-cs/2}" width="${cs}" height="${cs}" fill="#000"/>`;
+                        svg += `<rect x="${currX-cs/2}" y="${currY-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
+                        svg += `<rect x="${currX+w-cs/2}" y="${currY-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
+                        svg += `<rect x="${currX-cs/2}" y="${currY+h-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
+                        svg += `<rect x="${currX+w-cs/2}" y="${currY+h-cs/2}" width="${cs}" height="${cs}" fill="#000000"/>`;
 
                         if(type === 'EV') {
-                            // 엘리베이터 디테일
+                            // 엘리베이터 샤프트 및 X 점선 (글자 제거)
                             const mx = currX + 10, my = currY + 10, mw = w - 20, mh = h - 20;
                             if(mw > 20 && mh > 20) {
-                                svg += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" fill="#e2e8f0" stroke="#000" stroke-width="2"/>`;
-                                svg += `<line x1="${mx}" y1="${my}" x2="${mx+mw}" y2="${my+mh}" stroke="#94a3b8" stroke-dasharray="3,3"/>`;
-                                svg += `<line x1="${mx+mw}" y1="${my}" x2="${mx}" y2="${my+mh}" stroke="#94a3b8" stroke-dasharray="3,3"/>`;
-                                svg += `<text x="${currX + w/2}" y="${currY + h/2 + 5}" font-size="14" font-weight="bold" text-anchor="middle" fill="#334155">E/V</text>`;
+                                svg += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" fill="#e2e8f0" stroke="#000000" stroke-width="2"/>`;
+                                svg += `<line x1="${mx}" y1="${my}" x2="${mx+mw}" y2="${my+mh}" stroke="#64748b" stroke-dasharray="4,4" stroke-width="1.5"/>`;
+                                svg += `<line x1="${mx+mw}" y1="${my}" x2="${mx}" y2="${my+mh}" stroke="#64748b" stroke-dasharray="4,4" stroke-width="1.5"/>`;
                             }
                         } else if(type === 'STAIRS') {
-                            // 계단실 디테일
+                            // 계단실 디테일 및 화살표 (글자 UP 제거)
                             const mx = currX + 10, my = currY + 10, mw = w - 20, mh = h - 20;
                             if(mw > 20 && mh > 20) {
-                                svg += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" fill="#f1f5f9" stroke="#000" stroke-width="1.5"/>`;
-                                const steps = 6;
+                                svg += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" fill="#f8fafc" stroke="#000000" stroke-width="1.5"/>`;
+                                const steps = 7;
                                 const stepH = mh / steps;
                                 for(let s=1; s<steps; s++) {
-                                    svg += `<line x1="${mx}" y1="${my + s*stepH}" x2="${mx+mw}" y2="${my + s*stepH}" stroke="#94a3b8"/>`;
+                                    svg += `<line x1="${mx}" y1="${my + s*stepH}" x2="${mx+mw}" y2="${my + s*stepH}" stroke="#64748b" stroke-width="1"/>`;
                                 }
-                                svg += `<line x1="${mx + mw/2}" y1="${my}" x2="${mx + mw/2}" y2="${my+mh}" stroke="#000"/>`;
-                                svg += `<text x="${currX + w/2}" y="${currY + h/2 + 4}" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">STAIRS</text>`;
+                                svg += `<line x1="${mx + mw/2}" y1="${my}" x2="${mx + mw/2}" y2="${my+mh}" stroke="#000000" stroke-width="2"/>`;
+                                // 화살표 동선
+                                svg += `<path d="M ${mx + mw/4} ${my+mh-12} L ${mx + mw/4} ${my+18} L ${mx + mw/4 - 5} ${my+25}" fill="none" stroke="#2563eb" stroke-width="2"/>`;
                             }
                         } else {
-                            // 방 텍스트 및 치수
-                            const roomName = type === 'MEETING' ? 'MEETING' : (type === 'STORAGE' ? 'STORAGE' : 'OFFICE');
-                            if(w > 50 && h > 40) {
-                                svg += `<text x="${currX + w/2}" y="${currY + h/2 - 4}" font-size="13" font-weight="bold" fill="#1e293b" text-anchor="middle">${roomName}</text>`;
-                                svg += `<text x="${currX + w/2}" y="${currY + h/2 + 12}" font-size="10" fill="#64748b" text-anchor="middle">${Math.floor(w*10)}×${Math.floor(h*10)}</text>`;
-                            }
-
-                            // 문 달기 (방 변 중 무작위 1곳)
-                            if(w > 40 && h > 40) {
+                            // 일반 방 (순수 여닫이문만 달림)
+                            if(w > 35 && h > 35) {
                                 const doorSize = Math.min(30, w - 10);
                                 const dx = currX + (w - doorSize)/2;
                                 const dy = currY + h;
+                                // 문 개포 부위
                                 svg += `<rect x="${dx}" y="${dy - it}" width="${doorSize}" height="${it*2}" fill="#ffffff"/>`;
+                                // 문 패널 및 회전 호
                                 svg += `<line x1="${dx}" y1="${dy}" x2="${dx}" y2="${dy - doorSize}" stroke="#ef4444" stroke-width="2"/>`;
                                 svg += `<path d="M ${dx} ${dy - doorSize} A ${doorSize} ${doorSize} 0 0 1 ${dx + doorSize} ${dy}" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,2"/>`;
                             }
@@ -244,25 +237,21 @@
                 currY += h;
             }
 
-            // 도면 타이틀 표기
-            svg += `<rect x="20" y="20" width="220" height="28" fill="#000"/>`;
-            svg += `<text x="30" y="39" font-size="12" font-weight="bold" fill="#fff">LAYOUT NO.${String(index).padStart(3, '0')} (${gridCols}x${gridRows} GRID)</text>`;
-
             svg += `</svg>`;
             return svg;
         }
 
-        // 다운로드 프로세스
+        // 실행 및 다운로드 프로세스
         startBtn.addEventListener('click', async () => {
             startBtn.disabled = true;
             pBox.style.display = 'block';
-            statusText.innerText = '무작위 도면 렌더링 중...';
+            statusText.innerText = '도면 생성 중...';
 
             const zip = new JSZip();
-            const folder = zip.folder("Diverse_CAD_Floorplans");
+            const folder = zip.folder("Clean_Floorplans");
 
             for(let i = 1; i <= TOTAL; i++) {
-                const svgContent = createDiverseCadPlan(i);
+                const svgContent = createNoTextCadPlan();
                 
                 previewBox.innerHTML = svgContent;
                 renderTarget.innerHTML = svgContent;
@@ -270,30 +259,30 @@
                 const canvas = await html2canvas(renderTarget, { logging: false, scale: 2 });
                 const imgData = canvas.toDataURL('image/png').split(',')[1];
                 
-                folder.file(`Random_Floorplan_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
+                folder.file(`Clean_Floorplan_${String(i).padStart(3, '0')}.png`, imgData, {base64: true});
 
                 pBar.style.width = Math.round((i / TOTAL) * 100) + '%';
                 statusText.innerText = `생성 중... ${i} / ${TOTAL} 완료`;
 
-                await new Promise(r => setTimeout(r, 40)); 
+                await new Promise(r => setTimeout(r, 35)); 
             }
 
-            statusText.innerText = 'ZIP 압축 패키징 중...';
+            statusText.innerText = 'ZIP 파일 압축 진행 중...';
             
             zip.generateAsync({type:"blob"}).then(content => {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
-                link.download = "Diverse_Floorplans_100.zip";
+                link.download = "Clean_Floorplans_100.zip";
                 link.click();
 
-                statusText.innerText = '✅ 다양성을 갖춘 100장 다운로드 완료!';
+                statusText.innerText = '✅ 텍스트 없는 100장 다운로드 완료!';
                 startBtn.disabled = false;
                 startBtn.innerText = "다시 생성하기";
             });
         });
         
-        // 초기 샘플 출력
-        previewBox.innerHTML = createDiverseCadPlan('RND');
+        // 초기 1장 미리보기
+        previewBox.innerHTML = createNoTextCadPlan();
     </script>
 </body>
 </html>
