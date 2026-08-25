@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web API Executor - Ultimate Edition</title>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+        body { margin: 0; padding: 0; background-color: #f4f7f6; color: #333; display: flex; height: 100vh; flex-direction: column; overflow: hidden; }
+        
+        header { background-color: #2c3e50; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100; }
+        header h1 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        
+        .header-btns { display: flex; gap: 10px; }
+        .toggle-panel-btn { background: #34495e; border: none; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
+        .toggle-panel-btn:hover { background: #2c3e50; filter: brightness(1.2); }
+
+        main { display: flex; flex: 1; overflow: hidden; position: relative; }
+        
+        /* 왼쪽 설정 패널 */
+        .config-panel { width: 340px; background-color: white; padding: 20px; border-right: 1px solid #e0e0e0; overflow-y: auto; transition: transform 0.3s ease; box-shadow: 2px 0 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; flex-shrink: 0; }
+        .config-panel.collapsed { transform: translateX(-100%); position: absolute; height: 100%; z-index: 10; }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 9px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #3498db; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        
+        button.run-btn { width: 100%; padding: 11px; background-color: #27ae60; color: white; border: none; border-radius: 4px; font-size: 0.95rem; font-weight: bold; cursor: pointer; margin-top: 5px; transition: background 0.2s; }
+        button.run-btn:hover { background-color: #219653; }
+        button.run-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+        /* 오른쪽 결과 패널 */
+        .result-panel { flex: 1; display: flex; flex-direction: column; background-color: #1e1e1e; color: #d4d4d4; padding: 20px; overflow: hidden; }
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 10px; }
+        .header-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .result-header h2 { margin: 0; font-size: 1rem; color: #4fc1ff; }
+        
+        .tab-group { display: flex; background-color: #2d2d2d; border-radius: 4px; padding: 2px; border: 1px solid #404040; }
+        .tab-btn { background: none; border: none; color: #aaa; padding: 5px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 3px; font-weight: 600; }
+        .tab-btn.active { background-color: #3498db; color: white; }
+        
+        .action-tools { display: flex; gap: 8px; align-items: center; }
+        .tool-btn { background: #333; border: 1px solid #555; color: #ddd; padding: 5px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; }
+        .tool-btn:hover { background: #444; }
+
+        .table-search { padding: 5px 10px; background: #252526; border: 1px solid #444; color: white; border-radius: 4px; font-size: 0.8rem; width: 180px; }
+        .table-search:focus { outline: none; border-color: #3498db; }
+
+        .status-badge { padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+        .status-success { background-color: rgba(39, 174, 96, 0.2); color: #2ecc71; }
+        .status-error { background-color: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+
+        .result-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: #2d2d2d; border-radius: 6px; border: 1px solid #404040; }
+        
+        pre { margin: 0; padding: 15px; flex: 1; overflow: auto; white-space: pre-wrap; word-wrap: break-word; font-family: "Consolas", monospace; font-size: 0.85rem; }
+
+        /* 가로/세로 스크롤 가능한 테이블 컨테이너 */
+        .table-container { width: 100%; height: 100%; overflow: auto; position: relative; }
+        table.data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+        table.data-table th, table.data-table td { padding: 10px 12px; border: 1px solid #404040; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        table.data-table th { background-color: #252526; color: #4fc1ff; position: sticky; top: 0; z-index: 5; }
+        table.data-table tr:nth-child(even) { background-color: #252526; }
+        table.data-table tr:hover { background-color: #37373d; }
+        
+        .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⚡ API Request Automator <span style="font-size: 0.7rem; color: #95a5a6; font-weight: normal;">Ultimate</span></h1>
+        <div class="header-btns">
+            <button id="togglePanelBtn" class="toggle-panel-btn">⚙️ 설정 패널 숨기기/펼치기</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- 설정 영역 -->
+        <div id="configPanel" class="config-panel">
+            <div class="form-group">
+                <label for="apiUrl">Target API URL</label>
+                <input type="text" id="apiUrl" value="https://jsonplaceholder.typicode.com/users" placeholder="https://api.example.com/data">
+            </div>
+
+            <div class="form-group">
+                <label for="method">HTTP Method</label>
+                <select id="method">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="queryParams">Query Params</label>
+                <input type="text" id="queryParams" placeholder="e.g., status=active&limit=10">
+            </div>
+
+            <div class="form-group">
+                <label for="authKey">Auth Key (Bearer)</label>
+                <input type="password" id="authKey" placeholder="Optional token">
+            </div>
+
+            <div style="border-top: 1px dashed #ddd; margin: 15px 0; padding-top: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #2c3e50; font-size: 0.85rem;">Sorting (정렬)</label>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sortField">Key (e.g., id, address.city)</label>
+                        <input type="text" id="sortField" placeholder="Field name">
+                    </div>
+                    <div class="form-group">
+                        <label for="sortOrder">Order</label>
+                        <select id="sortOrder">
+                            <option value="asc">오름차순 (Asc)</option>
+                            <option value="desc">내림차순 (Desc)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button id="runBtn" class="run-btn">Execute Request</button>
+            <div id="loader" class="loader" style="margin-top: 12px;"></div>
+        </div>
+
+        <!-- 결과 영역 -->
+        <div class="result-panel">
+            <div class="result-header">
+                <div class="header-left">
+                    <h2>Response Viewer</h2>
+                    <div class="tab-group">
+                        <button id="tabJsonBtn" class="tab-btn active">JSON / RAW</button>
+                        <button id="tabTableBtn" class="tab-btn">Table View</button>
+                    </div>
+                </div>
+                
+                <div class="action-tools">
+                    <input type="text" id="tableSearchInput" class="table-search" placeholder="테이블 검색..." style="display: none;">
+                    <button id="copyJsonBtn" class="tool-btn">JSON 복사</button>
+                    <div id="statusBadge" class="status-badge" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <div class="result-content">
+                <pre id="jsonView">Ready to send request...</pre>
+                <div id="tableView" class="table-container" style="display: none;"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let globalRawData = null; // 원본 데이터 보관용 (검색 필터링용)
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function extractDeepArray(obj) {
+            if (Array.isArray(obj)) return obj;
+            if (typeof obj === 'object' && obj !== null) {
+                for (let key in obj) {
+                    let found = extractDeepArray(obj[key]);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function getNestedValue(obj, path) {
+            if (!path) return undefined;
+            return path.split('.').reduce((acc, part) => acc && acc[part] !== undefined ? acc[part] : undefined, obj);
+        }
+
+        function xmlToJson(xml) {
+            let obj = {};
+            if (xml.nodeType === 1) {
+                if (xml.attributes.length > 0) {
+                    obj["@attributes"] = {};
+                    for (let j = 0; j < xml.attributes.length; j++) {
+                        let attribute = xml.attributes.item(j);
+                        obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+                    }
+                }
+            } else if (xml.nodeType === 3) {
+                obj = xml.nodeValue.trim();
+            }
+
+            if (xml.hasChildNodes()) {
+                for (let i = 0; i < xml.childNodes.length; i++) {
+                    let item = xml.childNodes.item(i);
+                    let nodeName = item.nodeName;
+                    if (nodeName === "#text") {
+                        let textVal = item.nodeValue.trim();
+                        if (textVal) return textVal;
+                        continue;
+                    }
+                    if (typeof obj[nodeName] === "undefined") {
+                        obj[nodeName] = xmlToJson(item);
+                    } else {
+                        if (!Array.isArray(obj[nodeName])) {
+                            obj[nodeName] = [obj[nodeName]];
+                        }
+                        obj[nodeName].push(xmlToJson(item));
+                    }
+                }
+            }
+            return obj;
+        }
+
+        // 테이블 렌더링 (필터 키워드 반영 기능 포함)
+        function renderTable(data, filterKeyword = '') {
+            let targetArray = extractDeepArray(data);
+
+            if (!targetArray || targetArray.length === 0) {
+                return '<div style="color: #888; padding: 30px; text-align: center;">표(Table)로 변환할 수 있는 데이터(배열)를 찾을 수 없습니다.</div>';
+            }
+
+            // 필터링 적용
+            if (filterKeyword.trim() !== '') {
+                const keyword = filterKeyword.toLowerCase();
+                targetArray = targetArray.filter(item => {
+                    if (typeof item !== 'object' || item === null) {
+                        return String(item).toLowerCase().includes(keyword);
+                    }
+                    return Object.values(item).some(val => 
+                        String(val !== null && typeof val === 'object' ? JSON.stringify(val) : val).toLowerCase().includes(keyword)
+                    );
+                });
+            }
+
+            if (targetArray.length === 0) {
+                return '<div style="color: #888; padding: 30px; text-align: center;">검색 결과가 없습니다.</div>';
+            }
+
+            const keysSet = new Set();
+            targetArray.forEach(item => {
+                if (typeof item === 'object' && item !== null) {
+                    Object.keys(item).forEach(k => keysSet.add(k));
+                }
+            });
+
+            const headers = Array.from(keysSet);
+            if (headers.length === 0) {
+                let html = '<table class="data-table"><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody>';
+                targetArray.forEach((val, idx) => {
+                    html += `<tr><td>${idx}</td><td>${escapeHtml(val)}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            }
+
+            let html = '<table class="data-table"><thead><tr>';
+            headers.forEach(h => { html += `<th>${escapeHtml(h)}</th>`; });
+            html += '</tr></thead><tbody>';
+
+            targetArray.forEach(row => {
+                html += '<tr>';
+                headers.forEach(h => {
+                    let val = row ? row[h] : '';
+                    if (typeof val === 'object' && val !== null) val = JSON.stringify(val);
+                    if (val === undefined || val === null) val = '';
+                    html += `<td title="${escapeHtml(val)}">${escapeHtml(val)}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const runBtn = document.getElementById('runBtn');
+            const togglePanelBtn = document.getElementById('togglePanelBtn');
+            const configPanel = document.getElementById('configPanel');
+            const apiUrlInput = document.getElementById('apiUrl');
+            const methodSelect = document.getElementById('method');
+            const queryParamsInput = document.getElementById('queryParams');
+            const authKeyInput = document.getElementById('authKey');
+            const sortFieldInput = document.getElementById('sortField');
+            const sortOrderSelect = document.getElementById('sortOrder');
+            
+            const jsonView = document.getElementById('jsonView');
+            const tableView = document.getElementById('tableView');
+            const statusBadge = document.getElementById('statusBadge');
+            const loader = document.getElementById('loader');
+            const copyJsonBtn = document.getElementById('copyJsonBtn');
+            const tableSearchInput = document.getElementById('tableSearchInput');
+
+            const tabJsonBtn = document.getElementById('tabJsonBtn');
+            const tabTableBtn = document.getElementById('tabTableBtn');
+
+            // 설정 패널 토글
+            togglePanelBtn.addEventListener('click', () => {
+                configPanel.classList.toggle('collapsed');
+            });
+
+            // 탭 전환 이벤트
+            tabJsonBtn.addEventListener('click', () => {
+                tabJsonBtn.classList.add('active');
+                tabTableBtn.classList.remove('active');
+                jsonView.style.display = 'block';
+                tableView.style.display = 'none';
+                tableSearchInput.style.display = 'none';
+            });
+
+            tabTableBtn.addEventListener('click', () => {
+                tabTableBtn.classList.add('active');
+                tabJsonBtn.classList.remove('active');
+                jsonView.style.display = 'none';
+                tableView.style.display = 'block';
+                tableSearchInput.style.display = 'block';
+            });
+
+            // 테이블 실시간 검색 필터 이벤트
+            tableSearchInput.addEventListener('input', (e) => {
+                if (globalRawData) {
+                    tableView.innerHTML = renderTable(globalRawData, e.target.value);
+                }
+            });
+
+            // JSON 복사 버튼
+            copyJsonBtn.addEventListener('click', () => {
+                const textToCopy = jsonView.textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalText = copyJsonBtn.textContent;
+                    copyJsonBtn.textContent = '복사 완료!';
+                    setTimeout(() => { copyJsonBtn.textContent = originalText; }, 1500);
+                });
+            });
+
+            // API 실행 로직
+            runBtn.addEventListener('click', async () => {
+                const baseUrl = apiUrlInput.value.trim();
+                const method = methodSelect.value;
+                const queryParams = queryParamsInput.value.trim();
+                const authKey = authKeyInput.value.trim();
+                const sortField = sortFieldInput.value.trim();
+                const sortOrder = sortOrderSelect.value;
+
+                if (!baseUrl) { alert('API URL을 입력해주세요.'); return; }
+
+                let finalUrl = baseUrl;
+                if (queryParams) {
+                    finalUrl += (finalUrl.includes('?') ? '&' : '?') + queryParams;
+                }
+
+                const headers = { 'Accept': 'application/json, application/xml, text/xml' };
+                if (authKey) headers['Authorization'] = `Bearer ${authKey}`;
+
+                runBtn.disabled = true;
+                runBtn.textContent = 'Executing...';
+                loader.style.display = 'block';
+                statusBadge.style.display = 'none';
+                jsonView.textContent = 'Fetching data...';
+                tableView.innerHTML = '';
+                tableSearchInput.value = '';
+
+                try {
+                    const response = await fetch(finalUrl, { method, headers });
+
+                    statusBadge.style.display = 'block';
+                    if (response.ok) {
+                        statusBadge.textContent = `${response.status} OK`;
+                        statusBadge.className = 'status-badge status-success';
+                    } else {
+                        statusBadge.textContent = `${response.status} Error`;
+                        statusBadge.className = 'status-badge status-error';
+                    }
+
+                    const responseText = await response.text();
+                    let responseData;
+                    let isStructured = false;
+
+                    const contentType = response.headers.get("content-type") || "";
+                    if (contentType.includes("json") || responseText.trim().startsWith("{") || responseText.trim().startsWith("[")) {
+                        try { responseData = JSON.parse(responseText); isStructured = true; } 
+                        catch (e) { responseData = responseText; }
+                    } else if (contentType.includes("xml") || responseText.trim().startsWith("<")) {
+                        try {
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(responseText, "text/xml");
+                            if (xmlDoc.querySelector("parsererror")) throw new Error("XML Parse Error");
+                            responseData = xmlToJson(xmlDoc);
+                            isStructured = true;
+                        } catch (e) { responseData = responseText; }
+                    } else {
+                        responseData = responseText;
+                    }
+
+                    // 정렬 수행
+                    if (isStructured && sortField) {
+                        let targetArray = extractDeepArray(responseData);
+
+                        if (targetArray) {
+                            targetArray.sort((a, b) => {
+                                let valA = getNestedValue(a, sortField);
+                                let valB = getNestedValue(b, sortField);
+
+                                if (valA === undefined || valA === null) valA = '';
+                                if (valB === undefined || valB === null) valB = '';
+
+                                let strA = String(valA);
+                                let strB = String(valB);
+
+                                let compareResult = strA.localeCompare(strB, undefined, { 
+                                    numeric: true, 
+                                    sensitivity: 'base' 
+                                });
+
+                                return sortOrder === 'asc' ? compareResult : -compareResult;
+                            });
+                        }
+                    }
+
+                    globalRawData = responseData; // 원본 데이터 저장
+
+                    if (typeof responseData === 'object') {
+                        jsonView.textContent = JSON.stringify(responseData, null, 2);
+                    } else {
+                        jsonView.textContent = responseData;
+                    }
+
+                    tableView.innerHTML = renderTable(responseData);
+
+                } catch (error) {
+                    statusBadge.style.display = 'block';
+                    statusBadge.textContent = 'Network Error';
+                    statusBadge.className = 'status-badge status-error';
+                    jsonView.textContent = `Error: ${error.message}\n(CORS 정책이나 네트워크 연결을 확인해주세요.)`;
+                    tableView.innerHTML = '<div style="color:#e74c3c; padding:20px; text-align:center;">네트워크 에러가 발생했습니다.</div>';
+                } finally {
+                    runBtn.disabled = false;
+                    runBtn.textContent = 'Execute Request';
+                    loader.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
