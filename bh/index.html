@@ -1,0 +1,2039 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,
+           initial-scale=1,
+           maximum-scale=1,
+           user-scalable=no,
+           viewport-fit=cover"
+>
+
+<meta name="theme-color" content="#010713">
+
+<title>∞ BLUE HEART — GAME EDITION</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    position:fixed;
+    inset:0;
+
+    background:#010713;
+
+    touch-action:none;
+    overscroll-behavior:none;
+}
+
+body{
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+canvas{
+    position:fixed;
+    inset:0;
+
+    width:100%;
+    height:100%;
+
+    display:block;
+
+    touch-action:none;
+}
+
+#bg{ z-index:0; }
+#world{ z-index:2; }
+#fx{ z-index:3; }
+
+.ui{
+    position:fixed;
+    inset:0;
+    z-index:10;
+
+    pointer-events:none;
+}
+
+/* ==============================
+   LOGO
+============================== */
+
+.logo{
+    position:absolute;
+
+    top:calc(env(safe-area-inset-top) + 22px);
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    text-align:center;
+
+    white-space:nowrap;
+}
+
+.logo small{
+    display:block;
+
+    font-size:7px;
+
+    letter-spacing:.5em;
+
+    color:rgba(180,245,255,.35);
+}
+
+.logo strong{
+    display:block;
+
+    margin-top:5px;
+
+    font-size:18px;
+
+    font-weight:900;
+
+    letter-spacing:-.06em;
+
+    color:#c9fbff;
+
+    text-shadow:
+        0 0 10px rgba(80,230,255,.7),
+        0 0 30px rgba(0,150,255,.45);
+}
+
+/* ==============================
+   COUNTER
+============================== */
+
+.counter{
+    position:absolute;
+
+    top:calc(env(safe-area-inset-top) + 18px);
+
+    right:15px;
+
+    min-width:96px;
+
+    padding:7px 11px;
+
+    border-radius:999px;
+
+    border:1px solid rgba(100,225,255,.13);
+
+    background:rgba(1,15,34,.55);
+
+    backdrop-filter:blur(12px);
+
+    text-align:center;
+}
+
+.counter span{
+    display:block;
+
+    font-size:6px;
+
+    letter-spacing:.3em;
+
+    color:rgba(190,245,255,.35);
+}
+
+#count{
+    display:block;
+
+    margin-top:2px;
+
+    font-size:14px;
+
+    font-weight:900;
+
+    color:#aaf8ff;
+
+    text-shadow:0 0 12px rgba(30,220,255,.9);
+}
+
+/* ==============================
+   LEVEL BAR
+============================== */
+
+.levelWrap{
+    position:absolute;
+
+    top:calc(env(safe-area-inset-top) + 58px);
+
+    right:15px;
+
+    min-width:96px;
+
+    padding:6px 11px 8px;
+
+    border-radius:14px;
+
+    border:1px solid rgba(100,225,255,.13);
+
+    background:rgba(1,15,34,.5);
+
+    backdrop-filter:blur(12px);
+
+    text-align:center;
+}
+
+.levelWrap span{
+    display:block;
+
+    font-size:6px;
+
+    letter-spacing:.25em;
+
+    color:rgba(190,245,255,.35);
+
+    margin-bottom:4px;
+}
+
+#levelNum{
+    font-size:11px;
+    font-weight:900;
+    color:#ffe28a;
+    text-shadow:0 0 10px rgba(255,210,110,.8);
+}
+
+.levelTrack{
+    margin-top:5px;
+
+    width:100%;
+    height:4px;
+
+    border-radius:99px;
+
+    background:rgba(120,220,255,.12);
+
+    overflow:hidden;
+}
+
+.levelFill{
+    height:100%;
+    width:0%;
+
+    border-radius:99px;
+
+    background:linear-gradient(90deg,#20d5ff,#ffe28a);
+
+    transition:width .25s ease-out;
+}
+
+/* ==============================
+   COMBO
+============================== */
+
+.combo{
+    position:absolute;
+
+    left:50%;
+
+    top:calc(env(safe-area-inset-top) + 88px);
+
+    transform:translateX(-50%) scale(.7);
+
+    text-align:center;
+
+    opacity:0;
+
+    transition:
+        opacity .18s ease-out,
+        transform .18s cubic-bezier(.34,1.56,.64,1);
+
+    pointer-events:none;
+}
+
+.combo.show{
+    opacity:1;
+    transform:translateX(-50%) scale(1);
+}
+
+.combo b{
+    display:block;
+
+    font-size:22px;
+    font-weight:900;
+
+    color:#fff4c8;
+
+    text-shadow:
+        0 0 10px rgba(255,220,140,.85),
+        0 0 26px rgba(255,180,60,.5);
+}
+
+.combo span{
+    display:block;
+
+    margin-top:2px;
+
+    font-size:7px;
+    letter-spacing:.35em;
+
+    color:rgba(255,225,160,.55);
+}
+
+/* ==============================
+   TOAST / ACHIEVEMENT
+============================== */
+
+.toast{
+    position:absolute;
+
+    top:calc(env(safe-area-inset-top) + 10px);
+
+    left:50%;
+
+    width:min(78vw,320px);
+
+    padding:10px 16px;
+
+    border-radius:14px;
+
+    border:1px solid rgba(160,240,255,.25);
+
+    background:rgba(2,20,44,.82);
+
+    backdrop-filter:blur(14px);
+
+    text-align:center;
+
+    transform:translate(-50%,-140%);
+
+    opacity:0;
+
+    transition:
+        transform .45s cubic-bezier(.2,.9,.25,1.15),
+        opacity .3s ease;
+
+    box-shadow:0 0 30px rgba(30,200,255,.25);
+}
+
+.toast.show{
+    transform:translate(-50%,0);
+    opacity:1;
+}
+
+.toast em{
+    display:block;
+    font-style:normal;
+
+    font-size:6.5px;
+    letter-spacing:.3em;
+
+    color:rgba(255,220,140,.7);
+}
+
+.toast strong{
+    display:block;
+
+    margin-top:3px;
+
+    font-size:12px;
+    font-weight:900;
+
+    color:#eafcff;
+}
+
+/* ==============================
+   LEVEL UP FLASH
+============================== */
+
+.levelupFlash{
+    position:fixed;
+    inset:0;
+
+    background:radial-gradient(
+        circle at 50% 50%,
+        rgba(255,225,140,.28),
+        rgba(255,225,140,0) 60%
+    );
+
+    opacity:0;
+
+    pointer-events:none;
+
+    z-index:9;
+}
+
+.levelupFlash.play{
+    animation:flashPulse .7s ease-out;
+}
+
+@keyframes flashPulse{
+    0%{ opacity:0; }
+    18%{ opacity:1; }
+    100%{ opacity:0; }
+}
+
+/* ==============================
+   CENTER
+============================== */
+
+.center{
+    position:absolute;
+
+    left:50%;
+    top:50%;
+
+    width:150px;
+    height:150px;
+
+    transform:translate(-50%,-50%);
+}
+
+.ring{
+    position:absolute;
+    inset:0;
+
+    border-radius:50%;
+
+    border:1px solid rgba(90,225,255,.08);
+
+    animation:spin 16s linear infinite;
+}
+
+.ring2{
+    position:absolute;
+
+    inset:30px;
+
+    border-radius:50%;
+
+    border:1px dashed rgba(100,230,255,.09);
+
+    animation:spin 10s linear infinite reverse;
+}
+
+@keyframes spin{
+    to{ transform:rotate(360deg); }
+}
+
+.heart{
+    position:absolute;
+
+    left:50%;
+    top:50%;
+
+    width:38px;
+    height:38px;
+
+    transform:translate(-50%,-50%) rotate(-45deg);
+
+    background:linear-gradient(
+        135deg,
+        #ffffff,
+        #b4faff 25%,
+        #20d5ff 62%,
+        #006eff
+    );
+
+    border-radius:7px 0 7px 0;
+
+    filter:
+        drop-shadow(0 0 9px rgba(160,250,255,.9))
+        drop-shadow(0 0 30px rgba(0,180,255,.7));
+
+    animation:heartbeat 1.7s cubic-bezier(.65,0,.35,1) infinite;
+}
+
+.heart::before,
+.heart::after{
+    content:"";
+
+    position:absolute;
+
+    width:38px;
+    height:38px;
+
+    background:inherit;
+
+    border-radius:50%;
+}
+
+.heart::before{ left:0; top:-19px; }
+.heart::after{ left:19px; top:0; }
+
+@keyframes heartbeat{
+    0%,100%{ transform:translate(-50%,-50%) rotate(-45deg) scale(.9); }
+    12%{ transform:translate(-50%,-50%) rotate(-45deg) scale(1.12); }
+    22%{ transform:translate(-50%,-50%) rotate(-45deg) scale(.96); }
+    32%{ transform:translate(-50%,-50%) rotate(-45deg) scale(1); }
+}
+
+/* ==============================
+   HINT
+============================== */
+
+.hint{
+    position:absolute;
+
+    bottom:calc(env(safe-area-inset-bottom) + 25px);
+
+    left:0;
+
+    width:100%;
+
+    text-align:center;
+
+    font-size:7px;
+
+    letter-spacing:.3em;
+
+    color:rgba(180,245,255,.28);
+
+    transition:opacity .4s;
+}
+
+.hint.hide{ opacity:0; }
+
+/* ==============================
+   GOAL BADGE (bottom, next milestone)
+============================== */
+
+.goal{
+    position:absolute;
+
+    bottom:calc(env(safe-area-inset-bottom) + 48px);
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    text-align:center;
+
+    font-size:7px;
+
+    letter-spacing:.2em;
+
+    color:rgba(190,245,255,.4);
+
+    white-space:nowrap;
+}
+
+.goal b{
+    color:rgba(255,225,160,.75);
+}
+
+/* ==============================
+   PERFORMANCE
+============================== */
+
+.performance{
+    position:absolute;
+
+    left:12px;
+
+    top:calc(env(safe-area-inset-top) + 23px);
+
+    font-size:7px;
+
+    letter-spacing:.15em;
+
+    color:rgba(160,240,255,.25);
+}
+
+#mode{
+    color:rgba(140,240,255,.5);
+}
+
+/* ==============================
+   BEST STATS (bottom left)
+============================== */
+
+.best{
+    position:absolute;
+
+    left:12px;
+
+    bottom:calc(env(safe-area-inset-bottom) + 12px);
+
+    font-size:6.5px;
+
+    letter-spacing:.18em;
+
+    line-height:1.7;
+
+    color:rgba(160,240,255,.3);
+}
+
+.best b{
+    color:rgba(200,250,255,.55);
+}
+
+@media(max-width:700px){
+
+    .center{
+        transform:translate(-50%,-50%) scale(.82);
+    }
+
+    .performance{
+        display:none;
+    }
+}
+
+@media(max-height:600px){
+
+    .center{
+        transform:translate(-50%,-50%) scale(.62);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="bg"></canvas>
+<canvas id="world"></canvas>
+<canvas id="fx"></canvas>
+
+<div class="levelupFlash" id="levelupFlash"></div>
+
+<div class="ui">
+
+    <div class="logo">
+        <small>INFINITE EMOTION</small>
+        <strong>∞ BLUE HEART</strong>
+    </div>
+
+    <div class="counter">
+        <span>CREATED</span>
+        <b id="count">000000000</b>
+    </div>
+
+    <div class="levelWrap">
+        <span>LEVEL</span>
+        <div id="levelNum">1</div>
+        <div class="levelTrack">
+            <div class="levelFill" id="levelFill"></div>
+        </div>
+    </div>
+
+    <div class="combo" id="combo">
+        <b id="comboNum">×2</b>
+        <span>COMBO</span>
+    </div>
+
+    <div class="toast" id="toast">
+        <em>ACHIEVEMENT</em>
+        <strong id="toastText">-</strong>
+    </div>
+
+    <div class="performance">
+        <span id="mode">ULTRA</span>
+    </div>
+
+    <div class="center">
+        <div class="ring"></div>
+        <div class="ring2"></div>
+        <div class="heart"></div>
+    </div>
+
+    <div class="goal" id="goal">
+        NEXT · <b id="goalNum">100</b>
+    </div>
+
+    <div class="best" id="best">
+        BEST COMBO <b id="bestCombo">0</b><br>
+        ALL-TIME <b id="bestTotal">0</b>
+    </div>
+
+    <div class="hint" id="hint">
+        TAP · HOLD · DRAG · GO CRAZY
+    </div>
+
+</div>
+
+
+<script>
+"use strict";
+
+/* ==========================================================
+   ∞ BLUE HEART — GAME EDITION
+   HARDCORE PERFORMANCE EDITION + GAME LAYER
+
+   중요:
+
+   이 파일은 실행 중에 하트 객체를 "생성"하지 않는다.
+
+   하트 데이터 / 파티클 데이터: Float32Array (+ Uint8Array 플래그)
+
+   즉,
+       클릭 수 ↑
+       메모리 ↑ X
+
+   실제 화면 객체 수는 항상 고정.
+
+   이번 버전에서 추가된 것:
+     - 콤보 시스템 (연속 탭 배수)
+     - 레벨 시스템 (누적 생성 수 기반, progress bar)
+     - 업적 토스트 (마일스톤)
+     - 골든 하트 (희귀 보너스, 콤보/레벨에 따라 확률 증가)
+     - 레벨업 플래시 + 사운드 (Web Audio, 외부 에셋 없음)
+     - 영구 기록 저장 (window.storage 있으면 사용, 없으면 세션 메모리만)
+
+   게임 레이어도 동일한 원칙을 따른다:
+   콤보/레벨/업적 상태는 전부 고정 크기 변수/배열이며,
+   시간이 지나거나 클릭이 폭주해도 메모리가 늘어나지 않는다.
+========================================================== */
+
+
+/* ==========================================================
+   CANVAS
+========================================================== */
+
+const bgCanvas = document.getElementById("bg");
+const worldCanvas = document.getElementById("world");
+const fxCanvas = document.getElementById("fx");
+
+const bg = bgCanvas.getContext("2d", { alpha:false });
+const world = worldCanvas.getContext("2d", { alpha:true });
+const fx = fxCanvas.getContext("2d", { alpha:true });
+
+const countText = document.getElementById("count");
+const hint = document.getElementById("hint");
+const modeText = document.getElementById("mode");
+
+const levelNumEl = document.getElementById("levelNum");
+const levelFillEl = document.getElementById("levelFill");
+const goalNumEl = document.getElementById("goalNum");
+
+const comboEl = document.getElementById("combo");
+const comboNumEl = document.getElementById("comboNum");
+
+const toastEl = document.getElementById("toast");
+const toastTextEl = document.getElementById("toastText");
+
+const levelupFlashEl = document.getElementById("levelupFlash");
+
+const bestComboEl = document.getElementById("bestCombo");
+const bestTotalEl = document.getElementById("bestTotal");
+
+
+/* ==========================================================
+   SIZE
+========================================================== */
+
+let W = innerWidth;
+let H = innerHeight;
+
+let DPR = Math.min(window.devicePixelRatio || 1, 1.35);
+
+
+function setupCanvas(c, context){
+
+    c.width = Math.max(1, Math.floor(W * DPR));
+    c.height = Math.max(1, Math.floor(H * DPR));
+
+    c.style.width = W + "px";
+    c.style.height = H + "px";
+
+    context.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+
+
+function resize(){
+
+    W = innerWidth;
+    H = innerHeight;
+
+    DPR = Math.min(window.devicePixelRatio || 1, 1.35);
+
+    setupCanvas(bgCanvas, bg);
+    setupCanvas(worldCanvas, world);
+    setupCanvas(fxCanvas, fx);
+
+    makeStars();
+}
+
+
+addEventListener("resize", resize, { passive:true });
+
+
+/* ==========================================================
+   FIXED LIMITS
+========================================================== */
+
+const MAX_HEARTS = 500;
+const MAX_PARTICLES = 80;
+
+
+/* ==========================================================
+   HEART DATA
+========================================================== */
+
+const heartX = new Float32Array(MAX_HEARTS);
+const heartY = new Float32Array(MAX_HEARTS);
+const heartVX = new Float32Array(MAX_HEARTS);
+const heartVY = new Float32Array(MAX_HEARTS);
+const heartLife = new Float32Array(MAX_HEARTS);
+const heartSize = new Float32Array(MAX_HEARTS);
+const heartRot = new Float32Array(MAX_HEARTS);
+const heartSpin = new Float32Array(MAX_HEARTS);
+const heartPhase = new Float32Array(MAX_HEARTS);
+const heartColor = new Uint8Array(MAX_HEARTS);
+
+/*
+   골든 하트 플래그.
+
+   0/1 이진 상태 → Uint8Array.
+   추가 메모리 500 bytes, 고정.
+*/
+const heartGolden = new Uint8Array(MAX_HEARTS);
+
+const heartActive = new Uint8Array(MAX_HEARTS);
+
+let heartWrite = 0;
+
+
+/* ==========================================================
+   PARTICLE DATA
+========================================================== */
+
+const partX = new Float32Array(MAX_PARTICLES);
+const partY = new Float32Array(MAX_PARTICLES);
+const partVX = new Float32Array(MAX_PARTICLES);
+const partVY = new Float32Array(MAX_PARTICLES);
+const partLife = new Float32Array(MAX_PARTICLES);
+const partSize = new Float32Array(MAX_PARTICLES);
+const partActive = new Uint8Array(MAX_PARTICLES);
+const partGold = new Uint8Array(MAX_PARTICLES);
+
+let particleWrite = 0;
+
+
+/* ==========================================================
+   COLORS
+========================================================== */
+
+const COLORS = [
+    "#efffff",
+    "#baf9ff",
+    "#77edff",
+    "#35dcff",
+    "#08c4ff",
+    "#008fff",
+    "#0065ff"
+];
+
+const GOLD_COLOR = "#ffe28a";
+
+
+/* ==========================================================
+   HEART SPRITES
+========================================================== */
+
+const spriteSizes = [8, 11, 15, 20, 27];
+
+const sprites = [];
+const goldSprites = [];
+
+
+function createHeartSprite(size, color){
+
+    const s = Math.ceil(size * 4);
+
+    const c = document.createElement("canvas");
+
+    c.width = s;
+    c.height = s;
+
+    const g = c.getContext("2d");
+
+    g.translate(s / 2, s / 2);
+    g.rotate(-Math.PI / 4);
+
+    g.fillStyle = color;
+
+    g.shadowColor = color;
+    g.shadowBlur = size * .75;
+
+    const r = size;
+
+    g.beginPath();
+    g.moveTo(0, r * .3);
+    g.bezierCurveTo(-r*.75, -r*.1, -r*.48, -r*.7, 0, -r*.32);
+    g.bezierCurveTo(r*.48, -r*.7, r*.75, -r*.1, 0, r*.3);
+    g.closePath();
+    g.fill();
+
+    return c;
+}
+
+
+for(let s = 0; s < spriteSizes.length; s++){
+
+    sprites[s] = [];
+
+    for(let c = 0; c < COLORS.length; c++){
+        sprites[s][c] = createHeartSprite(spriteSizes[s], COLORS[c]);
+    }
+
+    /*
+       골든 스프라이트는 색상별로 만들 필요 없음.
+       사이즈당 1개씩만.
+    */
+    goldSprites[s] = createHeartSprite(spriteSizes[s] * 1.15, GOLD_COLOR);
+}
+
+
+/* ==========================================================
+   RANDOM
+========================================================== */
+
+function random(min, max){
+    return Math.random() * (max - min) + min;
+}
+
+
+/* ==========================================================
+   PERSISTENT STATS (window.storage, with in-memory fallback)
+========================================================== */
+
+/*
+   Claude 아티팩트 환경에서는 window.storage로 영구 저장.
+   그 외 환경(그냥 파일로 열었을 때)에서는 저장 기능 없이
+   세션 메모리로만 동작한다. (localStorage는 사용하지 않음)
+*/
+
+let hasStorage = false;
+
+let stats = {
+    bestTotal: 0,
+    bestCombo: 0,
+    unlockedAchievements: []
+};
+
+let statsDirty = false;
+let lastStatsSave = 0;
+
+
+async function loadStats(){
+
+    try{
+
+        if(!window.storage){
+            hasStorage = false;
+            return;
+        }
+
+        hasStorage = true;
+
+        const result = await window.storage.get("blueheart-stats", false);
+
+        if(result && result.value){
+
+            const parsed = JSON.parse(result.value);
+
+            stats.bestTotal = parsed.bestTotal || 0;
+            stats.bestCombo = parsed.bestCombo || 0;
+            stats.unlockedAchievements = parsed.unlockedAchievements || [];
+        }
+
+    }catch(err){
+
+        /*
+           키가 없거나(첫 실행) 접근 실패.
+           기본값 유지.
+        */
+    }
+
+    /*
+       화면에 즉시 반영.
+    */
+
+    totalCreated = stats.bestTotal;
+
+    for(let i = 0; i < stats.unlockedAchievements.length; i++){
+        achievedSet.add(stats.unlockedAchievements[i]);
+    }
+
+    scoreDirty = true;
+
+    paintBest();
+}
+
+
+async function saveStats(now){
+
+    if(!hasStorage) return;
+
+    if(!statsDirty) return;
+
+    if(now - lastStatsSave < 1500) return;
+
+    lastStatsSave = now;
+    statsDirty = false;
+
+    try{
+
+        await window.storage.set(
+            "blueheart-stats",
+            JSON.stringify(stats),
+            false
+        );
+
+    }catch(err){
+
+        /*
+           저장 실패해도 게임은 계속 진행.
+        */
+    }
+}
+
+
+function paintBest(){
+
+    bestComboEl.textContent = String(stats.bestCombo);
+    bestTotalEl.textContent = String(stats.bestTotal);
+}
+
+
+/* ==========================================================
+   SCORE
+========================================================== */
+
+let totalCreated = 0;
+
+let scoreDirty = false;
+let lastScorePaint = 0;
+
+
+function addScore(n){
+
+    totalCreated += n;
+
+    if(totalCreated > stats.bestTotal){
+        stats.bestTotal = totalCreated;
+        statsDirty = true;
+    }
+
+    scoreDirty = true;
+
+    updateLevel();
+    checkAchievements();
+}
+
+
+function paintScore(now){
+
+    if(!scoreDirty) return;
+
+    if(now - lastScorePaint < 50) return;
+
+    lastScorePaint = now;
+
+    countText.textContent = String(totalCreated).padStart(9, "0");
+
+    scoreDirty = false;
+}
+
+
+/* ==========================================================
+   LEVEL SYSTEM
+========================================================== */
+
+/*
+   레벨 n을 시작하는 데 필요한 누적 하트 수.
+   공식 기반이라 배열을 무한히 만들 필요 없음.
+*/
+
+function totalForLevel(level){
+
+    if(level <= 1) return 0;
+
+    return Math.floor(60 * Math.pow(level - 1, 1.65));
+}
+
+
+let currentLevel = 1;
+let currentLevelFloor = 0;
+let currentLevelCeil = totalForLevel(2);
+
+
+function updateLevel(){
+
+    let changed = false;
+
+    while(totalCreated >= currentLevelCeil){
+
+        currentLevel++;
+
+        currentLevelFloor = currentLevelCeil;
+        currentLevelCeil = totalForLevel(currentLevel + 1);
+
+        changed = true;
+    }
+
+    const span = Math.max(1, currentLevelCeil - currentLevelFloor);
+    const into = totalCreated - currentLevelFloor;
+
+    const pct = Math.min(100, Math.max(0, (into / span) * 100));
+
+    levelNumEl.textContent = String(currentLevel);
+    levelFillEl.style.width = pct.toFixed(1) + "%";
+
+    goalNumEl.textContent = String(currentLevelCeil);
+
+    if(changed){
+        onLevelUp();
+    }
+}
+
+
+function onLevelUp(){
+
+    levelupFlashEl.classList.remove("play");
+
+    /*
+       reflow로 애니메이션 재시작.
+    */
+    void levelupFlashEl.offsetWidth;
+
+    levelupFlashEl.classList.add("play");
+
+    playTone(660, .12, "sine", .0);
+    playTone(880, .18, "sine", .1);
+
+    vibrate([10, 40, 10]);
+
+    /*
+       레벨업 시 축하 버스트.
+    */
+
+    burst(W/2, H*0.42, 18, 1.6, true);
+}
+
+
+/* ==========================================================
+   COMBO SYSTEM
+========================================================== */
+
+let comboCount = 0;
+let lastTapTime = 0;
+let comboHideTimer = null;
+
+
+function registerTap(now){
+
+    if(now - lastTapTime < 650){
+        comboCount++;
+    }else{
+        comboCount = 1;
+    }
+
+    lastTapTime = now;
+
+    if(comboCount > stats.bestCombo){
+        stats.bestCombo = comboCount;
+        statsDirty = true;
+        paintBest();
+    }
+
+    if(comboCount >= 2){
+
+        comboNumEl.textContent = "×" + comboCount;
+        comboEl.classList.add("show");
+
+        if(comboHideTimer) clearTimeout(comboHideTimer);
+
+        comboHideTimer = setTimeout(()=>{
+            comboEl.classList.remove("show");
+            comboCount = 0;
+        }, 900);
+    }
+
+    return comboMultiplier();
+}
+
+
+function comboMultiplier(){
+
+    if(comboCount >= 20) return 4;
+    if(comboCount >= 12) return 3;
+    if(comboCount >= 6) return 2;
+    if(comboCount >= 2) return 1.4;
+
+    return 1;
+}
+
+
+/* ==========================================================
+   ACHIEVEMENTS
+========================================================== */
+
+const ACHIEVEMENTS = [
+    { at: 50,     text: "첫 걸음"        },
+    { at: 200,    text: "따뜻해지는 중"   },
+    { at: 1000,   text: "하트 컬렉터"     },
+    { at: 5000,   text: "무한 애정"       },
+    { at: 20000,  text: "심장 폭풍"       },
+    { at: 100000, text: "∞ 블루하트"      }
+];
+
+const achievedSet = new Set();
+
+let toastQueue = [];
+let toastBusy = false;
+
+
+function checkAchievements(){
+
+    for(let i = 0; i < ACHIEVEMENTS.length; i++){
+
+        const a = ACHIEVEMENTS[i];
+
+        if(totalCreated >= a.at && !achievedSet.has(a.at)){
+
+            achievedSet.add(a.at);
+
+            stats.unlockedAchievements = Array.from(achievedSet);
+            statsDirty = true;
+
+            queueToast(a.text);
+        }
+    }
+}
+
+
+function queueToast(text){
+
+    toastQueue.push(text);
+
+    if(!toastBusy){
+        playNextToast();
+    }
+}
+
+
+function playNextToast(){
+
+    if(toastQueue.length === 0){
+        toastBusy = false;
+        return;
+    }
+
+    toastBusy = true;
+
+    const text = toastQueue.shift();
+
+    toastTextEl.textContent = text;
+    toastEl.classList.add("show");
+
+    playTone(740, .1, "triangle", 0);
+
+    vibrate(15);
+
+    setTimeout(()=>{
+
+        toastEl.classList.remove("show");
+
+        setTimeout(playNextToast, 350);
+
+    }, 2200);
+}
+
+
+/* ==========================================================
+   SOUND (Web Audio, 외부 파일 없음)
+========================================================== */
+
+let audioCtx = null;
+
+
+function ensureAudio(){
+
+    if(audioCtx) return audioCtx;
+
+    try{
+
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+
+        audioCtx = new Ctx();
+
+    }catch(err){
+
+        audioCtx = null;
+    }
+
+    return audioCtx;
+}
+
+
+function playTone(freq, dur, type, delay){
+
+    const ctx = ensureAudio();
+
+    if(!ctx) return;
+
+    if(ctx.state === "suspended"){
+        ctx.resume().catch(()=>{});
+    }
+
+    const t0 = ctx.currentTime + (delay || 0);
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = type || "sine";
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(.16, t0 + .02);
+    gain.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t0);
+    osc.stop(t0 + dur + .05);
+}
+
+
+/* ==========================================================
+   HEART SPAWN
+========================================================== */
+
+function goldenChance(){
+
+    /*
+       콤보/레벨이 높을수록 골든 하트 확률 증가.
+       상한을 둬서 너무 남발되지 않게.
+    */
+
+    const base = .012;
+
+    const comboBonus = Math.min(.05, comboCount * .004);
+    const levelBonus = Math.min(.03, currentLevel * .0015);
+
+    return Math.min(.12, base + comboBonus + levelBonus);
+}
+
+
+function spawnHeart(x, y, power, forceGolden){
+
+    const i = heartWrite;
+
+    heartWrite++;
+
+    if(heartWrite >= MAX_HEARTS){
+        heartWrite = 0;
+    }
+
+    heartActive[i] = 1;
+
+    heartX[i] = x;
+    heartY[i] = y;
+
+    const angle = Math.random() * Math.PI * 2;
+
+    const speed = random(.35, 2.8) * power;
+
+    heartVX[i] = Math.cos(angle) * speed;
+    heartVY[i] = Math.sin(angle) * speed;
+
+    heartSize[i] = random(5, 17);
+
+    heartLife[i] = 1;
+
+    heartRot[i] = random(0, Math.PI * 2);
+    heartSpin[i] = random(-.025, .025);
+    heartPhase[i] = random(0, Math.PI * 2);
+
+    heartColor[i] = (Math.random() * COLORS.length) | 0;
+
+    const isGolden = forceGolden || (Math.random() < goldenChance());
+
+    heartGolden[i] = isGolden ? 1 : 0;
+
+    if(isGolden){
+
+        /*
+           골든 하트는 보너스 점수를 별도로 지급.
+           (버스트의 amount 점수와는 별개로 +5)
+        */
+
+        totalCreated += 5;
+
+        if(totalCreated > stats.bestTotal){
+            stats.bestTotal = totalCreated;
+            statsDirty = true;
+        }
+
+        scoreDirty = true;
+
+        for(let p = 0; p < 4; p++){
+            spawnParticle(x, y, .6, true);
+        }
+    }
+}
+
+
+/* ==========================================================
+   BURST
+========================================================== */
+
+function burst(x, y, amount, power, skipScore){
+
+    const MAX_PER_EVENT = 32;
+
+    if(amount > MAX_PER_EVENT){
+        amount = MAX_PER_EVENT;
+    }
+
+    for(let i = 0; i < amount; i++){
+
+        spawnHeart(
+            x + random(-8,8),
+            y + random(-8,8),
+            power
+        );
+    }
+
+    if(!skipScore){
+        addScore(amount);
+    }
+}
+
+
+/* ==========================================================
+   PARTICLE
+========================================================== */
+
+function spawnParticle(x, y, power, golden){
+
+    const i = particleWrite;
+
+    particleWrite++;
+
+    if(particleWrite >= MAX_PARTICLES){
+        particleWrite = 0;
+    }
+
+    partActive[i] = 1;
+
+    partX[i] = x;
+    partY[i] = y;
+
+    const angle = Math.random() * Math.PI * 2;
+
+    const speed = random(1, 6) * power;
+
+    partVX[i] = Math.cos(angle) * speed;
+    partVY[i] = Math.sin(angle) * speed;
+
+    partLife[i] = 1;
+
+    partSize[i] = random(.6, 2);
+
+    partGold[i] = golden ? 1 : 0;
+}
+
+
+/* ==========================================================
+   STARS
+========================================================== */
+
+let starsX, starsY, starsR, starsA;
+let starCount = 0;
+
+
+function makeStars(){
+
+    starCount = Math.min(150, Math.floor(W * H / 5000));
+
+    starsX = new Float32Array(starCount);
+    starsY = new Float32Array(starCount);
+    starsR = new Float32Array(starCount);
+    starsA = new Float32Array(starCount);
+
+    for(let i = 0; i < starCount; i++){
+
+        starsX[i] = random(0, W);
+        starsY[i] = random(0, H);
+        starsR[i] = random(.2, 1.1);
+        starsA[i] = random(.1, .55);
+    }
+}
+
+
+/* ==========================================================
+   BACKGROUND
+========================================================== */
+
+function drawBackground(now){
+
+    const gradient = bg.createRadialGradient(
+        W * .5, H * .45, 0,
+        W * .5, H * .5, Math.max(W,H) * .8
+    );
+
+    /*
+       레벨이 오를수록 배경이 아주 미세하게 따뜻해진다.
+       (블루 → 살짝 골드빛이 도는 블루)
+    */
+
+    const warmth = Math.min(1, currentLevel / 40);
+
+    gradient.addColorStop(0, mixHex("#092e69", "#3a2e10", warmth * .35));
+    gradient.addColorStop(.4, "#041b43");
+    gradient.addColorStop(1, "#010611");
+
+    bg.fillStyle = gradient;
+    bg.fillRect(0, 0, W, H);
+
+    bg.fillStyle = "#b9f7ff";
+
+    for(let i = 0; i < starCount; i++){
+
+        bg.globalAlpha = starsA[i] + Math.sin(now * .001 + i) * .1;
+
+        bg.beginPath();
+        bg.arc(starsX[i], starsY[i], starsR[i], 0, Math.PI * 2);
+        bg.fill();
+    }
+
+    bg.globalAlpha = 1;
+}
+
+
+function mixHex(a, b, t){
+
+    const pa = parseInt(a.slice(1), 16);
+    const pb = parseInt(b.slice(1), 16);
+
+    const ar = (pa >> 16) & 255, ag = (pa >> 8) & 255, ab = pa & 255;
+    const br = (pb >> 16) & 255, bg2 = (pb >> 8) & 255, bb = pb & 255;
+
+    const r = Math.round(ar + (br - ar) * t);
+    const g = Math.round(ag + (bg2 - ag) * t);
+    const bl = Math.round(ab + (bb - ab) * t);
+
+    return "rgb(" + r + "," + g + "," + bl + ")";
+}
+
+
+/* ==========================================================
+   INPUT
+========================================================== */
+
+let pointerX = 0;
+let pointerY = 0;
+
+let pointerDown = false;
+let pointerStart = 0;
+
+let lastPointerX = 0;
+let lastPointerY = 0;
+
+let moveAccumulator = 0;
+
+let inputDirty = false;
+
+
+function pointerDownHandler(e){
+
+    e.preventDefault();
+
+    pointerDown = true;
+
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+
+    lastPointerX = pointerX;
+    lastPointerY = pointerY;
+
+    pointerStart = performance.now();
+
+    inputDirty = true;
+
+    hint.classList.add("hide");
+
+    const mult = registerTap(pointerStart);
+
+    burst(pointerX, pointerY, Math.round(10 * Math.min(mult, 2.2)), 1.2 * Math.min(mult, 2));
+
+    for(let i = 0; i < 6; i++){
+        spawnParticle(pointerX, pointerY, .5);
+    }
+
+    if(mult > 1){
+        playTone(520 + comboCount * 12, .08, "sine", 0);
+    }
+
+    vibrate(6);
+}
+
+
+function pointerMoveHandler(e){
+
+    e.preventDefault();
+
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+
+    inputDirty = true;
+}
+
+
+function pointerUpHandler(e){
+
+    e.preventDefault();
+
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+
+    const hold = performance.now() - pointerStart;
+
+    pointerDown = false;
+
+    const mult = comboMultiplier();
+
+    if(hold < 280){
+
+        burst(pointerX, pointerY, Math.round(22 * Math.min(mult,2)), 1.5);
+
+        for(let i = 0; i < 10; i++){
+            spawnParticle(pointerX, pointerY, .8);
+        }
+
+        vibrate(10);
+    }
+    else{
+
+        const power = Math.min(4, 1 + hold / 1000);
+
+        burst(pointerX, pointerY, 32, power);
+
+        for(let i = 0; i < 20; i++){
+            spawnParticle(pointerX, pointerY, power * .3);
+        }
+
+        vibrate(20);
+    }
+}
+
+
+addEventListener("pointerdown", pointerDownHandler, { passive:false });
+addEventListener("pointermove", pointerMoveHandler, { passive:false });
+addEventListener("pointerup", pointerUpHandler, { passive:false });
+
+addEventListener("pointercancel", ()=>{ pointerDown = false; }, { passive:true });
+
+
+/* ==========================================================
+   DRAG GENERATOR
+========================================================== */
+
+function processInput(){
+
+    if(!pointerDown || !inputDirty) return;
+
+    const dx = pointerX - lastPointerX;
+    const dy = pointerY - lastPointerY;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    lastPointerX = pointerX;
+    lastPointerY = pointerY;
+
+    inputDirty = false;
+
+    moveAccumulator += distance;
+
+    let amount = 0;
+
+    if(moveAccumulator >= 5){
+
+        amount = Math.min(4, Math.floor(moveAccumulator / 5));
+
+        moveAccumulator -= amount * 5;
+    }
+
+    for(let i = 0; i < amount; i++){
+
+        spawnHeart(
+            pointerX + random(-4,4),
+            pointerY + random(-4,4),
+            .75
+        );
+    }
+
+    addScore(amount);
+}
+
+
+/* ==========================================================
+   PARTICLE UPDATE + DRAW
+========================================================== */
+
+function updateParticles(){
+
+    fx.clearRect(0, 0, W, H);
+
+    for(let i = 0; i < MAX_PARTICLES; i++){
+
+        if(partActive[i] === 0) continue;
+
+        partX[i] += partVX[i];
+        partY[i] += partVY[i];
+
+        partVX[i] *= .94;
+        partVY[i] *= .94;
+
+        partLife[i] -= .045;
+
+        if(partLife[i] <= 0){
+            partActive[i] = 0;
+            continue;
+        }
+
+        fx.globalAlpha = partLife[i];
+
+        fx.fillStyle = partGold[i] ? "#ffe28a" : "#9ff7ff";
+
+        fx.beginPath();
+        fx.arc(partX[i], partY[i], partSize[i], 0, Math.PI * 2);
+        fx.fill();
+    }
+
+    fx.globalAlpha = 1;
+}
+
+
+/* ==========================================================
+   PERFORMANCE MONITOR
+========================================================== */
+
+let frameCount = 0;
+let fpsStart = performance.now();
+
+let qualityLevel = 2;
+
+
+function monitorFPS(now){
+
+    frameCount++;
+
+    if(now - fpsStart < 1800) return;
+
+    const fps = frameCount / ((now - fpsStart) / 1000);
+
+    if(fps < 38){
+        qualityLevel = Math.max(0, qualityLevel - 1);
+    }
+    else if(fps > 57){
+        qualityLevel = Math.min(2, qualityLevel + 1);
+    }
+
+    if(qualityLevel === 2) modeText.textContent = "ULTRA";
+    else if(qualityLevel === 1) modeText.textContent = "HIGH";
+    else modeText.textContent = "SAFE";
+
+    frameCount = 0;
+    fpsStart = now;
+}
+
+
+function currentHeartLimit(){
+
+    if(qualityLevel === 2) return MAX_HEARTS;
+    if(qualityLevel === 1) return 350;
+
+    return 220;
+}
+
+
+/* ==========================================================
+   VISIBILITY
+========================================================== */
+
+let sleeping = false;
+
+
+document.addEventListener("visibilitychange", ()=>{
+
+    sleeping = document.hidden;
+
+    if(sleeping){
+
+        pointerDown = false;
+        inputDirty = false;
+        moveAccumulator = 0;
+    }
+});
+
+
+/* ==========================================================
+   VIBRATION
+========================================================== */
+
+function vibrate(pattern){
+
+    if(navigator.vibrate){
+        navigator.vibrate(pattern);
+    }
+}
+
+
+/* ==========================================================
+   MAIN LOOP
+========================================================== */
+
+let lastTime = performance.now();
+
+
+function frame(now){
+
+    if(sleeping){
+        requestAnimationFrame(frame);
+        return;
+    }
+
+    let delta = now - lastTime;
+
+    if(delta > 50) delta = 50;
+
+    lastTime = now;
+
+    processInput();
+
+    const limit = currentHeartLimit();
+
+    for(let i = 0; i < limit; i++){
+
+        if(heartActive[i] === 0) continue;
+
+        let x = heartX[i];
+        let y = heartY[i];
+        let vx = heartVX[i];
+        let vy = heartVY[i];
+
+        if(pointerDown){
+
+            const dx = pointerX - x;
+            const dy = pointerY - y;
+
+            const d2 = dx * dx + dy * dy;
+
+            if(d2 < 32400 && d2 > 4){
+
+                const d = Math.sqrt(d2);
+
+                const f = (1 - d / 180) * .025;
+
+                vx += dx / d * f;
+                vy += dy / d * f;
+            }
+        }
+
+        x += vx;
+        y += vy;
+
+        vx *= .988;
+        vy *= .988;
+
+        vy += Math.sin(i * .7 + now * .0007) * .002;
+
+        heartRot[i] += heartSpin[i];
+        heartPhase[i] += .025;
+
+        heartLife[i] -= .0017;
+
+        if(x < -40) x = W + 40;
+        else if(x > W + 40) x = -40;
+
+        if(y < -40) y = H + 40;
+        else if(y > H + 40) y = -40;
+
+        if(heartLife[i] <= 0){
+
+            x = random(0, W);
+            y = random(0, H);
+
+            vx = random(-.7, .7);
+            vy = random(-.7, .7);
+
+            heartLife[i] = 1;
+
+            /*
+               재활용되는 순간에도 아주 낮은 확률로
+               골든 상태를 새로 부여할 수 있다.
+            */
+
+            heartGolden[i] = (Math.random() < .004) ? 1 : 0;
+        }
+
+        heartX[i] = x;
+        heartY[i] = y;
+
+        heartVX[i] = vx;
+        heartVY[i] = vy;
+    }
+
+    drawBackground(now);
+
+    world.clearRect(0, 0, W, H);
+
+    for(let i = 0; i < limit; i++){
+
+        if(heartActive[i] === 0) continue;
+
+        const s = heartSize[i];
+
+        let si;
+
+        if(s < 9) si = 0;
+        else if(s < 12) si = 1;
+        else if(s < 17) si = 2;
+        else if(s < 23) si = 3;
+        else si = 4;
+
+        const isGolden = heartGolden[i] === 1;
+
+        const image = isGolden
+            ? goldSprites[si]
+            : sprites[si][heartColor[i]];
+
+        const ds = spriteSizes[si] * (isGolden ? 4 * 1.15 : 4);
+
+        world.globalAlpha = Math.max(.08, heartLife[i]);
+
+        world.drawImage(
+            image,
+            heartX[i] - ds / 2,
+            heartY[i] - ds / 2,
+            ds,
+            ds
+        );
+    }
+
+    world.globalAlpha = 1;
+
+    updateParticles();
+
+    paintScore(now);
+    monitorFPS(now);
+
+    saveStats(now);
+
+    requestAnimationFrame(frame);
+}
+
+
+/* ==========================================================
+   INITIALIZE
+========================================================== */
+
+resize();
+
+for(let i = 0; i < 100; i++){
+    spawnHeart(random(0,W), random(0,H), .7);
+}
+
+loadStats();
+
+updateLevel();
+
+requestAnimationFrame(frame);
+
+
+/* ==========================================================
+   BROWSER CONTROL
+========================================================== */
+
+document.addEventListener("contextmenu", e=>{ e.preventDefault(); });
+document.addEventListener("selectstart", e=>{ e.preventDefault(); });
+document.addEventListener("dragstart", e=>{ e.preventDefault(); });
+document.addEventListener("gesturestart", e=>{ e.preventDefault(); });
+
+document.addEventListener("touchmove", e=>{ e.preventDefault(); }, { passive:false });
+
+
+/* ==========================================================
+   DOUBLE TAP / DOUBLE CLICK
+========================================================== */
+
+let lastTap = 0;
+
+
+addEventListener("pointerup", e=>{
+
+    const now = performance.now();
+
+    if(now - lastTap < 280){
+
+        const mult = comboMultiplier();
+
+        burst(e.clientX, e.clientY, 32, 3);
+
+        for(let i = 0; i < 20; i++){
+            spawnParticle(e.clientX, e.clientY, 1);
+        }
+
+        /*
+           더블탭은 확정 골든 하트 1개 보너스.
+        */
+
+        spawnHeart(e.clientX, e.clientY, 1.4, true);
+
+        playTone(900, .1, "square", 0);
+
+        vibrate([12, 20, 12]);
+    }
+
+    lastTap = now;
+
+}, { passive:false });
+
+
+/* ==========================================================
+   SCREEN WAKE
+========================================================== */
+
+let wakeLock = null;
+
+
+async function requestWakeLock(){
+
+    try{
+
+        if("wakeLock" in navigator){
+            wakeLock = await navigator.wakeLock.request("screen");
+        }
+
+    }catch(_){}
+}
+
+
+requestWakeLock();
+
+
+document.addEventListener("visibilitychange", ()=>{
+
+    if(!document.hidden){
+        requestWakeLock();
+    }
+});
+
+</script>
+
+</body>
+</html>
