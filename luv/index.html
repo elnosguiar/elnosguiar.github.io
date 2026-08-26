@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta
+    name="viewport"
+    content="
+        width=device-width,
+        initial-scale=1,
+        maximum-scale=1,
+        user-scalable=no,
+        viewport-fit=cover
+    "
+>
+<meta name="theme-color" content="#020817">
+<title>∞ BLUE HEART</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+}
+html,
+body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    position:fixed;
+    inset:0;
+    background:#020817;
+    touch-action:none;
+    overscroll-behavior:none;
+}
+body{
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+    color:white;
+}
+canvas{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    touch-action:none;
+}
+#bg{
+    z-index:0;
+}
+#canvas{
+    z-index:2;
+}
+#fx{
+    z-index:3;
+}
+.ui{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:10;
+}
+/* =========================================================
+   TOP
+========================================================= */
+.logo{
+    position:absolute;
+    top:
+        calc(
+            env(safe-area-inset-top) + 20px
+        );
+    left:50%;
+    transform:
+        translateX(-50%);
+    text-align:center;
+    white-space:nowrap;
+}
+.logo small{
+    display:block;
+    font-size:8px;
+    letter-spacing:.45em;
+    color:
+        rgba(
+            190,
+            245,
+            255,
+            .4
+        );
+}
+.logo strong{
+    display:block;
+    margin-top:5px;
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:-.06em;
+    background:
+        linear-gradient(
+            90deg,
+            #fff,
+            #a8f7ff,
+            #1dd4ff,
+            #fff
+        );
+    background-size:200% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    animation:
+        shine 6s linear infinite;
+}
+@keyframes shine{
+    to{
+        background-position:
+            200% 0;
+    }
+}
+/* =========================================================
+   SCORE
+========================================================= */
+.score{
+    position:absolute;
+    top:
+        calc(
+            env(safe-area-inset-top) + 20px
+        );
+    right:16px;
+    min-width:80px;
+    padding:
+        7px
+        10px;
+    border:
+        1px solid
+        rgba(
+            120,
+            235,
+            255,
+            .12
+        );
+    border-radius:999px;
+    background:
+        rgba(
+            2,
+            18,
+            40,
+            .45
+        );
+    backdrop-filter:
+        blur(10px);
+    text-align:center;
+}
+.score small{
+    display:block;
+    font-size:6px;
+    letter-spacing:.25em;
+    color:
+        rgba(
+            190,
+            245,
+            255,
+            .35
+        );
+}
+#score{
+    display:block;
+    margin-top:2px;
+    font-size:13px;
+    font-weight:800;
+    color:#a5f7ff;
+    text-shadow:
+        0 0 12px
+        rgba(
+            30,
+            220,
+            255,
+            .8
+        );
+}
+/* =========================================================
+   CENTER
+========================================================= */
+.center{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:150px;
+    height:150px;
+    transform:
+        translate(-50%,-50%);
+}
+.ring{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    border:
+        1px solid
+        rgba(
+            100,
+            225,
+            255,
+            .08
+        );
+    animation:
+        rotate 14s linear infinite;
+}
+.ring::after{
+    content:"";
+    position:absolute;
+    inset:25px;
+    border-radius:50%;
+    border:
+        1px dashed
+        rgba(
+            100,
+            225,
+            255,
+            .08
+        );
+    animation:
+        rotate 8s linear infinite reverse;
+}
+@keyframes rotate{
+    to{
+        transform:rotate(360deg);
+    }
+}
+.main-heart{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:42px;
+    height:42px;
+    transform:
+        translate(-50%,-50%)
+        rotate(-45deg);
+    background:
+        linear-gradient(
+            135deg,
+            #eaffff,
+            #74efff 35%,
+            #0cc3ff 65%,
+            #0066ff
+        );
+    border-radius:
+        6px 0 6px 0;
+    filter:
+        drop-shadow(
+            0 0 8px
+            #b0faff
+        )
+        drop-shadow(
+            0 0 28px
+            #18d5ff
+        );
+    animation:
+        beat 1.8s
+        cubic-bezier(.65,0,.35,1)
+        infinite;
+}
+.main-heart::before,
+.main-heart::after{
+    content:"";
+    position:absolute;
+    width:42px;
+    height:42px;
+    background:inherit;
+    border-radius:50%;
+}
+.main-heart::before{
+    top:-21px;
+    left:0;
+}
+.main-heart::after{
+    left:21px;
+    top:0;
+}
+@keyframes beat{
+    0%,100%{
+        transform:
+            translate(-50%,-50%)
+            rotate(-45deg)
+            scale(.9);
+    }
+    12%{
+        transform:
+            translate(-50%,-50%)
+            rotate(-45deg)
+            scale(1.1);
+    }
+    21%{
+        transform:
+            translate(-50%,-50%)
+            rotate(-45deg)
+            scale(.95);
+    }
+    30%{
+        transform:
+            translate(-50%,-50%)
+            rotate(-45deg)
+            scale(1);
+    }
+}
+/* =========================================================
+   HINT
+========================================================= */
+.hint{
+    position:absolute;
+    bottom:
+        calc(
+            env(safe-area-inset-bottom) + 24px
+        );
+    left:50%;
+    transform:
+        translateX(-50%);
+    width:100%;
+    text-align:center;
+    font-size:7px;
+    letter-spacing:.3em;
+    color:
+        rgba(
+            180,
+            240,
+            255,
+            .3
+        );
+    transition:
+        opacity .5s;
+}
+.hint.hide{
+    opacity:0;
+}
+/* =========================================================
+   PERFORMANCE INDICATOR
+========================================================= */
+.perf{
+    position:absolute;
+    left:12px;
+    top:
+        calc(
+            env(safe-area-inset-top) + 23px
+        );
+    font-size:7px;
+    letter-spacing:.15em;
+    color:
+        rgba(
+            170,
+            240,
+            255,
+            .22
+        );
+}
+#quality{
+    color:
+        rgba(
+            130,
+            235,
+            255,
+            .45
+        );
+}
+/* =========================================================
+   DESKTOP
+========================================================= */
+@media(pointer:fine){
+    body{
+        cursor:none;
+    }
+    .cursor{
+        display:block;
+    }
+}
+.cursor{
+    display:none;
+    position:fixed;
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:white;
+    transform:
+        translate(-50%,-50%);
+    box-shadow:
+        0 0 8px white,
+        0 0 20px #51e8ff,
+        0 0 40px #008cff;
+    pointer-events:none;
+    z-index:100;
+}
+/* =========================================================
+   MOBILE
+========================================================= */
+@media(max-width:700px){
+    .center{
+        transform:
+            translate(-50%,-50%)
+            scale(.8);
+    }
+    .logo strong{
+        font-size:16px;
+    }
+    .perf{
+        display:none;
+    }
+}
+@media(max-height:600px){
+    .center{
+        transform:
+            translate(-50%,-50%)
+            scale(.62);
+    }
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<canvas id="canvas"></canvas>
+<canvas id="fx"></canvas>
+<div class="ui">
+    <div class="logo">
+        <small>INFINITE EMOTION</small>
+        <strong>∞ BLUE HEART</strong>
+    </div>
+    <div class="score">
+        <small>CREATED</small>
+        <b id="score">000000</b>
+    </div>
+    <div class="perf">
+        <span id="quality">HIGH</span>
+    </div>
+    <div class="center">
+        <div class="ring"></div>
+        <div class="main-heart"></div>
+    </div>
+    <div
+        class="hint"
+        id="hint"
+    >
+        TOUCH · DRAG · HOLD · RELEASE
+    </div>
+</div>
+<div
+    class="cursor"
+    id="cursor"
+></div>
+<script>
+"use strict";
+/* ============================================================
+   ULTRA PERFORMANCE BLUE HEART
+============================================================ */
+/*
+    핵심:
+    화면에 "무한히 많은 하트"가 있는 것처럼 보이지만
+    실제로 렌더링하는 객체 수는 고정.
+    생성 -> Pool에서 가져옴
+    사망 -> Pool로 반환
+    따라서 오래 실행해도
+    객체가 계속 누적되지 않는다.
+*/
+/* =========================================================
+   DOM
+========================================================= */
+const bgCanvas =
+    document.getElementById("bg");
+const canvas =
+    document.getElementById("canvas");
+const fxCanvas =
+    document.getElementById("fx");
+const bg =
+    bgCanvas.getContext("2d",{
+        alpha:false
+    });
+const ctx =
+    canvas.getContext("2d",{
+        alpha:true
+    });
+const fx =
+    fxCanvas.getContext("2d",{
+        alpha:true
+    });
+const scoreEl =
+    document.getElementById("score");
+const hint =
+    document.getElementById("hint");
+const qualityEl =
+    document.getElementById("quality");
+const cursor =
+    document.getElementById("cursor");
+/* =========================================================
+   DEVICE
+========================================================= */
+let W=innerWidth;
+let H=innerHeight;
+/*
+    DPR를 너무 높게 쓰면
+    모바일에서 픽셀 수가 폭발한다.
+    최대 1.5로 제한.
+*/
+let DPR =
+    Math.min(
+        window.devicePixelRatio || 1,
+        1.5
+    );
+function setup(
+    canvas,
+    context
+){
+    canvas.width =
+        Math.floor(
+            W*DPR
+        );
+    canvas.height =
+        Math.floor(
+            H*DPR
+        );
+    canvas.style.width =
+        W+"px";
+    canvas.style.height =
+        H+"px";
+    context.setTransform(
+        DPR,
+        0,
+        0,
+        DPR,
+        0,
+        0
+    );
+}
+function resize(){
+    W=innerWidth;
+    H=innerHeight;
+    DPR =
+        Math.min(
+            window.devicePixelRatio || 1,
+            1.5
+        );
+    setup(bgCanvas,bg);
+    setup(canvas,ctx);
+    setup(fxCanvas,fx);
+    createStars();
+}
+addEventListener(
+    "resize",
+    resize,
+    {
+        passive:true
+    }
+);
+/* =========================================================
+   PERFORMANCE SETTINGS
+========================================================= */
+/*
+    이 값들이 실제 렉 방지 핵심.
+*/
+const MAX_HEARTS = 900;
+const MAX_SPARKS = 180;
+const MAX_RIPPLES = 16;
+/*
+    화면에 보이는 숫자는 무한.
+    실제 객체는 MAX_HEARTS까지만.
+*/
+let quality = 2;
+/*
+    2 = HIGH
+    1 = MEDIUM
+    0 = LOW
+*/
+/* =========================================================
+   OBJECT POOLS
+========================================================= */
+const heartPool = [];
+const sparkPool = [];
+const ripplePool = [];
+const activeHearts = [];
+const activeSparks = [];
+const activeRipples = [];
+/*
+    미리 객체 생성.
+    게임 중 new를 거의 하지 않는다.
+*/
+for(
+    let i=0;
+    i<MAX_HEARTS;
+    i++
+){
+    heartPool.push(
+        new Heart()
+    );
+}
+for(
+    let i=0;
+    i<MAX_SPARKS;
+    i++
+){
+    sparkPool.push(
+        new Spark()
+    );
+}
+for(
+    let i=0;
+    i<MAX_RIPPLES;
+    i++
+){
+    ripplePool.push(
+        new Ripple()
+    );
+}
+/* =========================================================
+   GLOBAL
+========================================================= */
+let created=0;
+let firstInteraction=false;
+const pointers =
+    new Map();
+const COLORS=[
+    "#eaffff",
+    "#b8f7ff",
+    "#79ebff",
+    "#3bdcff",
+    "#13c4ff",
+    "#008fff",
+    "#0065ff"
+];
+/* =========================================================
+   UTILS
+========================================================= */
+function rand(
+    a,
+    b
+){
+    return Math.random()*
+        (b-a)+a;
+}
+function clamp(
+    n,
+    a,
+    b
+){
+    return Math.max(
+        a,
+        Math.min(b,n)
+    );
+}
+function addScore(n){
+    created+=n;
+    /*
+        textContent는
+        실제로 값이 바뀔 때만.
+    */
+    scoreEl.textContent =
+        created
+            .toString()
+            .padStart(
+                6,
+                "0"
+            );
+}
+function vibrate(ms){
+    if(
+        navigator.vibrate
+    ){
+        navigator.vibrate(ms);
+    }
+}
+/* =========================================================
+   HEART SPRITE CACHE
+========================================================= */
+/*
+    매 하트마다 shadowBlur + path 계산하면 비쌈.
+    그래서 하트를 미리 여러 크기로 렌더링해서
+    이미지처럼 복사한다.
+    실제 프레임에서는 drawImage만 수행.
+*/
+const heartSprites=[];
+const SPRITE_SIZES=[
+    8,
+    12,
+    16,
+    22,
+    30
+];
+function buildHeartSprite(
+    size,
+    color
+){
+    const s =
+        Math.ceil(
+            size*4
+        );
+    const off =
+        document.createElement(
+            "canvas"
+        );
+    off.width=s;
+    off.height=s;
+    const c =
+        off.getContext("2d");
+    const x=s/2;
+    const y=s/2;
+    c.save();
+    c.translate(
+        x,
+        y
+    );
+    c.rotate(
+        -Math.PI/4
+    );
+    c.fillStyle=color;
+    c.shadowColor=color;
+    c.shadowBlur=size*.8;
+    const r=size;
+    c.beginPath();
+    c.moveTo(
+        0,
+        r*.32
+    );
+    c.bezierCurveTo(
+        -r*.75,
+        -r*.1,
+        -r*.45,
+        -r*.7,
+        0,
+        -r*.32
+    );
+    c.bezierCurveTo(
+        r*.45,
+        -r*.7,
+        r*.75,
+        -r*.1,
+        0,
+        r*.32
+    );
+    c.closePath();
+    c.fill();
+    c.restore();
+    return off;
+}
+for(
+    const size
+    of SPRITE_SIZES
+){
+    const row=[];
+    for(
+        const c
+        of COLORS
+    ){
+        row.push(
+            buildHeartSprite(
+                size,
+                c
+            )
+        );
+    }
+    heartSprites.push(row);
+}
+/* =========================================================
+   HEART OBJECT
+========================================================= */
+function Heart(){
+    this.active=false;
+    this.x=0;
+    this.y=0;
+    this.vx=0;
+    this.vy=0;
+    this.size=8;
+    this.life=0;
+    this.drag=.99;
+    this.gravity=0;
+    this.rotation=0;
+    this.spin=0;
+    this.spriteSize=0;
+    this.colorIndex=0;
+    this.pulse=0;
+}
+Heart.prototype.spawn =
+function(
+    x,
+    y,
+    power
+){
+    this.active=true;
+    this.x=x;
+    this.y=y;
+    const angle =
+        rand(
+            0,
+            Math.PI*2
+        );
+    const speed =
+        rand(
+            .4,
+            2.8
+        )*power;
+    this.vx =
+        Math.cos(angle)*
+        speed;
+    this.vy =
+        Math.sin(angle)*
+        speed;
+    this.size =
+        rand(
+            5,
+            18
+        )*
+        Math.pow(
+            power,
+            .18
+        );
+    this.life=1;
+    /*
+        오래 살아남도록.
+        객체가 계속 죽었다 생겼다 하지 않게.
+    */
+    this.decay =
+        rand(
+            .0015,
+            .004
+        );
+    this.drag =
+        rand(
+            .985,
+            .996
+        );
+    this.gravity =
+        rand(
+            -.008,
+            .012
+        );
+    this.rotation =
+        rand(
+            0,
+            Math.PI*2
+        );
+    this.spin =
+        rand(
+            -.025,
+            .025
+        );
+    this.colorIndex =
+        Math.floor(
+            Math.random()*
+            COLORS.length
+        );
+    this.spriteSize =
+        this.size<10
+        ? 0
+        : this.size<14
+        ? 1
+        : this.size<19
+        ? 2
+        : this.size<26
+        ? 3
+        : 4;
+    this.pulse =
+        rand(
+            0,
+            Math.PI*2
+        );
+};
+/* =========================================================
+   HEART UPDATE
+========================================================= */
+Heart.prototype.update =
+function(){
+    if(!this.active)
+        return;
+    /*
+        가장 가까운 손가락 하나만 계산.
+        기존 코드처럼 모든 하트마다
+        모든 포인터를 순회하지 않는다.
+    */
+    let px=0;
+    let py=0;
+    let hasPointer=false;
+    /*
+        최대 pointer 몇 개 안 되므로
+        여기서만 처리.
+    */
+    const first =
+        pointers.values()
+            .next();
+    if(
+        !first.done
+    ){
+        px=first.value.x;
+        py=first.value.y;
+        hasPointer=true;
+    }
+    if(hasPointer){
+        const dx =
+            px-this.x;
+        const dy =
+            py-this.y;
+        const d2 =
+            dx*dx+
+            dy*dy;
+        /*
+            sqrt 대신
+            거리 제곱 비교.
+        */
+        if(
+            d2<
+            220*220
+        ){
+            const d =
+                Math.sqrt(d2)+
+                .0001;
+            const force =
+                (
+                    1-
+                    d/220
+                )*.055;
+            this.vx +=
+                dx/d*
+                force;
+            this.vy +=
+                dy/d*
+                force;
+        }
+    }
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx *= this.drag;
+    this.vy *= this.drag;
+    this.vy +=
+        this.gravity;
+    this.rotation +=
+        this.spin;
+    this.pulse +=
+        .025;
+    this.life -=
+        this.decay;
+    /*
+        WORLD WRAP
+    */
+    const margin=40;
+    if(
+        this.x<
+        -margin
+    ){
+        this.x=
+            W+margin;
+    }
+    else if(
+        this.x>
+        W+margin
+    ){
+        this.x=
+            -margin;
+    }
+    if(
+        this.y<
+        -margin
+    ){
+        this.y=
+            H+margin;
+    }
+    else if(
+        this.y>
+        H+margin
+    ){
+        this.y=
+            -margin;
+    }
+    if(
+        this.life<=0
+    ){
+        releaseHeart(
+            this
+        );
+    }
+};
+/* =========================================================
+   HEART DRAW
+========================================================= */
+Heart.prototype.draw =
+function(){
+    if(!this.active)
+        return;
+    const pulse =
+        1+
+        Math.sin(
+            this.pulse
+        )*.08;
+    const sprite =
+        heartSprites[
+            this.spriteSize
+        ][
+            this.colorIndex
+        ];
+    const size =
+        SPRITE_SIZES[
+            this.spriteSize
+        ]*
+        pulse;
+    ctx.globalAlpha =
+        clamp(
+            this.life,
+            0,
+            1
+        );
+    ctx.drawImage(
+        sprite,
+        this.x-size*2,
+        this.y-size*2,
+        size*4,
+        size*4
+    );
+};
+/* =========================================================
+   HEART POOL
+========================================================= */
+function getHeart(){
+    /*
+        Pool 비어 있으면
+        가장 오래된 객체를 재사용.
+        절대로 배열이 무한히 커지지 않는다.
+    */
+    if(
+        heartPool.length
+    ){
+        return heartPool.pop();
+    }
+    /*
+        activeHearts[0] 재활용
+    */
+    return activeHearts.shift();
+}
+function releaseHeart(h){
+    h.active=false;
+    heartPool.push(h);
+    const index =
+        activeHearts.indexOf(h);
+    if(index>=0){
+        activeHearts[
+            index
+        ]=
+            activeHearts[
+                activeHearts.length-1
+            ];
+        activeHearts.pop();
+    }
+}
+/* =========================================================
+   SPAWN
+========================================================= */
+function spawnHeart(
+    x,
+    y,
+    power=1
+){
+    const h=
+        getHeart();
+    h.spawn(
+        x,
+        y,
+        power
+    );
+    activeHearts.push(h);
+}
+function spawnBurst(
+    x,
+    y,
+    amount,
+    power
+){
+    /*
+        실제 렌더 객체 수는
+        절대 MAX_HEARTS를 넘지 않는다.
+    */
+    const available =
+        Math.min(
+            amount,
+            MAX_HEARTS-
+            activeHearts.length+
+            80
+        );
+    for(
+        let i=0;
+        i<available;
+        i++
+    ){
+        spawnHeart(
+            x+
+            rand(-8,8),
+            y+
+            rand(-8,8),
+            power
+        );
+    }
+    addScore(
+        amount
+    );
+}
+/* =========================================================
+   SPARK
+========================================================= */
+function Spark(){
+    this.active=false;
+}
+Spark.prototype.spawn =
+function(
+    x,
+    y,
+    power
+){
+    this.active=true;
+    this.x=x;
+    this.y=y;
+    const a=
+        rand(
+            0,
+            Math.PI*2
+        );
+    const s=
+        rand(
+            2,
+            8
+        )*
+        power;
+    this.vx=
+        Math.cos(a)*s;
+    this.vy=
+        Math.sin(a)*s;
+    this.life=1;
+    this.size=
+        rand(
+            .5,
+            2
+        );
+};
+Spark.prototype.update =
+function(){
+    this.x+=this.vx;
+    this.y+=this.vy;
+    this.vx*=.93;
+    this.vy*=.93;
+    this.life-=.035;
+    if(
+        this.life<=0
+    ){
+        this.active=false;
+        sparkPool.push(
+            this
+        );
+        const i=
+            activeSparks
+                .indexOf(this);
+        if(i>=0){
+            activeSparks[i]=
+                activeSparks[
+                    activeSparks.length-1
+                ];
+            activeSparks.pop();
+        }
+    }
+};
+Spark.prototype.draw =
+function(){
+    fx.globalAlpha=
+        this.life;
+    fx.fillStyle=
+        "#9ff7ff";
+    fx.beginPath();
+    fx.arc(
+        this.x,
+        this.y,
+        this.size,
+        0,
+        Math.PI*2
+    );
+    fx.fill();
+};
+function spawnSpark(
+    x,
+    y,
+    power=1
+){
+    if(
+        !sparkPool.length
+    )
+        return;
+    const s=
+        sparkPool.pop();
+    s.spawn(
+        x,
+        y,
+        power
+    );
+    activeSparks.push(s);
+}
+/* =========================================================
+   RIPPLE
+========================================================= */
+function Ripple(){
+    this.active=false;
+}
+Ripple.prototype.spawn =
+function(
+    x,
+    y,
+    power
+){
+    this.active=true;
+    this.x=x;
+    this.y=y;
+    this.radius=4;
+    this.speed=
+        7+
+        power*2;
+    this.life=1;
+};
+Ripple.prototype.update =
+function(){
+    this.radius +=
+        this.speed;
+    this.speed*=.965;
+    this.life*=.95;
+    if(
+        this.life<.02
+    ){
+        this.active=false;
+        ripplePool.push(
+            this
+        );
+        const i=
+            activeRipples
+                .indexOf(this);
+        if(i>=0){
+            activeRipples[i]=
+                activeRipples[
+                    activeRipples.length-1
+                ];
+            activeRipples.pop();
+        }
+    }
+};
+Ripple.prototype.draw =
+function(){
+    fx.globalAlpha=
+        this.life;
+    fx.strokeStyle=
+        "#54e8ff";
+    fx.lineWidth=1;
+    fx.beginPath();
+    fx.arc(
+        this.x,
+        this.y,
+        this.radius,
+        0,
+        Math.PI*2
+    );
+    fx.stroke();
+};
+function ripple(
+    x,
+    y,
+    power=1
+){
+    if(
+        !ripplePool.length
+    )
+        return;
+    const r=
+        ripplePool.pop();
+    r.spawn(
+        x,
+        y,
+        power
+    );
+    activeRipples.push(r);
+}
+/* =========================================================
+   STARS
+========================================================= */
+let stars=[];
+function createStars(){
+    stars=[];
+    const count =
+        quality===2
+        ? Math.min(
+            260,
+            Math.floor(
+                W*H/4000
+            )
+        )
+        : quality===1
+        ? 130
+        : 70;
+    for(
+        let i=0;
+        i<count;
+        i++
+    ){
+        stars.push({
+            x:rand(0,W),
+            y:rand(0,H),
+            r:rand(
+                .2,
+                1.2
+            ),
+            a:rand(
+                .1,
+                .6
+            ),
+            phase:rand(
+                0,
+                Math.PI*2
+            )
+        });
+    }
+}
+/* =========================================================
+   BACKGROUND
+========================================================= */
+function drawBackground(
+    time
+){
+    const g=
+        bg.createRadialGradient(
+            W*.5,
+            H*.45,
+            0,
+            W*.5,
+            H*.5,
+            Math.max(
+                W,
+                H
+            )*.75
+        );
+    g.addColorStop(
+        0,
+        "#092e68"
+    );
+    g.addColorStop(
+        .35,
+        "#041a42"
+    );
+    g.addColorStop(
+        1,
+        "#010612"
+    );
+    bg.fillStyle=g;
+    bg.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+    /*
+        별은 저비용으로 유지
+    */
+    bg.fillStyle=
+        "#b9f8ff";
+    for(
+        let i=0;
+        i<stars.length;
+        i++
+    ){
+        const s=
+            stars[i];
+        bg.globalAlpha=
+            s.a+
+            Math.sin(
+                time*.001+
+                s.phase
+            )*.12;
+        bg.beginPath();
+        bg.arc(
+            s.x,
+            s.y,
+            s.r,
+            0,
+            Math.PI*2
+        );
+        bg.fill();
+    }
+    bg.globalAlpha=1;
+}
+/* =========================================================
+   WORLD RENDER
+========================================================= */
+function renderWorld(){
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
+    /*
+        연결선 제거.
+        이게 의외로 모바일에서 엄청 비싸다.
+    */
+    for(
+        let i=0;
+        i<activeHearts.length;
+        i++
+    ){
+        activeHearts[i]
+            .update();
+        activeHearts[i]
+            .draw();
+    }
+    ctx.globalAlpha=1;
+}
+/* =========================================================
+   FX RENDER
+========================================================= */
+function renderFX(){
+    fx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
+    for(
+        let i=0;
+        i<activeSparks.length;
+        i++
+    ){
+        activeSparks[i]
+            .update();
+        if(
+            activeSparks[i]
+                .active
+        ){
+            activeSparks[i]
+                .draw();
+        }
+    }
+    for(
+        let i=0;
+        i<activeRipples.length;
+        i++
+    ){
+        activeRipples[i]
+            .update();
+        if(
+            activeRipples[i]
+                .active
+        ){
+            activeRipples[i]
+                .draw();
+        }
+    }
+    fx.globalAlpha=1;
+}
+/* =========================================================
+   POINTERS
+========================================================= */
+function down(e){
+    e.preventDefault();
+    firstInteraction=true;
+    hint.classList.add(
+        "hide"
+    );
+    pointers.set(
+        e.pointerId,
+        {
+            x:e.clientX,
+            y:e.clientY,
+            lastX:e.clientX,
+            lastY:e.clientY,
+            down:performance.now()
+        }
+    );
+    spawnBurst(
+        e.clientX,
+        e.clientY,
+        10,
+        1.2
+    );
+    ripple(
+        e.clientX,
+        e.clientY,
+        1
+    );
+    for(
+        let i=0;
+        i<8;
+        i++
+    ){
+        spawnSpark(
+            e.clientX,
+            e.clientY,
+            .7
+        );
+    }
+    vibrate(6);
+    try{
+        e.target.setPointerCapture(
+            e.pointerId
+        );
+    }catch(_){}
+}
+function move(e){
+    e.preventDefault();
+    const p=
+        pointers.get(
+            e.pointerId
+        );
+    if(!p)
+        return;
+    const dx=
+        e.clientX-
+        p.lastX;
+    const dy=
+        e.clientY-
+        p.lastY;
+    const distance2=
+        dx*dx+
+        dy*dy;
+    p.x=e.clientX;
+    p.y=e.clientY;
+    /*
+        움직였을 때만 생성.
+    */
+    if(
+        distance2>4
+    ){
+        const distance=
+            Math.sqrt(
+                distance2
+            );
+        /*
+            생성량에 강한 제한.
+            빠르게 움직여도
+            한 프레임에 폭발적으로 생성되지 않음.
+        */
+        const amount=
+            quality===2
+            ? Math.min(
+                5,
+                Math.floor(
+                    distance*.35
+                )+1
+            )
+            : quality===1
+            ? Math.min(
+                3,
+                Math.floor(
+                    distance*.25
+                )+1
+            )
+            : 1;
+        for(
+            let i=0;
+            i<amount;
+            i++
+        ){
+            spawnHeart(
+                e.clientX+
+                rand(-4,4),
+                e.clientY+
+                rand(-4,4),
+                .8
+            );
+        }
+        /*
+            아주 가벼운 spark.
+        */
+        if(
+            quality>0 &&
+            Math.random()<.35
+        ){
+            spawnSpark(
+                e.clientX,
+                e.clientY,
+                .3
+            );
+        }
+    }
+}
+function up(e){
+    e.preventDefault();
+    const p=
+        pointers.get(
+            e.pointerId
+        );
+    if(!p)
+        return;
+    const hold=
+        performance.now()-
+        p.down;
+    /*
+        tap
+    */
+    if(
+        hold<300
+    ){
+        spawnBurst(
+            e.clientX,
+            e.clientY,
+            20,
+            1.5
+        );
+        ripple(
+            e.clientX,
+            e.clientY,
+            1.4
+        );
+        vibrate(10);
+    }
+    /*
+        long press
+    */
+    else{
+        const power=
+            clamp(
+                1+
+                hold/900,
+                1,
+                6
+            );
+        /*
+            숫자는 무한히 올라가지만
+            실제 활성 하트는 고정.
+        */
+        spawnBurst(
+            e.clientX,
+            e.clientY,
+            Math.floor(
+                70*power
+            ),
+            power
+        );
+        ripple(
+            e.clientX,
+            e.clientY,
+            power
+        );
+        if(
+            quality>0
+        ){
+            for(
+                let i=0;
+                i<25;
+                i++
+            ){
+                spawnSpark(
+                    e.clientX,
+                    e.clientY,
+                    power*.35
+                );
+            }
+        }
+        vibrate(
+            Math.min(
+                40,
+                8+
+                power*4
+            )
+        );
+    }
+    pointers.delete(
+        e.pointerId
+    );
+}
+function cancel(e){
+    pointers.delete(
+        e.pointerId
+    );
+}
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
+window.addEventListener(
+    "pointerdown",
+    down,
+    {
+        passive:false
+    }
+);
+window.addEventListener(
+    "pointermove",
+    move,
+    {
+        passive:false
+    }
+);
+window.addEventListener(
+    "pointerup",
+    up,
+    {
+        passive:false
+    }
+);
+window.addEventListener(
+    "pointercancel",
+    cancel,
+    {
+        passive:false
+    }
+);
+/* =========================================================
+   DOUBLE CLICK
+========================================================= */
+window.addEventListener(
+    "dblclick",
+    e=>{
+        e.preventDefault();
+        spawnBurst(
+            e.clientX,
+            e.clientY,
+            250,
+            4
+        );
+        ripple(
+            e.clientX,
+            e.clientY,
+            4
+        );
+        vibrate(30);
+    },
+    {
+        passive:false
+    }
+);
+/* =========================================================
+   CURSOR
+========================================================= */
+window.addEventListener(
+    "mousemove",
+    e=>{
+        cursor.style.left=
+            e.clientX+
+            "px";
+        cursor.style.top=
+            e.clientY+
+            "px";
+    },
+    {
+        passive:true
+    }
+);
+/* =========================================================
+   AUTO QUALITY
+========================================================= */
+let fpsFrames=0;
+let fpsTime=performance.now();
+function qualityMonitor(
+    now
+){
+    fpsFrames++;
+    if(
+        now-fpsTime>=1500
+    ){
+        const fps=
+            fpsFrames/
+            (
+                (now-fpsTime)/
+                1000
+            );
+        /*
+            FPS가 떨어지면
+            자동으로 그래픽 감소.
+        */
+        if(
+            fps<42 &&
+            quality>0
+        ){
+            quality--;
+            qualityEl.textContent=
+                quality===1
+                ? "MEDIUM"
+                : "LOW";
+            createStars();
+        }
+        /*
+            충분히 안정적이면
+            다시 조금 복구.
+        */
+        else if(
+            fps>57 &&
+            quality<2
+        ){
+            quality++;
+            qualityEl.textContent=
+                quality===2
+                ? "HIGH"
+                : "MEDIUM";
+            createStars();
+        }
+        fpsFrames=0;
+        fpsTime=now;
+    }
+}
+/* =========================================================
+   INITIAL
+========================================================= */
+resize();
+/*
+    초기 하트는 적게.
+    첫 화면 로딩 빠르게.
+*/
+for(
+    let i=0;
+    i<90;
+    i++
+){
+    spawnHeart(
+        rand(0,W),
+        rand(0,H),
+        .8
+    );
+}
+/* =========================================================
+   MAIN LOOP
+========================================================= */
+let last=performance.now();
+function loop(now){
+    /*
+        탭을 오래 벗어났다가 돌아왔을 때
+        수천 프레임을 한꺼번에 계산하는 것을 방지.
+    */
+    if(
+        now-last>
+        100
+    ){
+        last=now;
+    }
+    drawBackground(
+        now
+    );
+    renderWorld();
+    renderFX();
+    qualityMonitor(
+        now
+    );
+    last=now;
+    requestAnimationFrame(
+        loop
+    );
+}
+requestAnimationFrame(
+    loop
+);
+/* =========================================================
+   MOBILE BROWSER LOCK
+========================================================= */
+document.addEventListener(
+    "contextmenu",
+    e=>{
+        e.preventDefault();
+    }
+);
+document.addEventListener(
+    "selectstart",
+    e=>{
+        e.preventDefault();
+    }
+);
+document.addEventListener(
+    "dragstart",
+    e=>{
+        e.preventDefault();
+    }
+);
+document.addEventListener(
+    "gesturestart",
+    e=>{
+        e.preventDefault();
+    }
+);
+document.addEventListener(
+    "touchmove",
+    e=>{
+        e.preventDefault();
+    },
+    {
+        passive:false
+    }
+);
+/* =========================================================
+   WAKE LOCK
+========================================================= */
+let wakeLock=null;
+async function keepAwake(){
+    try{
+        if(
+            "wakeLock"
+            in navigator
+        ){
+            wakeLock=
+                await navigator
+                    .wakeLock
+                    .request(
+                        "screen"
+                    );
+        }
+    }catch(_){}
+}
+keepAwake();
+document.addEventListener(
+    "visibilitychange",
+    ()=>{
+        if(
+            document.visibilityState===
+            "visible"
+        ){
+            keepAwake();
+        }
+    }
+);
+</script>
+</body>
+</html>
