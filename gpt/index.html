@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relay — 초안 · 교정 릴레이 (무료판)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF9F6;
+    --paper-panel:#F1EEE6;
+    --ink:#1F1D1B;
+    --ink-soft:#5B564C;
+    --rule:#D9D3C5;
+    --blue:#2C5F8A;
+    --blue-soft:#E5EDF3;
+    --red:#A6392A;
+    --red-soft:#F5E7E3;
+    --del:#A39C8C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Source Serif 4', Georgia, serif;
+    line-height:1.6;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  header{
+    padding:28px 24px 20px;
+    border-bottom:1px solid var(--rule);
+    max-width:760px;
+    margin:0 auto;
+  }
+  header .mark{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    border:1px solid var(--rule);
+    padding:2px 7px;
+    border-radius:2px;
+    margin-bottom:10px;
+  }
+  header h1{
+    margin:0;
+    font-size:28px;
+    font-weight:700;
+    font-style:italic;
+  }
+  header p{
+    margin:6px 0 0;
+    color:var(--ink-soft);
+    font-size:14.5px;
+    max-width:56ch;
+  }
+  main{
+    max-width:760px;
+    margin:0 auto;
+    padding:22px 24px 80px;
+  }
+  .panel{
+    background:var(--paper-panel);
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:18px 20px;
+    margin-bottom:22px;
+  }
+  .row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .row:last-child{ margin-bottom:0; }
+  .field{
+    flex:1;
+    min-width:160px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+  }
+  input[type="password"], input[type="text"], select, textarea{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    padding:8px 9px;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  textarea{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-size:15px;
+    resize:vertical;
+    min-height:64px;
+  }
+  select{ cursor:pointer; }
+  .role-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .role-row select{ font-size:12.5px; padding:6px 8px; }
+  .swap{
+    background:none;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:5px 9px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .swap:hover{ background:var(--paper); }
+  button.run{
+    width:100%;
+    padding:12px;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:2px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    letter-spacing:0.03em;
+    cursor:pointer;
+    transition:opacity .15s;
+  }
+  button.run:hover{ opacity:0.85; }
+  button.run:disabled{ opacity:0.4; cursor:default; }
+  .status{
+    margin-top:22px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    display:none;
+  }
+  .status.show{ display:block; }
+  .status .step{
+    padding:3px 0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .status .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--rule);
+    flex-shrink:0;
+  }
+  .status .step.active .dot{ background:var(--ink); }
+  .status .step.done .dot{ background:var(--blue); }
+  .status .step.error .dot{ background:var(--red); }
+  .error-msg{
+    color:var(--red);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    margin-top:4px;
+    white-space:pre-wrap;
+  }
+  .manuscript{
+    display:none;
+    margin-top:32px;
+  }
+  .manuscript.show{ display:block; }
+  .byline{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:10px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--rule);
+  }
+  .byline .who-draft{ color:var(--blue); }
+  .byline .who-review{ color:var(--red); }
+  .body-text{
+    font-size:17px;
+    white-space:pre-wrap;
+  }
+  .body-text ins{
+    text-decoration:none;
+    color:var(--red);
+    background:var(--red-soft);
+    padding:0 1px;
+  }
+  .body-text del{
+    text-decoration:line-through;
+    color:var(--del);
+  }
+  details.original{
+    margin-top:20px;
+    border-top:1px solid var(--rule);
+    padding-top:10px;
+  }
+  details.original summary{
+    cursor:pointer;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  details.original .body-text{
+    margin-top:10px;
+    color:var(--ink-soft);
+    font-size:15px;
+  }
+  .notes{
+    margin-top:26px;
+    background:var(--blue-soft);
+    border-left:3px solid var(--blue);
+    padding:14px 16px;
+    font-size:14.5px;
+  }
+  .notes .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--blue);
+    letter-spacing:0.04em;
+    margin-bottom:6px;
+    display:block;
+  }
+  .key-hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">RELAY · draft &amp; review · free</span>
+  <h1>한 모델이 쓰고, 다른 모델이 고친다</h1>
+  <p>주제를 던지면 한쪽 모델이 초안을 쓰고, 다른 쪽 모델이 그 초안을 검토해 고칩니다. 고친 부분은 빨간 펜 표시처럼 보여줍니다. Groq과 Gemini 모두 무료 티어로 사용할 수 있어요.</p>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="row">
+      <div class="field">
+        <label for="groqKey">GROQ API KEY <span style="opacity:.6;">(무료)</span></label>
+        <input type="password" id="groqKey" placeholder="gsk_...">
+      </div>
+      <div class="field">
+        <label for="geminiKey">GEMINI API KEY <span style="opacity:.6;">(무료)</span></label>
+        <input type="password" id="geminiKey" placeholder="AIza...">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="groqModel">GROQ 모델</label>
+        <input type="text" id="groqModel" value="llama-3.3-70b-versatile">
+      </div>
+      <div class="field">
+        <label for="geminiModel">GEMINI 모델</label>
+        <input type="text" id="geminiModel" value="gemini-2.0-flash">
+      </div>
+    </div>
+    <div class="key-hint">Groq 키는 console.groq.com/keys, Gemini 키는 aistudio.google.com/apikey 에서 무료로 발급받을 수 있습니다. 키는 브라우저에만 저장되며 새로고침하면 사라집니다.</div>
+  </div>
+
+  <div class="panel">
+    <div class="role-row">
+      <span>초안 담당</span>
+      <select id="drafter">
+        <option value="groq">Groq (Llama)</option>
+        <option value="gemini">Gemini</option>
+      </select>
+      <button class="swap" id="swapBtn" type="button">⇄ 역할 바꾸기</button>
+      <span>교정 담당</span>
+      <select id="reviewer" disabled>
+        <option value="gemini">Gemini</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label for="prompt">주제 / 요청</label>
+      <textarea id="prompt" placeholder="예: 재택근무의 장단점에 대한 짧은 칼럼을 써줘"></textarea>
+    </div>
+    <button class="run" id="runBtn" type="button">릴레이 시작</button>
+    <div class="status" id="status">
+      <div class="step" id="stepDraft"><span class="dot"></span><span id="stepDraftLabel">초안 대기 중</span></div>
+      <div class="step" id="stepReview"><span class="dot"></span><span id="stepReviewLabel">교정 대기 중</span></div>
+      <div class="error-msg" id="errorMsg" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="manuscript" id="manuscript">
+    <div class="byline">
+      <span>초안: <span class="who-draft" id="bylineDraft">Groq</span></span>
+      <span>교정: <span class="who-review" id="bylineReview">Gemini</span></span>
+    </div>
+    <div class="body-text" id="finalText"></div>
+
+    <div class="notes" id="notesBox" style="display:none;">
+      <span class="label">교정 노트</span>
+      <div id="notesText"></div>
+    </div>
+
+    <details class="original">
+      <summary>원본 초안 보기</summary>
+      <div class="body-text" id="draftText"></div>
+    </details>
+  </div>
+</main>
+
+<script>
+const el = id => document.getElementById(id);
+
+el('swapBtn').addEventListener('click', () => {
+  const d = el('drafter');
+  d.value = d.value === 'groq' ? 'gemini' : 'groq';
+  syncReviewer();
+});
+
+function syncReviewer(){
+  const d = el('drafter').value;
+  const r = el('reviewer');
+  const other = d === 'groq' ? 'gemini' : 'groq';
+  r.innerHTML = `<option value="${other}">${other === 'groq' ? 'Groq (Llama)' : 'Gemini'}</option>`;
+}
+el('drafter').addEventListener('change', syncReviewer);
+syncReviewer();
+
+function setStep(id, label, state){
+  const stepEl = el(id);
+  const labelEl = el(id + 'Label');
+  labelEl.textContent = label;
+  stepEl.classList.remove('active','done','error');
+  if(state) stepEl.classList.add(state);
+}
+
+function providerName(p){ return p === 'groq' ? 'Groq' : 'Gemini'; }
+
+async function callGroq(apiKey, model, systemPrompt, userPrompt){
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    })
+  });
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error(`Groq ${res.status}: ${t.slice(0,300)}`);
+  }
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+async function callGemini(apiKey, model, systemPrompt, userPrompt){
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
+    })
+  });
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error(`Gemini ${res.status}: ${t.slice(0,300)}`);
+  }
+  const data = await res.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+async function callModel(provider, systemPrompt, userPrompt){
+  if(provider === 'groq'){
+    const key = el('groqKey').value.trim();
+    if(!key) throw new Error('Groq API 키를 입력하세요.');
+    return callGroq(key, el('groqModel').value.trim(), systemPrompt, userPrompt);
+  } else {
+    const key = el('geminiKey').value.trim();
+    if(!key) throw new Error('Gemini API 키를 입력하세요.');
+    return callGemini(key, el('geminiModel').value.trim(), systemPrompt, userPrompt);
+  }
+}
+
+// 간단한 단어 단위 LCS diff
+function diffWords(oldText, newText){
+  const a = oldText.split(/(\s+)/);
+  const b = newText.split(/(\s+)/);
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+  for(let i=m-1;i>=0;i--){
+    for(let j=n-1;j>=0;j--){
+      dp[i][j] = a[i]===b[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  let i=0,j=0; const out=[];
+  while(i<m && j<n){
+    if(a[i]===b[j]){ out.push({t:'same', s:a[i]}); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ out.push({t:'del', s:a[i]}); i++; }
+    else { out.push({t:'ins', s:b[j]}); j++; }
+  }
+  while(i<m){ out.push({t:'del', s:a[i]}); i++; }
+  while(j<n){ out.push({t:'ins', s:b[j]}); j++; }
+  return out;
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderDiff(oldText, newText){
+  const parts = diffWords(oldText, newText);
+  let html = '';
+  for(const p of parts){
+    const safe = escapeHtml(p.s);
+    if(p.t === 'same') html += safe;
+    else if(p.t === 'ins') html += `<ins>${safe}</ins>`;
+    else html += `<del>${safe}</del>`;
+  }
+  return html;
+}
+
+el('runBtn').addEventListener('click', async () => {
+  const prompt = el('prompt').value.trim();
+  if(!prompt){ el('prompt').focus(); return; }
+
+  const drafter = el('drafter').value;
+  const reviewer = drafter === 'groq' ? 'gemini' : 'groq';
+
+  el('runBtn').disabled = true;
+  el('status').classList.add('show');
+  el('manuscript').classList.remove('show');
+  el('errorMsg').style.display = 'none';
+  setStep('stepDraft', `${providerName(drafter)}가 초안 작성 중…`, 'active');
+  setStep('stepReview', '교정 대기 중', null);
+
+  let draft, revisedRaw, notes = '';
+
+  try {
+    draft = await callModel(
+      drafter,
+      '당신은 글을 쓰는 작가입니다. 요청받은 주제로 3~6개 문단 분량의 글을 한국어로 작성하세요. 서두 설명이나 메타 코멘트 없이 본문만 출력하세요.',
+      prompt
+    );
+    setStep('stepDraft', `${providerName(drafter)} 초안 완료`, 'done');
+  } catch(e){
+    setStep('stepDraft', `${providerName(drafter)} 초안 실패`, 'error');
+    el('errorMsg').style.display = 'block';
+    el('errorMsg').textContent = e.message;
+    el('runBtn').disabled = false;
+    return;
+  }
+
+  setStep('stepReview', `${providerName(reviewer)}가 검토 중…`, 'active');
+
+  try {
+    const reviewSystem = `당신은 꼼꼼한 편집자입니다. 아래 형식을 정확히 지켜 응답하세요. 다른 말은 절대 덧붙이지 마세요.
+###REVISED###
+(수정된 전체 글. 원문의 구조와 분량을 크게 벗어나지 않게, 문장을 다듬고 부정확한 부분을 고친 최종본만 적으세요.)
+###NOTES###
+(무엇을 왜 고쳤는지 2~4개의 짧은 항목으로, 한 줄씩 적으세요.)`;
+    const reviewUser = `다음 초안을 검토하고 수정하세요:\n\n${draft}`;
+    revisedRaw = await callModel(reviewer, reviewSystem, reviewUser);
+    setStep('stepReview', `${providerName(reviewer)} 교정 완료`, 'done');
+  } catch(e){
+    setStep('stepReview', `${providerName(reviewer)} 교정 실패`, 'error');
+    el('errorMsg').style.display = 'block';
+    el('errorMsg').textContent = e.message;
+    el('runBtn').disabled = false;
+    return;
+  }
+
+  // 형식 파싱
+  let revised = revisedRaw;
+  const revisedMatch = revisedRaw.match(/###REVISED###([\s\S]*?)###NOTES###/);
+  const notesMatch = revisedRaw.match(/###NOTES###([\s\S]*)/);
+  if(revisedMatch) revised = revisedMatch[1].trim();
+  if(notesMatch) notes = notesMatch[1].trim();
+
+  el('bylineDraft').textContent = providerName(drafter);
+  el('bylineReview').textContent = providerName(reviewer);
+  el('finalText').innerHTML = renderDiff(draft, revised);
+  el('draftText').textContent = draft;
+
+  if(notes){
+    el('notesBox').style.display = 'block';
+    el('notesText').textContent = notes;
+  } else {
+    el('notesBox').style.display = 'none';
+  }
+
+  el('manuscript').classList.add('show');
+  el('runBtn').disabled = false;
+});
+</script>
+</body>
+</html>
