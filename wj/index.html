@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>원주 축제 안내 — 사계절 원주</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #ECE5D3;
+    --paper-deep: #E2D9C3;
+    --ink: #2A241E;
+    --ink-soft: #5B5346;
+    --dahong: #BF5330;
+    --jjok: #33495A;
+    --sallim: #5F7A56;
+    --line: #C9BFA6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 15% 0%, rgba(191,83,48,0.05), transparent 45%),
+      radial-gradient(ellipse at 90% 20%, rgba(51,73,90,0.05), transparent 40%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    line-height:1.6;
+    min-height:100vh;
+  }
+
+  /* texture */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.012) 0px, transparent 1px, transparent 2px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.012) 0px, transparent 1px, transparent 2px);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  header{
+    position:relative;
+    max-width:840px;
+    margin:0 auto;
+    padding:64px 24px 32px;
+    z-index:1;
+  }
+  .eyebrow{
+    font-size:14px;
+    color:var(--ink-soft);
+    letter-spacing:0.02em;
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Noto Serif KR', serif;
+    font-weight:900;
+    font-size:clamp(34px, 6vw, 54px);
+    margin:0 0 14px;
+    letter-spacing:-0.01em;
+  }
+  h1 span{color:var(--dahong);}
+  .lede{
+    font-size:16.5px;
+    color:var(--ink-soft);
+    max-width:560px;
+  }
+
+  .notice{
+    max-width:840px;
+    margin:0 auto 8px;
+    padding:0 24px;
+    position:relative; z-index:1;
+  }
+  .notice-box{
+    border:1px solid var(--line);
+    border-left:4px solid var(--jjok);
+    background:rgba(255,255,255,0.35);
+    padding:14px 18px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+  }
+  .notice-box b{color:var(--jjok);}
+
+  .controls{
+    max-width:840px;
+    margin:36px auto 8px;
+    padding:0 24px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    position:relative; z-index:1;
+  }
+  .search-wrap{
+    flex:1 1 220px;
+    position:relative;
+  }
+  #searchInput{
+    width:100%;
+    padding:11px 14px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,0.5);
+    font-family:'Noto Sans KR', sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    outline:none;
+  }
+  #searchInput:focus{border-color:var(--dahong);}
+  #searchInput::placeholder{color:#9c927b;}
+
+  .chip{
+    padding:9px 16px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    font-size:13.5px;
+    font-family:'Noto Sans KR', sans-serif;
+    cursor:pointer;
+    transition:background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .chip:hover{border-color:var(--ink-soft);}
+  .chip.active{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+
+  main{
+    max-width:840px;
+    margin:0 auto;
+    padding:24px 24px 100px;
+    position:relative;
+    z-index:1;
+  }
+
+  .timeline{
+    position:relative;
+    padding-left:78px;
+  }
+  .timeline::before{
+    content:"";
+    position:absolute;
+    left:38px;
+    top:6px;
+    bottom:6px;
+    width:1px;
+    background:var(--line);
+  }
+
+  .item{
+    position:relative;
+    margin-bottom:34px;
+  }
+  .item:last-child{margin-bottom:0;}
+
+  .month-tag{
+    position:absolute;
+    left:-78px;
+    top:2px;
+    width:70px;
+    text-align:right;
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--jjok);
+    letter-spacing:0.01em;
+  }
+  .dot{
+    position:absolute;
+    left:34px;
+    top:8px;
+    width:9px; height:9px;
+    border-radius:50%;
+    background:var(--dahong);
+    border:2px solid var(--paper);
+    box-shadow:0 0 0 1px var(--dahong);
+  }
+
+  .card{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,0.42);
+    padding:20px 22px 18px;
+    position:relative;
+    transition:box-shadow 0.2s, transform 0.2s;
+  }
+  .card:hover{
+    box-shadow:3px 3px 0 rgba(42,36,30,0.08);
+  }
+  .card::before,
+  .card::after{
+    content:"";
+    position:absolute;
+    width:12px; height:12px;
+    border-radius:50%;
+    background:var(--paper);
+    top:50%;
+    transform:translateY(-50%);
+  }
+
+  .card-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .card h3{
+    font-family:'Noto Serif KR', serif;
+    font-size:20px;
+    font-weight:700;
+    margin:0 0 4px;
+  }
+  .period{
+    font-size:13.5px;
+    color:var(--dahong);
+    font-weight:500;
+  }
+  .season-badge{
+    font-size:11.5px;
+    padding:4px 10px;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  .meta{
+    margin-top:10px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px 18px;
+  }
+  .meta span{display:inline-flex; align-items:center; gap:5px;}
+
+  .desc{
+    margin-top:10px;
+    font-size:14.5px;
+    color:var(--ink);
+  }
+
+  .card-foot{
+    margin-top:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .official{
+    font-size:13px;
+    color:var(--jjok);
+    text-decoration:none;
+    border-bottom:1px solid var(--jjok);
+    padding-bottom:1px;
+  }
+  .official:hover{color:var(--dahong); border-color:var(--dahong);}
+  .unconfirmed{
+    font-size:12px;
+    color:#8a7f68;
+    font-style:italic;
+  }
+
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--ink-soft);
+    font-size:14.5px;
+  }
+
+  footer{
+    max-width:840px;
+    margin:0 auto;
+    padding:0 24px 60px;
+    font-size:12.5px;
+    color:#8a7f68;
+    position:relative; z-index:1;
+  }
+
+  @media (max-width:600px){
+    .timeline{padding-left:56px;}
+    .month-tag{left:-56px; width:48px; font-size:13px;}
+    .dot{left:24px;}
+    .timeline::before{left:28px;}
+    header{padding:44px 18px 22px;}
+    main{padding:18px 18px 80px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">원주에가면 · 사계절 축제 안내</div>
+  <h1>원주에서 <span>만나는</span><br>한 해의 축제</h1>
+  <p class="lede">한지의 고장, 만두의 도시 원주. 봄꽃부터 겨울빛까지, 원주에서 열리는 축제를 계절 순서로 모았습니다.</p>
+</header>
+
+<div class="notice">
+  <div class="notice-box">
+    <b>안내</b> — 이 페이지는 웹 검색으로 확인한 정보를 정리한 것으로, 실시간 자동 수집 결과가 아닙니다. 일부 축제는 2026년 정확한 일정이 아직 공지 전이라 예년 시기로 표기했습니다. 방문 전 각 카드의 공식 링크에서 최신 일정을 확인해 주세요.
+  </div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <input id="searchInput" type="text" placeholder="축제 이름, 장소로 검색…">
+  </div>
+</div>
+<div class="controls" id="seasonChips">
+  <button class="chip active" data-season="all">전체</button>
+  <button class="chip" data-season="봄">봄</button>
+  <button class="chip" data-season="여름">여름</button>
+  <button class="chip" data-season="가을">가을</button>
+  <button class="chip" data-season="겨울">겨울</button>
+</div>
+
+<main>
+  <div class="timeline" id="timeline"></div>
+  <div class="empty" id="emptyMsg" style="display:none;">검색 결과가 없습니다.</div>
+</main>
+
+<footer>
+  정보 기준: 2026년 9월 · 출처: 원주관광(wonju.go.kr), 원주만두축제(mandufestival.co.kr), 원주한지문화제(wonjuhanji.co.kr), 더페스티벌(thefestival.co.kr) 등 · 축제 일정은 주최측 사정에 따라 변경될 수 있습니다.
+</footer>
+
+<script>
+const festivals = [
+  {
+    name: "제28회 원주한지문화제",
+    month: 5, monthLabel: "5월",
+    season: "봄",
+    period: "2026. 5. 1(금) ~ 5. 5(화) · 5일간",
+    place: "원주시 한지공원길 151 (원주한지테마파크)",
+    host: "(사)한지문화재단",
+    desc: "천 년을 이어온 원주 한지의 역사를 체험하는 축제. 한지 공예 체험과 전시, 공연이 함께 열립니다.",
+    link: "https://www.wonjuhanji.co.kr",
+    confirmed: true
+  },
+  {
+    name: "용수골 꽃양귀비 축제",
+    month: 5, monthLabel: "5월경",
+    season: "봄",
+    period: "매년 5~6월 개화 시기 (2026년 일정 미공지)",
+    place: "원주시 판부면 서곡리 1435 일원",
+    host: "원주시",
+    desc: "마을 주민이 직접 파종하고 가꾼 양귀비 꽃밭을 걷는 축제. 붉은 꽃물결이 장관을 이룹니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: false
+  },
+  {
+    name: "원주 장미축제",
+    month: 5, monthLabel: "5~6월경",
+    season: "봄",
+    period: "매년 5~6월 (2026년 일정 미공지)",
+    place: "원주시 장미공원길 43-3 (원주장미공원)",
+    host: "원주시",
+    desc: "원주장미공원 가득 피어난 장미를 배경으로 공연과 체험 프로그램이 진행됩니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: false
+  },
+  {
+    name: "섬강축제",
+    month: 8, monthLabel: "여름경",
+    season: "여름",
+    period: "매년 여름 (2026년 일정 미공지)",
+    place: "원주시 지정면 지정로 317",
+    host: "원주시",
+    desc: "섬강을 따라 열리는 수변 축제. 물놀이와 지역 먹거리, 야간 공연을 함께 즐길 수 있습니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: false
+  },
+  {
+    name: "제10회 원주문화의거리 치맥축제",
+    month: 9, monthLabel: "9월",
+    season: "가을",
+    period: "2026. 9. 2(수) ~ 9. 5(토) · 4일간",
+    place: "원주시 중앙동 문화의거리 일원",
+    host: "원주문화의거리상인회",
+    desc: "올해 10회를 맞은 원도심 대표 축제. 주제는 '10년의 맛, 거리의 추억'. 치킨과 맥주, 치맥가수왕 무대, 거리공연·버스킹이 이어지며 연계 행사인 '달빛 도깨비 야시장'은 10월 17일까지 운영됩니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: true
+  },
+  {
+    name: "제4회 원주시 세계문화축제: 와우 페스티벌",
+    month: 9, monthLabel: "9월",
+    season: "가을",
+    period: "2026. 9. 5(토)",
+    place: "원주시 댄싱공연장 주차장 일대",
+    host: "원주시가족센터",
+    desc: "2023년 시작된 다문화 화합 축제. 세계 각국의 전통놀이·전통의상 체험과 다양한 나라의 문화 프로그램을 통해 서로 다른 문화를 이해하고 존중하는 자리를 마련합니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: true
+  },
+  {
+    name: "반계리 은행나무축제",
+    month: 10, monthLabel: "10월경",
+    season: "가을",
+    period: "매년 10~11월 단풍 시기 (2026년 일정 미공지)",
+    place: "원주시 문막읍 반계리 1495-1",
+    host: "원주시",
+    desc: "수령 1,000년이 넘은 것으로 알려진 반계리 은행나무의 황금빛 단풍을 즐기는 축제. 최근 광장이 새로 조성되어 관람 여건이 좋아졌습니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: false
+  },
+  {
+    name: "2026 원주만두축제",
+    month: 10, monthLabel: "10월",
+    season: "가을",
+    period: "2026. 10. 23(금) ~ 10. 25(일) · 3일간",
+    place: "원주시 중앙로 92 일원 (중앙시장·자유시장 일대)",
+    host: "원주시",
+    desc: "만두하면 원주, 원주하면 만두. 원주를 대표하는 미식 축제로 만두 맛집 부스와 체험 프로그램, 서포터즈 '만두덕후'가 함께합니다.",
+    link: "https://mandufestival.co.kr",
+    confirmed: true
+  },
+  {
+    name: "농업인의 날 「삼토페스티벌」",
+    month: 11, monthLabel: "11월경",
+    season: "가을",
+    period: "매년 11월 농업인의 날(11.11) 전후 (2026년 일정 미공지)",
+    place: "원주시 서원대로 331 (명륜동)",
+    host: "원주시",
+    desc: "흙·땅·삶, 세 가지 '토(土)'를 주제로 농업의 가치를 기념하는 축제. 지역 농산물 장터와 체험이 함께 열립니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: false
+  },
+  {
+    name: "원주 고니골 빛축제",
+    month: 12, monthLabel: "겨울경",
+    season: "겨울",
+    period: "매년 겨울 시즌 (2026년 일정 미공지)",
+    place: "원주시 고니골 일원",
+    host: "원주시",
+    desc: "고니골 테마단지 일대를 수놓는 겨울 조명축제. 반짝이는 야경 포토존이 인기입니다.",
+    link: "https://www.wonju.go.kr/tour",
+    confirmed: false
+  }
+];
+
+festivals.sort((a,b) => a.month - b.month);
+
+const timeline = document.getElementById('timeline');
+const emptyMsg = document.getElementById('emptyMsg');
+const searchInput = document.getElementById('searchInput');
+const chips = document.querySelectorAll('.chip');
+let activeSeason = 'all';
+
+function render(){
+  const q = searchInput.value.trim().toLowerCase();
+  const filtered = festivals.filter(f => {
+    const matchesSeason = activeSeason === 'all' || f.season === activeSeason;
+    const matchesQuery = !q || f.name.toLowerCase().includes(q) || f.place.toLowerCase().includes(q);
+    return matchesSeason && matchesQuery;
+  });
+
+  timeline.innerHTML = '';
+  emptyMsg.style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.innerHTML = `
+      <div class="month-tag">${f.monthLabel}</div>
+      <div class="dot"></div>
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <h3>${f.name}</h3>
+            <div class="period">${f.period}</div>
+          </div>
+          <div class="season-badge">${f.season}</div>
+        </div>
+        <div class="meta">
+          <span>📍 ${f.place}</span>
+          <span>주최 · ${f.host}</span>
+        </div>
+        <div class="desc">${f.desc}</div>
+        <div class="card-foot">
+          <a class="official" href="${f.link}" target="_blank" rel="noopener">공식 정보 확인 →</a>
+          ${f.confirmed ? '' : '<span class="unconfirmed">2026 일정 미공지 · 예년 기준 표기</span>'}
+        </div>
+      </div>
+    `;
+    timeline.appendChild(item);
+  });
+}
+
+chips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    chips.forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeSeason = chip.dataset.season;
+    render();
+  });
+});
+
+searchInput.addEventListener('input', render);
+
+render();
+</script>
+
+</body>
+</html>
