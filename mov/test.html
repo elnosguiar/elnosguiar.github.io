@@ -991,28 +991,6 @@ function splitCaption(s,e,text){
   chunks.forEach((c,i)=>{const d=(e-s)*c.length/total;out.push({s:t,e:i===chunks.length-1?e:t+d,text:c});t+=d;});
   return out;
 }
-// 일부 Whisper 모델 설정에 forced_decoder_ids가 남아 있으면 language/task/return_timestamps와 충돌함 → 비워 준다
-function clearForcedIds(p){
-  try{
-    const m=p&&p.model;if(!m)return;
-    if(m.generation_config&&m.generation_config.forced_decoder_ids)m.generation_config.forced_decoder_ids=null;
-    if(m.config&&m.config.forced_decoder_ids)m.config.forced_decoder_ids=null;
-  }catch(_){}
-}
-async function runAsr(seg,opts){
-  try{return await asr(seg,opts);}
-  catch(e){
-    if(!/forced_decoder_ids/.test(errText(e)))throw e;
-    clearForcedIds(asr);                       // 1차: 모델 설정에서 제거 후 재시도
-    try{return await asr(seg,opts);}
-    catch(e2){
-      if(!/forced_decoder_ids/.test(errText(e2)))throw e2;
-      const o={return_timestamps:true,forced_decoder_ids:null};   // 2차: 명시적으로 null 지정
-      if(opts.language)o.language=opts.language;
-      return await asr(seg,o);
-    }
-  }
-}
 async function autoCaption(){
   if(!S.file)return toast('먼저 영상을 열어주세요');
   if(capBusy)return;
@@ -1046,7 +1024,6 @@ async function autoCaption(){
         }catch(e){errs.push(new URL(host).host+': '+errText(e));setMsg('다른 서버로 다시 시도 중…',0.04);}
       }
       if(!asr)throw new Error('AI 모델을 내려받지 못했어요 → '+errs.join(' | '));
-      clearForcedIds(asr);
       asrModel=model;
     }
     if(capCancel)throw new Error('cancel');
@@ -1076,12 +1053,13 @@ async function autoCaption(){
       const me=meanEnergy(a,b);
       if(me.max>0.008&&me.mean>0.0025){
         const seg=S.audio.samples.slice(Math.floor(a*16000),Math.floor(b*16000));
-        const out=await runAsr(seg,opts);
+        const out=await asr(seg,Object.assign({},opts));
         const chunks=out&&out.chunks?out.chunks:(out&&out.text?[{timestamp:[0,b-a],text:out.text}]:[]);
         for(const c of chunks){
           const text=(c.text||'').trim();if(!text)continue;
           let cs=a+(c.timestamp&&c.timestamp[0]!=null?c.timestamp[0]:0);
-          let ce=a+(c.timestamp&&c.timestamp[1]!=null?c.timestamp[1]:(b-a));
+          // 마지막 조각은 끝 시간이 null로 올 수 있음 → 글자 수로 길이를 추정 (구간 끝까지 늘어지지 않게)
+          let ce=(c.timestamp&&c.timestamp[1]!=null)?a+c.timestamp[1]:Math.min(b,cs+Math.max(1.5,text.length*0.28));
           cs=clamp(cs,a,b);ce=clamp(Math.max(ce,cs+0.5),a,Math.max(b,cs+0.5));
           splitCaption(cs,ce,text).forEach(p=>found.push(p));
         }
